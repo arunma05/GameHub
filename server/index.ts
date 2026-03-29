@@ -804,7 +804,7 @@ io.on('connection', (socket: Socket) => {
 // Serve static files from the client/dist folder in Production
 if (fs.existsSync(CLIENT_DIST)) {
   app.use(express.static(CLIENT_DIST));
-  app.get('/*', (req, res) => {
+  app.get('(.*)', (req, res) => {
     if (!req.path.startsWith('/socket.io')) {
       res.sendFile(path.join(CLIENT_DIST, 'index.html'));
     }
