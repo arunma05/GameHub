@@ -4,6 +4,7 @@ import { Server, Socket } from 'socket.io';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
+import https from 'https';
 import { generateCard, countCompletedLines } from './utils';
 import { RACER_SENTENCES, getRandomSentence } from './sentences';
 
@@ -218,7 +219,6 @@ io.on('connection', (socket: Socket) => {
       broadcastActiveRooms();
       
       const fetchQuestions = () => {
-        const https = require('https');
         const amount = room.gameData?.quizAmount || 10;
         https.get(`https://opentdb.com/api.php?amount=${amount}&category=18&type=multiple`, (resp: any) => {
           let data = '';
@@ -393,7 +393,6 @@ io.on('connection', (socket: Socket) => {
       broadcastActiveRooms();
       
       const fetchQuestions = () => {
-        const https = require('https');
         const amount = room.gameData?.quizAmount || 10;
         https.get(`https://opentdb.com/api.php?amount=${amount}&category=18&type=multiple`, (resp: any) => {
           let data = '';
