@@ -329,9 +329,10 @@ export const CssBattle: React.FC<CssBattleProps> = ({ me, leaderboard, onBack })
         </div>
       </div>
 
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+      <div className="mobile-column" style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         {/* Editors */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--item-border)' }}>
+        <div className="mobile-p-1" style={{ flex: 1, display: 'flex', flexDirection: 'column', borderRight: '1px solid var(--item-border)', minHeight: '300px' }}>
+
           {/* Color Palette */}
           <div style={{ padding: '1rem', background: 'var(--item-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 800 }}>TARGET COLORS:</div>
@@ -377,7 +378,8 @@ export const CssBattle: React.FC<CssBattleProps> = ({ me, leaderboard, onBack })
         </div>
 
         {/* Visuals */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', overflowY: 'auto', padding: '2rem', gap: '2rem' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', overflowY: 'auto', padding: '1rem', gap: '2rem' }}>
+
           
           {matchPercent === 100 && (
             <div className="card animate-fade-in" style={{ padding: '2rem', textAlign: 'center', background: 'var(--success-glow)', border: '2px solid var(--success)' }}>
@@ -390,16 +392,17 @@ export const CssBattle: React.FC<CssBattleProps> = ({ me, leaderboard, onBack })
             </div>
           )}
 
-          <div style={{ display: 'flex', gap: '2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            <div>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+            <div style={{ transform: 'scale(clamp(0.65, 20vw, 1))', transformOrigin: 'top center', width: 'min(400px, 100%)', height: 'min(300px, 80vw)' }}>
               <div style={{ padding: '0.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 800 }}>TARGET</div>
               <iframe ref={targetIframeRef} srcDoc={targetSrcDoc} title="Target" style={{ width: TARGET_WIDTH, height: TARGET_HEIGHT, border: 'none', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', background: '#fff' }} />
             </div>
-            <div>
+            <div style={{ transform: 'scale(clamp(0.65, 20vw, 1))', transformOrigin: 'top center', width: 'min(400px, 100%)', height: 'min(300px, 80vw)' }}>
               <div style={{ padding: '0.5rem', textAlign: 'center', color: 'var(--text-secondary)', fontWeight: 800 }}>YOUR OUTPUT</div>
               <iframe ref={outputIframeRef} srcDoc={outputSrcDoc} title="Output" style={{ width: TARGET_WIDTH, height: TARGET_HEIGHT, border: 'none', borderRadius: '8px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)', background: '#fff' }} />
             </div>
           </div>
+
 
           <div style={{ marginTop: '2rem' }}>
             <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 900 }}>

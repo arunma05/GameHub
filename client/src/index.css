@@ -301,6 +301,11 @@ p {
   flex-direction: row;
 }
 
+.mobile-column {
+  display: flex;
+  flex-direction: column;
+}
+
 .responsive-title {
   font-size: 4rem;
 }
@@ -310,10 +315,14 @@ p {
   max-width: 480px;
 }
 
+.mobile-hide {
+  display: block;
+}
+
 @media (max-width: 1024px) {
   .responsive-flex {
     flex-direction: column;
-    align-items: center;
+    align-items: stretch;
   }
   .responsive-card-width {
     max-width: 100%;
@@ -328,7 +337,7 @@ p {
 
 @media (max-width: 768px) {
   h1, .responsive-title {
-    font-size: 2.5rem !important;
+    font-size: 2.25rem !important;
   }
   h2 {
     font-size: 1.5rem !important;
@@ -346,4 +355,20 @@ p {
   .responsive-card-width {
     max-width: 100%;
   }
+  .mobile-hide {
+    display: none !important;
+  }
+  .mobile-column {
+    flex-direction: column !important;
+  }
+  .mobile-p-1 {
+    padding: 1rem !important;
+  }
+  .mobile-gap-1 {
+    gap: 1rem !important;
+  }
+  .mobile-gap-05 {
+    gap: 0.5rem !important;
+  }
 }
+

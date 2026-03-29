@@ -19,46 +19,51 @@ if (!fs.existsSync(DB_PATH)) {
   fs.writeFileSync(DB_PATH, JSON.stringify({ bingo: {}, typeracer: {}, chess: {}, flappy: {}, quiz: {}, cssbattle: [], sudoku: {}, sudokuSaves: {}, sixteencoins: {} }));
 }
 
-function getLeaderboards(): { bingo: Record<string, number>; typeracer: Record<string, number>; chess: Record<string, number>; quiz: Record<string, number>; sudoku: Record<string, number>; sixteencoins: Record<string, number>; flappy: { name: string; score: number }[]; cssbattle: { name: string; score: number; time: number }[] } {
+function getDB(): any {
   try {
     const data = fs.readFileSync(DB_PATH, 'utf8');
-    const db = JSON.parse(data);
-    
-    // Safety: ensure arrays
-    let flappy = Array.isArray(db.flappy) ? db.flappy : [];
-    let cssbattle = Array.isArray(db.cssbattle) ? db.cssbattle : [];
-
-    return { 
-      bingo: db.bingo || {}, 
-      typeracer: db.typeracer || {},
-      chess: db.chess || {},
-      quiz: db.quiz || {},
-      sudoku: db.sudoku || {},
-      sixteencoins: db.sixteencoins || {},
-      flappy: flappy,
-      cssbattle: cssbattle
-    };
+    return JSON.parse(data);
   } catch (e) {
-    return { bingo: {}, typeracer: {}, chess: {}, quiz: {}, sudoku: {}, sixteencoins: {}, flappy: [], cssbattle: [] };
+    return { bingo: {}, typeracer: {}, chess: {}, flappy: [], quiz: {}, cssbattle: [], sudoku: {}, sudokuSaves: {}, sixteencoins: {} };
   }
 }
 
+function getLeaderboards(): { bingo: Record<string, number>; typeracer: Record<string, number>; chess: Record<string, number>; quiz: Record<string, number>; sudoku: Record<string, number>; sixteencoins: Record<string, number>; flappy: { name: string; score: number }[]; cssbattle: { name: string; score: number; time: number }[] } {
+  const db = getDB();
+  
+  return { 
+    bingo: db.bingo || {}, 
+    typeracer: db.typeracer || {},
+    chess: db.chess || {},
+    quiz: db.quiz || {},
+    sudoku: db.sudoku || {},
+    sixteencoins: db.sixteencoins || {},
+    flappy: Array.isArray(db.flappy) ? db.flappy : [],
+    cssbattle: Array.isArray(db.cssbattle) ? db.cssbattle : []
+  };
+}
+
+
 function updatePlayerWin(name: string, type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins', score?: number, time?: number) {
-  const db = getLeaderboards();
+  const db = getDB();
   if (type === 'flappy' && score !== undefined) {
+    if (!Array.isArray(db.flappy)) db.flappy = [];
     db.flappy.push({ name, score });
-    db.flappy.sort((a, b) => b.score - a.score);
+    db.flappy.sort((a: any, b: any) => b.score - a.score);
     if (db.flappy.length > 100) db.flappy = db.flappy.slice(0, 100);
   } else if (type === 'cssbattle' && score !== undefined && time !== undefined) {
+    if (!Array.isArray(db.cssbattle)) db.cssbattle = [];
     db.cssbattle.push({ name, score, time });
-    db.cssbattle.sort((a, b) => b.score === a.score ? a.time - b.time : b.score - a.score);
+    db.cssbattle.sort((a: any, b: any) => b.score === a.score ? a.time - b.time : b.score - a.score);
     if (db.cssbattle.length > 100) db.cssbattle = db.cssbattle.slice(0, 100);
   } else if (type !== 'flappy' && type !== 'cssbattle') {
+    if (!db[type]) db[type] = {};
     const game = db[type] as Record<string, number>;
     game[name] = (game[name] || 0) + 1;
   }
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
 }
+
 
 const server = http.createServer(app);
 const io = new Server(server, {

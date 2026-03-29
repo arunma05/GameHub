@@ -314,22 +314,23 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
       </div>
 
       {/* Main Game Content */}
-      <div style={{
-        flex: 1, display: 'flex', gap: '2rem', padding: '2rem',
-        overflow: 'auto', justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap'
+      <div className="mobile-column" style={{
+        flex: 1, display: 'flex', gap: '2rem', padding: '1rem',
+        overflow: 'auto', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap'
       }}>
+
 
         {/* ── BINGO Progress Headers (Classic Row of 5) ── */}
         <div style={{ width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           
-          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
             {bingoLetters.map((l, i) => {
               const active = linesCompleted > i;
               return (
                 <div key={l} style={{
-                  flex: 1, height: '80px', borderRadius: '16px',
+                  flex: 1, height: 'clamp(45px, 12vw, 80px)', borderRadius: '12px',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '2.5rem', fontWeight: 900,
+                  fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', fontWeight: 900,
                   transition: 'all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
                   background: active 
                     ? 'linear-gradient(135deg, #10b981, #059669)' 
@@ -350,6 +351,7 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
             })}
           </div>
 
+
           {/* ── Main Grid ── */}
           <div className="card" style={{ padding: '10px', background: 'var(--item-bg)', borderRadius: '20px', border: '1px solid var(--item-border)' }}>
             <div style={{
@@ -366,8 +368,9 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
                     style={{
                       aspectRatio: '1/1',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '1.6rem', fontWeight: 800, borderRadius: '14px',
+                      fontSize: 'clamp(1rem, 4vw, 1.6rem)', fontWeight: 800, borderRadius: 'clamp(6px, 1.5vw, 12px)',
                       cursor: clickable ? 'pointer' : 'default',
+
                       userSelect: 'none',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       background: called

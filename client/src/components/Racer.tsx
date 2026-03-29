@@ -262,11 +262,12 @@ export const Racer: React.FC<RacerProps> = ({ room, me }) => {
         
         {/* Race Track Header */}
         <div className="card" style={{ padding: '2rem' }}>
-           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2.5rem' }}>
-              <h1 style={{ fontSize: '2.5rem', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem', margin: 0, color: 'var(--accent)' }}>
-                <Timer size={48} color="var(--accent)" /> 
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+              <h1 style={{ fontSize: 'clamp(1.5rem, 5vw, 2.5rem)', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '1rem', margin: 0, color: 'var(--accent)' }}>
+                <Timer size={32} color="var(--accent)" /> 
                 ARENA RACER
               </h1>
+
               <div style={{ display: 'flex', gap: '1rem' }}>
                 <div style={{ padding: '0.6rem 1.2rem', background: 'var(--accent-glow)', color: 'var(--accent)', borderRadius: '30px', fontSize: '1rem', fontWeight: 900, border: '1px solid var(--accent)' }}>
                   ROOM: {room.id}
@@ -314,8 +315,9 @@ export const Racer: React.FC<RacerProps> = ({ room, me }) => {
         </div>
 
         {/* Typing Area */}
-        <div className="card" style={{ padding: '4rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '3rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)', backdropFilter: 'blur(20px)' }}>
-           <div style={{ fontSize: '1.8rem', lineHeight: '1.8', position: 'relative', letterSpacing: '0.02em', textAlign: 'left', minHeight: '220px', fontWeight: 600, color: 'var(--text-primary)' }}>
+        <div className="card" style={{ padding: 'clamp(1rem, 5vw, 4rem)', flex: 1, display: 'flex', flexDirection: 'column', gap: '2rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)', backdropFilter: 'blur(20px)' }}>
+           <div style={{ fontSize: 'clamp(1.2rem, 4vw, 1.8rem)', lineHeight: '1.6', position: 'relative', letterSpacing: '0.02em', textAlign: 'left', minHeight: 'clamp(120px, 30vh, 220px)', fontWeight: 600, color: 'var(--text-primary)' }}>
+
               <span style={{ color: 'var(--success)', fontWeight: 950, textDecoration: 'underline decoration-thickness-2' }}>
                 {input}
               </span>
@@ -332,13 +334,14 @@ export const Racer: React.FC<RacerProps> = ({ room, me }) => {
                 autoComplete="off"
                 disabled={room.gameState !== 'playing'}
                 style={{ 
-                  width: '100%', fontSize: '1.8rem', padding: '2.5rem', textAlign: 'center', 
+                  width: '100%', fontSize: 'clamp(1.2rem, 4vw, 1.8rem)', padding: 'clamp(1rem, 4vw, 2.5rem)', textAlign: 'center', 
                   background: room.gameState === 'playing' ? 'var(--item-bg)' : 'var(--bg-secondary)', 
                   borderColor: room.gameState === 'playing' ? 'var(--accent)' : 'var(--item-border)',
                   boxShadow: room.gameState === 'playing' ? '0 0 50px var(--accent-glow) inset, 0 8px 32px rgba(0,0,0,0.05)' : 'none',
                   opacity: room.gameState === 'starting' ? 0.3 : 1, transition: 'all 0.3s ease', boxSizing: 'border-box',
                   color: 'var(--text-primary)', fontWeight: 950
                 }}
+
                 value={input}
                 onChange={handleChange}
                 onPaste={e => e.preventDefault()}

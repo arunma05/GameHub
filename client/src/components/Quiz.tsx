@@ -259,11 +259,12 @@ export const Quiz: React.FC<QuizProps> = ({ room, me }) => {
         </div>
       </div>
 
-      <div className="container responsive-flex" style={{ gap: '2rem', alignItems: 'stretch' }}>
+      <div className="container mobile-column" style={{ gap: '1.5rem', alignItems: 'stretch', padding: '1rem' }}>
         
         {/* Main Quiz Area */}
         <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="card" style={{ padding: '2.5rem', background: 'var(--card-bg)', borderTop: '4px solid var(--accent)' }}>
+          <div className="card" style={{ padding: 'clamp(1rem, 5vw, 2.5rem)', background: 'var(--card-bg)', borderTop: '4px solid var(--accent)' }}>
+
             
             {/* Timer Bar */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -316,12 +317,13 @@ export const Quiz: React.FC<QuizProps> = ({ room, me }) => {
                     onClick={() => handleAnswer(opt)}
                     disabled={!!myAnswer || showingResult}
                     style={{
-                      padding: '1.5rem',
+                      padding: 'clamp(0.8rem, 3vw, 1.5rem)',
                       borderRadius: '16px',
                       background: bg,
                       border: border,
                       color: 'var(--text-primary)',
-                      fontSize: '1.2rem',
+                      fontSize: 'clamp(1rem, 4vw, 1.2rem)',
+
                       fontWeight: 700,
                       textAlign: 'left',
                       cursor: myAnswer || showingResult ? 'default' : 'pointer',

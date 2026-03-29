@@ -29,6 +29,17 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
   const [nameInput, setNameInput] = useState(_me?.name || '');
   const [isJoining, setIsJoining] = useState(false);
   
+  // Sync isStarted with room state to prevent reset on remount
+  useEffect(() => {
+    if (room?.gameState === 'playing' || room?.gameState === 'starting') {
+      setIsStarted(true);
+      if (gameState.current) {
+        gameState.current.active = true;
+      }
+    }
+  }, [room?.gameState]);
+
+  
   // Game state refs for the loop
   const gameState = useRef({
     birdY: 300,

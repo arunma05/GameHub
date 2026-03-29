@@ -377,7 +377,7 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
             <Sword size={24} /> 16 COINS
           </h2>
         </div>
-        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
           <div style={{ display: 'flex', background: 'var(--item-bg)', padding: '2px', borderRadius: '8px', border: '1px solid var(--item-border)' }}>
             <button onClick={() => setViewMode('2d')} style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: viewMode === '2d' ? 'var(--accent)' : 'transparent', color: viewMode === '2d' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 900 }}>
               <Monitor size={14} /> 2D
@@ -386,7 +386,7 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
               <Box size={14} /> 3D
             </button>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div className="mobile-hide" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>ROTATE:</span>
             <input 
               type="range" min="0" max="360" value={boardRotation}
@@ -397,25 +397,28 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'var(--item-bg)', padding: '4px 12px', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 800 }}>P1:</span>
-               <input type="color" value={p1Color} onChange={(e) => setP1Color(e.target.value)} style={{ width: 18, height: 18, cursor: 'pointer', border: 'none', background: 'transparent', padding: 0 }} />
+               <input type="color" value={p1Color} onChange={(e) => setP1Color(e.target.value)} style={{ width: 14, height: 14, cursor: 'pointer', border: 'none', background: 'transparent', padding: 0 }} />
              </div>
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 800 }}>P2:</span>
-               <input type="color" value={p2Color} onChange={(e) => setP2Color(e.target.value)} style={{ width: 18, height: 18, cursor: 'pointer', border: 'none', background: 'transparent', padding: 0 }} />
+               <input type="color" value={p2Color} onChange={(e) => setP2Color(e.target.value)} style={{ width: 14, height: 14, cursor: 'pointer', border: 'none', background: 'transparent', padding: 0 }} />
              </div>
           </div>
-          {room.players.map((p, i) => (
-            <div key={p.id} style={{ 
-              display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 1rem', borderRadius: '12px',
-              background: room.currentTurnIndex === i ? 'var(--accent-glow)' : 'transparent',
-              border: room.currentTurnIndex === i ? '1px solid var(--accent)' : '1px solid transparent'
-            }}>
-              <div style={{ width: 10, height: 10, borderRadius: '50%', background: i === 0 ? p1Color : p2Color }} />
-              <div style={{ color: 'var(--text-primary)', fontWeight: 900, fontSize: '0.9rem' }}>{p.name}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{Object.values(coins).filter(id => id === p.id).length}</div>
-            </div>
-          ))}
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            {room.players.map((p, i) => (
+              <div key={p.id} style={{ 
+                display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0.75rem', borderRadius: '12px',
+                background: room.currentTurnIndex === i ? 'var(--accent-glow)' : 'transparent',
+                border: room.currentTurnIndex === i ? '1px solid var(--accent)' : '1px solid transparent'
+              }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: i === 0 ? p1Color : p2Color }} />
+                <div style={{ color: 'var(--text-primary)', fontWeight: 900, fontSize: '0.8rem' }}>{p.name}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{Object.values(coins).filter(id => id === p.id).length}</div>
+              </div>
+            ))}
+          </div>
         </div>
+
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem', overflowY: 'auto', justifyContent: 'center' }}>
         {room.gameState === 'waiting' ? (
@@ -477,12 +480,13 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
           <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
             {viewMode === '2d' ? (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem' }}>
-                <div style={{ 
-                  position: 'relative', width: 600, height: 600,
-                  transform: `rotate(${boardRotation}deg)`,
-                  transition: 'transform 0.5s ease-out'
-                }}>
-                  <svg width="600" height="600" viewBox="0 0 600 600">
+              <div style={{ 
+                position: 'relative', width: 'min(90vw, 600px)', aspectRatio: '1/1',
+                transform: `rotate(${boardRotation}deg)`,
+                transition: 'transform 0.5s ease-out'
+              }}>
+                <svg width="100%" height="100%" viewBox="0 0 600 600">
+
                     <g stroke="var(--item-border)" strokeWidth="3" opacity="0.8">
                       <line x1={OFFSET+2*SCALE} y1={OFFSET+0*SCALE} x2={OFFSET+0*SCALE} y2={OFFSET+2*SCALE} />
                       <line x1={OFFSET+0*SCALE} y1={OFFSET+2*SCALE} x2={OFFSET+2*SCALE} y2={OFFSET+4*SCALE} />

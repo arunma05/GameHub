@@ -597,7 +597,8 @@ const Chess: React.FC<ChessProps> = ({ room, me }) => {
           <span style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.75rem' }}>{room.id}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+        <div className="mobile-hide" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+
           {/* 2D / 3D toggle */}
           <div style={{
             display: 'flex',
@@ -666,10 +667,11 @@ const Chess: React.FC<ChessProps> = ({ room, me }) => {
       )}
 
       {/* ── Board area ── */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', gap: '6px', padding: '6px' }}>
+      <div className="mobile-column" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', gap: '8px', padding: '6px' }}>
+
 
         {/* LEFT sidebar — pieces opponent captured from me */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
           <CapturedSidebar
             pieces={theirCaptured}
             isWhitePieces={amIWhite}
@@ -678,8 +680,10 @@ const Chess: React.FC<ChessProps> = ({ room, me }) => {
           />
         </div>
 
+
         {/* CENTER — board + winner banner */}
-        <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+        <div style={{ flex: 2, position: 'relative', minHeight: 'min(80vw, 80vh)', maxHeight: '100%' }}>
+
 
           {/* Game over banner */}
           {room.gameState === 'finished' && (() => {

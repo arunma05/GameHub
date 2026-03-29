@@ -189,7 +189,8 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', gap: '2rem', padding: '2rem', overflowY: 'auto', justifyContent: 'center' }}>
+      <div className="mobile-column" style={{ flex: 1, display: 'flex', gap: '2rem', padding: 'clamp(1rem, 3vw, 2rem)', overflowY: 'auto', justifyContent: 'center', alignItems: 'center' }}>
+
         
         {/* Play Area */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '600px' }}>
@@ -240,8 +241,9 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
                       borderRight,
                       borderBottom,
                       textAlign: 'center',
-                      fontSize: '1.5rem',
+                      fontSize: 'clamp(1rem, 4vw, 1.5rem)',
                       fontWeight: isGiven ? 700 : 950,
+
                       outline: 'none',
                       cursor: isGiven ? 'default' : 'text'
                     }}
@@ -255,10 +257,11 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
         </div>
 
         {/* Leaderboard Column */}
-        <div style={{ width: '350px' }}>
-          <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 900 }}>
+        <div style={{ width: '100%', maxWidth: '350px' }}>
+          <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 900, justifyContent: 'center' }}>
              <Trophy size={18} color="#fbbf24" /> Sudoku Masters
           </h3>
+
           <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
             {Object.entries(leaderboard || {}).length > 0 ? (
               Object.entries(leaderboard)
