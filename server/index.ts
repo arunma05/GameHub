@@ -10,7 +10,8 @@ import { RACER_SENTENCES, getRandomSentence } from './sentences';
 const app = express();
 app.use(cors());
 
-const DB_PATH = path.join(__dirname, 'db.json');
+const DB_PATH = path.join(process.cwd(), 'server/db.json');
+const CLIENT_DIST = path.join(process.cwd(), 'client/dist');
 
 // Initialize DB if doesn't exist
 if (!fs.existsSync(DB_PATH)) {
@@ -801,5 +802,15 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
+// Serve static files from the client/dist folder in Production
+if (fs.existsSync(CLIENT_DIST)) {
+  app.use(express.static(CLIENT_DIST));
+  app.get('*', (req, res) => {
+    if (!req.path.startsWith('/socket.io')) {
+      res.sendFile(path.join(CLIENT_DIST, 'index.html'));
+    }
+  });
+}
+
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => console.log(`Bingo server on port ${PORT}`));
+server.listen(PORT, () => console.log(`Fun Arcade server on port ${PORT}`));
