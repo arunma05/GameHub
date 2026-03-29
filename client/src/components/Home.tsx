@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { socket } from '../socket';
 import type { Player, PublicRoom } from '../types';
 import { Sparkles, Users, Trophy, Timer, Globe, Lock, Unlock, Zap, Brain, Paintbrush, Grid3X3, Sword } from 'lucide-react';
+import { Logo } from './Logo';
 
 interface HomeProps {
   onRoomJoined: (me: Player) => void;
@@ -13,9 +14,10 @@ interface HomeProps {
     flappy: { name: string; score: number }[];
     cssbattle: { name: string; score: number; time: number }[];
     sudoku: Record<string, number>;
+    kakuro: Record<string, number>;
     sixteencoins: Record<string, number>;
   };
-  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | null;
+  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | null;
   publicRooms: PublicRoom[];
 }
 
@@ -80,8 +82,12 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
           ← Back to Dashboard
         </button>
 
+        <div style={{ alignSelf: 'center', marginBottom: '1rem' }}>
+          <Logo size={42} />
+        </div>
+
         <div style={{ textAlign: 'center' }}>
-          <h1 className="responsive-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '0.5rem', textTransform: 'uppercase', fontWeight: 900 }}>
+          <h1 className="responsive-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '0.5rem', fontWeight: 900 }}>
             {selectedGame === 'typeracer' ? <Timer size={48} color="#60a5fa" /> : 
              selectedGame === 'chess' ? <span style={{ fontSize: '3rem', color: '#8b5cf6' }}>♘</span> : 
              selectedGame === 'flappy' ? <Zap size={48} color="#fbbf24" /> :
@@ -89,6 +95,7 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
              selectedGame === 'cssbattle' ? <Paintbrush size={48} color="#f43f5e" /> :
              selectedGame === 'sudoku' ? <Grid3X3 size={48} color="#22d3ee" /> :
              selectedGame === 'sixteencoins' ? <Sword size={48} color="#6366f1" /> :
+             selectedGame === 'kakuro' ? <Brain size={48} color="#a78bfa" /> :
              <Sparkles size={48} color="#60a5fa" />}
             {selectedGame === 'typeracer' ? 'Type Racer' : 
              selectedGame === 'chess' ? 'Chess' : 
@@ -97,6 +104,7 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
              selectedGame === 'cssbattle' ? 'CSS Battle' :
              selectedGame === 'sudoku' ? 'Sudoku' :
              selectedGame === 'sixteencoins' ? '16 Coins' :
+             selectedGame === 'kakuro' ? 'Kakuro' :
              'BINGO'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
@@ -107,6 +115,7 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
              selectedGame === 'cssbattle' ? 'Replicate shapes using HTML & CSS' :
              selectedGame === 'sudoku' ? 'Classic 9x9 puzzle' :
              selectedGame === 'sixteencoins' ? 'Capture pieces in this strategy classic' :
+             selectedGame === 'kakuro' ? 'Challenging number crossword puzzle' :
              'Real-time multiplayer bingo experience'}
           </p>
         </div>
@@ -293,6 +302,7 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
                  selectedGame === 'cssbattle' ? 'CSS Masters' :
                  selectedGame === 'sudoku' ? 'Sudoku Masters' :
                  selectedGame === 'sixteencoins' ? 'Board Tacticians' :
+                 selectedGame === 'kakuro' ? 'Kakuro Brainiacs' :
                  'Bingo Champions'}
               </h3>
             </div>

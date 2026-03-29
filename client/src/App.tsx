@@ -12,20 +12,25 @@ import { Quiz } from './components/Quiz';
 import { CssBattle } from './components/CssBattle';
 import { Sudoku } from './components/Sudoku';
 import { SixteenCoins } from './components/SixteenCoins';
+import { Kakuro } from './components/Kakuro';
 import { NewsView } from './components/NewsView';
 
 export const App: React.FC = () => {
-  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'news'>('dashboard');
-  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | null>(null);
+  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'news'>('dashboard');
+  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | null>(null);
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [isDark, setIsDark] = useState<boolean>(() => {
     const saved = localStorage.getItem('theme');
     return saved ? saved === 'dark' : true;
   });
+  const [newsQuery, setNewsQuery] = useState('Latest tech news');
+  const [newsTitle, setNewsTitle] = useState('Tech Industry Updates');
+  const [newsSubtitle, setNewsSubtitle] = useState('Stay updated with fresh industry insights.');
 
   useEffect(() => {
     document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    document.title = "Fun Arcade";
   }, [isDark]);
 
   const toggleTheme = () => setIsDark(prev => !prev);
@@ -33,7 +38,7 @@ export const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({
     room: null,
     me: null,
-    leaderboards: { bingo: {}, typeracer: {}, chess: {}, quiz: {}, sudoku: {}, sixteencoins: {},
+    leaderboards: { bingo: {}, typeracer: {}, chess: {}, quiz: {}, sudoku: {}, kakuro: {}, sixteencoins: {},
       flappy: [], cssbattle: []
     },
     error: null,
@@ -44,6 +49,7 @@ export const App: React.FC = () => {
     const onActiveRooms = (rooms: PublicRoom[]) => setPublicRooms(rooms);
     socket.on('active-rooms', onActiveRooms);
     socket.emit('get-active-rooms');
+    socket.emit('get-leaderboards');
 
     const onRoomUpdated = (room: Room) => {
       setGameState(prev => ({ ...prev, room }));
@@ -85,13 +91,14 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleSelectGame = (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins') => {
+  const handleSelectGame = (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro') => {
     setSelectedGame(type);
     setGameState(prev => ({ ...prev, room: null, me: null })); 
     if (type === 'flappy') setView('flappy');
     else if (type === 'cssbattle') setView('cssbattle');
     else if (type === 'sudoku') setView('sudoku');
     else if (type === 'sixteencoins') setView('sixteencoins');
+    else if (type === 'kakuro') setView('home'); 
     else setView('home');
   };
 
@@ -100,7 +107,7 @@ export const App: React.FC = () => {
     setView('lobby');
   };
 
-  const handleDashboardJoin = (me: GameState['me'], gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins') => {
+  const handleDashboardJoin = (me: GameState['me'], gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro') => {
     setSelectedGame(gameType);
     setGameState(prev => ({ ...prev, me }));
     setView('lobby');
@@ -108,11 +115,27 @@ export const App: React.FC = () => {
 
   const renderView = () => {
     if (view === 'dashboard') {
-      return <Dashboard onSelectGame={handleSelectGame} onRoomJoined={handleDashboardJoin} publicRooms={publicRooms} onSelectNews={() => setView('news')} />;
+      return <Dashboard 
+        onSelectGame={handleSelectGame} 
+        onRoomJoined={handleDashboardJoin} 
+        publicRooms={publicRooms} 
+        leaderboards={gameState.leaderboards}
+        onSelectNews={(q: string, t: string, s: string) => {
+          setNewsQuery(q);
+          setNewsTitle(t);
+          setNewsSubtitle(s);
+          setView('news');
+        }} 
+      />;
     }
 
     if (view === 'news') {
-      return <NewsView onBack={() => setView('dashboard')} />;
+      return <NewsView 
+        onBack={() => setView('dashboard')} 
+        query={newsQuery} 
+        title={newsTitle} 
+        subtitle={newsSubtitle} 
+      />;
     }
 
     if (view === 'flappy') {
@@ -163,6 +186,8 @@ export const App: React.FC = () => {
         return <SixteenCoins room={gameState.room} me={gameState.me} onBack={() => setView('dashboard')} />;
       } else if (gameState.room.type === 'quiz') {
         return <Quiz room={gameState.room} me={gameState.me} />;
+      } else if (gameState.room.type === 'kakuro') {
+        return <Kakuro room={gameState.room} me={gameState.me} leaderboard={gameState.leaderboards.kakuro} onBack={() => setView('dashboard')} />;
       }
       return <Game room={gameState.room} me={gameState.me} />;
     }

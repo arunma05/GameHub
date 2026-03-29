@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['arun_logo.png'],
       manifest: {
         name: 'Fun Arcade',
         short_name: 'Arcade',
@@ -19,14 +19,14 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: 'favicon.svg',
+            src: 'arun_logo.png',
             sizes: '192x192',
-            type: 'image/svg+xml'
+            type: 'image/png'
           },
           {
-            src: 'favicon.svg',
+            src: 'arun_logo.png',
             sizes: '512x512',
-            type: 'image/svg+xml'
+            type: 'image/png'
           }
         ]
       }

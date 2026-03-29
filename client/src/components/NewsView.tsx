@@ -3,12 +3,20 @@ import { ArrowLeft, Rss, ExternalLink, Search } from 'lucide-react';
 
 interface NewsViewProps {
   onBack: () => void;
+  query?: string;
+  title?: string;
+  subtitle?: string;
 }
 
-export const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
+export const NewsView: React.FC<NewsViewProps> = ({ 
+  onBack, 
+  query = 'Latest tech news', 
+  title = 'Tech Industry Updates',
+  subtitle = 'Curated global updates. Use the search below to track new technology related news.'
+}) => {
   const [articles, setArticles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('Latest tech news');
+  const [searchQuery, setSearchQuery] = useState(query);
   const [searchInput, setSearchInput] = useState('');
 
   useEffect(() => {
@@ -41,13 +49,13 @@ export const NewsView: React.FC<NewsViewProps> = ({ onBack }) => {
           <ArrowLeft size={18} /> Back
         </button>
         <h1 className="responsive-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0, fontSize: '2.5rem' }}>
-          <Rss color="var(--success)" /> Tech Industry Updates
+          <Rss color="var(--success)" /> {title}
         </h1>
       </div>
 
       <div style={{ marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', fontWeight: 600 }}>
-          Curated global updates. Use the search below to track new technology related news.
+          {subtitle}
         </div>
         <form onSubmit={handleSearch} style={{ display: 'flex', gap: '0.5rem', maxWidth: '600px' }}>
           <input 

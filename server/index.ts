@@ -11,12 +11,17 @@ import { RACER_SENTENCES, getRandomSentence } from './sentences';
 const app = express();
 app.use(cors());
 
-const DB_PATH = path.join(process.cwd(), 'server/db.json');
-const CLIENT_DIST = path.join(process.cwd(), 'client/dist');
+const DB_PATH = fs.existsSync(path.join(process.cwd(), 'server/db.json')) 
+  ? path.join(process.cwd(), 'server/db.json') 
+  : path.join(process.cwd(), 'db.json');
+
+const CLIENT_DIST = fs.existsSync(path.join(process.cwd(), 'client/dist'))
+  ? path.join(process.cwd(), 'client/dist')
+  : path.join(process.cwd(), '../client/dist');
 
 // Initialize DB if doesn't exist
 if (!fs.existsSync(DB_PATH)) {
-  fs.writeFileSync(DB_PATH, JSON.stringify({ bingo: {}, typeracer: {}, chess: {}, flappy: {}, quiz: {}, cssbattle: [], sudoku: {}, sudokuSaves: {}, sixteencoins: {} }));
+  fs.writeFileSync(DB_PATH, JSON.stringify({ bingo: {}, typeracer: {}, chess: {}, flappy: {}, quiz: {}, cssbattle: [], sudoku: {}, kakuro: {}, sudokuSaves: {}, sixteencoins: {} }));
 }
 
 function getDB(): any {
@@ -24,11 +29,11 @@ function getDB(): any {
     const data = fs.readFileSync(DB_PATH, 'utf8');
     return JSON.parse(data);
   } catch (e) {
-    return { bingo: {}, typeracer: {}, chess: {}, flappy: [], quiz: {}, cssbattle: [], sudoku: {}, sudokuSaves: {}, sixteencoins: {} };
+    return { bingo: {}, typeracer: {}, chess: {}, flappy: [], quiz: {}, cssbattle: [], sudoku: {}, kakuro: {}, sudokuSaves: {}, sixteencoins: {} };
   }
 }
 
-function getLeaderboards(): { bingo: Record<string, number>; typeracer: Record<string, number>; chess: Record<string, number>; quiz: Record<string, number>; sudoku: Record<string, number>; sixteencoins: Record<string, number>; flappy: { name: string; score: number }[]; cssbattle: { name: string; score: number; time: number }[] } {
+function getLeaderboards(): { bingo: Record<string, number>; typeracer: Record<string, number>; chess: Record<string, number>; quiz: Record<string, number>; sudoku: Record<string, number>; kakuro: Record<string, number>; sixteencoins: Record<string, number>; flappy: { name: string; score: number }[]; cssbattle: { name: string; score: number; time: number }[] } {
   const db = getDB();
   
   return { 
@@ -37,6 +42,7 @@ function getLeaderboards(): { bingo: Record<string, number>; typeracer: Record<s
     chess: db.chess || {},
     quiz: db.quiz || {},
     sudoku: db.sudoku || {},
+    kakuro: db.kakuro || {},
     sixteencoins: db.sixteencoins || {},
     flappy: Array.isArray(db.flappy) ? db.flappy : [],
     cssbattle: Array.isArray(db.cssbattle) ? db.cssbattle : []
@@ -44,7 +50,7 @@ function getLeaderboards(): { bingo: Record<string, number>; typeracer: Record<s
 }
 
 
-function updatePlayerWin(name: string, type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins', score?: number, time?: number) {
+function updatePlayerWin(name: string, type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'kakuro' | 'sixteencoins', score?: number, time?: number) {
   const db = getDB();
   if (type === 'flappy' && score !== undefined) {
     if (!Array.isArray(db.flappy)) db.flappy = [];
@@ -80,7 +86,7 @@ interface Player {
 
 interface Room {
   id: string;
-  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins';
+  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro';
   hostId: string;
   players: Player[];
   gameState: 'waiting' | 'starting' | 'playing' | 'finished';
@@ -127,8 +133,12 @@ io.on('connection', (socket: Socket) => {
   socket.emit('leaderboard-updated', getLeaderboards());
   socket.emit('active-rooms', getActiveRooms());
 
+  socket.on('get-leaderboards', () => {
+    socket.emit('leaderboard-updated', getLeaderboards());
+  });
+
   /* ─── CREATE ROOM ─── */
-  socket.on('create-room', ({ playerName, type, isPublic, quizAmount }: { playerName: string; type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins', isPublic?: boolean, quizAmount?: number }, callback: Function) => {
+  socket.on('create-room', ({ playerName, type, isPublic, quizAmount }: { playerName: string; type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro', isPublic?: boolean, quizAmount?: number }, callback: Function) => {
     let roomId = generateRoomCode();
     while (rooms[roomId]) roomId = generateRoomCode();
 
@@ -192,8 +202,8 @@ io.on('connection', (socket: Socket) => {
     const room = rooms[roomId];
     if (!room || room.hostId !== socket.id || room.gameState !== 'waiting') return;
     
-    // Single player games can start with 1 player
-    const minPlayers = room.type === 'flappy' ? 1 : 2;
+    // Single player games or puzzles can start with 1 player
+    const minPlayers = (room.type === 'flappy' || room.type === 'kakuro' || room.type === 'sudoku') ? 1 : 2;
     if (room.players.length < minPlayers) return;
 
     if (room.type === 'typeracer') {
@@ -279,6 +289,11 @@ io.on('connection', (socket: Socket) => {
       p2Nodes.forEach(([x,y]) => { initialCoins[`${x},${y}`] = room.players[1].id; });
       
       room.gameData = { coins: initialCoins, readyCount: 2 };
+      io.to(roomId).emit('game-started', room);
+      broadcastActiveRooms();
+    } else if (room.type === 'kakuro') {
+      room.gameState = 'playing';
+      room.gameData = { level: 0 }; // Initial level
       io.to(roomId).emit('game-started', room);
       broadcastActiveRooms();
     } else {
@@ -452,6 +467,11 @@ io.on('connection', (socket: Socket) => {
       p2Nodes.forEach(([x,y]) => { initialCoins[`${x},${y}`] = room.players[1].id; });
       
       room.gameData = { coins: initialCoins, readyCount: 2 };
+      io.to(roomId).emit('game-started', room);
+      broadcastActiveRooms();
+    } else if (room.type === 'kakuro') {
+      room.gameState = 'playing';
+      room.gameData = { level: 0 }; // Initial level
       io.to(roomId).emit('game-started', room);
       broadcastActiveRooms();
     } else {
@@ -777,6 +797,22 @@ io.on('connection', (socket: Socket) => {
         fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
       }
     } catch(e) {}
+  });
+
+  socket.on('kakuro-win', ({ name, roomId }: { name: string; roomId?: string }) => {
+    updatePlayerWin(name, 'kakuro');
+    io.emit('leaderboard-updated', getLeaderboards());
+    if (roomId && rooms[roomId]) {
+      const room = rooms[roomId];
+      const player = room.players.find(p => p.name === name);
+      if (player) {
+        room.gameState = 'finished';
+        room.winner = player;
+        room.winners = [player];
+        io.to(roomId).emit('game-over', { winner: player, room });
+        broadcastActiveRooms();
+      }
+    }
   });
 
   socket.on('get-leaderboards', () => {

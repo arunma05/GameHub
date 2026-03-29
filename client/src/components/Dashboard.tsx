@@ -1,52 +1,134 @@
 import React, { useState } from 'react';
-import { Gamepad2, Timer, Sparkles, Trophy, Globe, Users, Zap, Brain, Paintbrush, Grid3X3, Sword } from 'lucide-react';
+import { Gamepad2, Timer, Trophy, Globe, Users, Zap, Brain, Paintbrush, Grid3X3, Sword } from 'lucide-react';
 import { socket } from '../socket';
+import { Logo } from './Logo';
 import type { Player, PublicRoom } from '../types';
 
 interface DashboardProps {
-  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins') => void;
-  onRoomJoined: (me: Player, gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins') => void;
+  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro') => void;
+  onRoomJoined: (me: Player, gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro') => void;
   publicRooms: PublicRoom[];
-  onSelectNews?: () => void;
+  leaderboards: Record<string, any>;
+  onSelectNews?: (query: string, title: string, subtitle: string) => void;
 }
 
 const GAME_META: Record<string, { color: string; label: string; icon: React.ReactNode }> = {
-  bingo: { color: '#10b981', label: 'BINGO', icon: <Gamepad2 size={13} /> },
-  typeracer: { color: '#3b82f6', label: 'TYPE RACER', icon: <Timer size={13} /> },
-  chess: { color: '#8b5cf6', label: 'CHESS', icon: <span style={{ fontSize: '0.85rem' }}>♘</span> },
-  flappy: { color: '#fbbf24', label: 'FLAPPY', icon: <Zap size={13} /> },
-  quiz: { color: '#ec4899', label: 'TECH QUIZ', icon: <Brain size={13} /> },
-  cssbattle: { color: '#f43f5e', label: 'CSS BATTLE', icon: <Paintbrush size={13} /> },
-  sudoku: { color: '#22d3ee', label: 'SUDOKU', icon: <Grid3X3 size={13} /> },
-  sixteencoins: { color: '#6366f1', label: '16 COINS', icon: <Sword size={13} /> },
+  bingo: { color: '#10b981', label: 'Bingo', icon: <Gamepad2 size={13} /> },
+  typeracer: { color: '#3b82f6', label: 'Type Racer', icon: <Timer size={13} /> },
+  chess: { color: '#8b5cf6', label: 'Chess', icon: <span style={{ fontSize: '0.85rem' }}>♘</span> },
+  flappy: { color: '#fbbf24', label: 'Flappy Bird', icon: <Zap size={13} /> },
+  quiz: { color: '#ec4899', label: 'Tech Quiz', icon: <Brain size={13} /> },
+  cssbattle: { color: '#f43f5e', label: 'CSS Battle', icon: <Paintbrush size={13} /> },
+  sudoku: { color: '#22d3ee', label: 'Sudoku', icon: <Grid3X3 size={13} /> },
+  kakuro: { color: '#a78bfa', label: 'Kakuro', icon: <Brain size={13} /> },
+  sixteencoins: { color: '#6366f1', label: '16 Coins', icon: <Sword size={13} /> },
 };
 
-const TechNewsTile: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
+const NewsTile: React.FC<{ 
+  onClick?: () => void; 
+  title: string; 
+  desc: string; 
+  icon: React.ReactNode; 
+  color: string;
+  linkText: string;
+}> = ({ onClick, title, desc, icon, color, linkText }) => (
   <div
     className="card"
     onClick={onClick}
     style={{
-      padding: '2.5rem', height: '100%', minHeight: '220px', display: 'flex', flexDirection: 'column',
-      borderColor: 'var(--success-glow)', cursor: 'pointer', background: 'var(--card-bg)',
+      padding: '2rem', height: '100%', minHeight: '200px', display: 'flex', flexDirection: 'column',
+      borderColor: `${color}44`, cursor: 'pointer', background: 'var(--card-bg)',
       transition: 'all 0.3s ease', border: '1px solid var(--item-border)'
     }}
-    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)'; e.currentTarget.style.borderColor = 'var(--success)'; }}
+    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)'; e.currentTarget.style.borderColor = color; }}
     onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.borderColor = 'var(--item-border)'; }}
   >
-    <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'var(--success-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.5rem' }}>
-      <Globe size={32} color="var(--success)" />
+    <div style={{ width: '50px', height: '50px', borderRadius: '14px', background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+      {icon}
     </div>
-    <h2 style={{ fontSize: '1.8rem', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: 900 }}>Latest Tech News</h2>
-    <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6', fontSize: '0.95rem', fontWeight: 600 }}>
-      Stay up-to-date with curated news about software, QA, and global tech trends.
+    <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: 950 }}>{title}</h2>
+    <p style={{ color: 'var(--text-secondary)', lineHeight: '1.5', fontSize: '0.9rem', fontWeight: 600 }}>
+      {desc}
     </p>
-    <div style={{ marginTop: 'auto', paddingTop: '1.5rem', fontSize: '0.9rem', color: 'var(--success)', fontWeight: 900 }}>
-      READ LATEST NEWS →
+    <div style={{ marginTop: 'auto', paddingTop: '1.25rem', fontSize: '0.85rem', color: color, fontWeight: 900 }}>
+      {linkText}
     </div>
   </div>
 );
 
-export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame, onRoomJoined, publicRooms, onSelectNews }) => {
+const GlobalLeadersTile: React.FC<{ leaderboards: Record<string, any> }> = ({ leaderboards }) => {
+  const getTopPlayer = (gameType: string, data: any) => {
+    if (Array.isArray(data)) {
+      if (data.length === 0) return null;
+      const top = data[0];
+
+      if (gameType === 'flappy') {
+        return { 
+          name: top.name || 'Anonymous', 
+          score: `${(top.score / 1000).toFixed(2)} km`
+        };
+      }
+      const unit = gameType === 'cssbattle' ? '%' : 'pts';
+      return { 
+        name: top.name || 'Anonymous', 
+        score: `${Math.round(top.score)}${unit}`
+      };
+    }
+    if (data && typeof data === 'object') {
+      const entries = Object.entries(data);
+      if (entries.length === 0) return null;
+      const sorted = entries.sort((a, b) => (b[1] as number) - (a[1] as number));
+      return { name: sorted[0][0], score: `${sorted[0][1]} wins` };
+    }
+    return null;
+  };
+
+  return (
+    <div className="card">
+       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+          <Trophy size={24} color="#fbbf24" />
+          <h2 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 950, color: 'var(--text-primary)' }}>Top Scorers</h2>
+       </div>
+       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {Object.entries(GAME_META).filter(([key]) => getTopPlayer(key, leaderboards[key])).length > 0 ? (
+            Object.entries(GAME_META).map(([key, meta], index, array) => {
+              const top = getTopPlayer(key, leaderboards[key]) as { name: string; score: string | number } | null;
+              if (!top) return null;
+              const isLast = index === array.length - 1;
+              return (
+                <div key={key} style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  paddingBottom: '0.75rem', 
+                  borderBottom: isLast ? 'none' : '1px solid var(--item-border)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <div style={{ color: meta.color, opacity: 0.8 }}>{meta.icon}</div>
+                    <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 950, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{meta.label}</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)' }}>{top.name}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: 950, color: meta.color }}>
+                    {top.score}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem', background: 'var(--item-bg)', borderRadius: '12px', fontSize: '0.9rem' }}>
+               No records found. Be the first to win!
+            </div>
+          )}
+       </div>
+    </div>
+  );
+};
+
+
+
+export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame, onRoomJoined, publicRooms, leaderboards, onSelectNews }) => {
   const [playerName, setPlayerName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [joiningRoom, setJoiningRoom] = useState<string | null>(null);
@@ -65,12 +147,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame, onRoomJoined
   };
 
   return (
-    <div className="container" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '1.5rem', margin: '0 auto', position: 'relative' }}>
+    <div className="container" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '1.5rem', margin: '0 auto', position: 'relative', paddingBottom: '4rem' }}>
 
       {/* Title */}
-      <div style={{ textAlign: 'center', width: '100%' }}>
-        <h1 className="responsive-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', fontWeight: 950, marginBottom: '1rem' }}>
-          <Sparkles size={50} color="var(--accent)" />
+      <div style={{ textAlign: 'center', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+        <Logo size={50} />
+        <h1 className="responsive-title" style={{ fontWeight: 950, margin: 0, color: 'var(--text-primary)' }}>
           Fun Arcade
         </h1>
       </div>
@@ -95,7 +177,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame, onRoomJoined
 
             {/* Public Lobbies Section (MOVED HERE) */}
             {publicRooms.length > 0 && (
-              <div className="card animate-fade-in" style={{ padding: '2rem', borderColor: 'var(--item-border)', background: 'var(--card-bg)' }}>
+              <div className="card animate-fade-in">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <Globe size={22} color="var(--text-secondary)" />
@@ -119,13 +201,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame, onRoomJoined
                   />
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
                   {publicRooms.map(room => {
                     const meta = GAME_META[room.type] ?? GAME_META['bingo'];
                     return (
                       <div key={room.id} className="lobby-item" style={{
                         display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem',
-                        padding: '1.25rem', background: 'var(--card-bg)',
+                        background: 'var(--card-bg)',
                         borderRadius: '16px', border: '1px solid var(--item-border)',
                         transition: 'all 0.2s ease',
                       }}>
@@ -171,13 +253,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame, onRoomJoined
                 { type: 'cssbattle' as const, players: 'Single Player', color: '#f43f5e', icon: <Paintbrush size={32} color="#f43f5e" />, title: 'CSS BATTLE', desc: 'Code HTML & CSS to match target shapes. Beat the clock and get 100% match!' },
                 { type: 'flappy' as const, players: 'Single Player', color: '#fbbf24', icon: <Zap size={32} color="#fbbf24" />, title: 'FLAPPY BIRD', desc: 'Navigate the bird through pipes. Beat your high score in this fly-high challenge!' },
                 { type: 'sudoku' as const, players: 'Single Player', color: '#22d3ee', icon: <Grid3X3 size={32} color="#22d3ee" />, title: 'SUDOKU', desc: 'Classic 9x9 puzzle. Saves your progress so you can resume anytime!' },
+                { type: 'kakuro' as const, players: 'Single/Multiplayer', color: '#a78bfa', icon: <Brain size={32} color="#a78bfa" />, title: 'KAKURO', desc: 'Challenging number crossword puzzle. Solve single player or race in multiplayer!' },
                 { type: 'sixteencoins' as const, players: '2 Player', color: '#6366f1', icon: <Sword size={32} color="#6366f1" />, title: '16 COINS', desc: 'Classic strategy board game in stunning 3D. Capture all opponent coins to win!' },
               ].map(({ type, players, color, icon, title, desc }) => (
                 <div
                   key={type}
                   onClick={() => onSelectGame(type)}
-                  className="card"
-                  style={{ width: '100%', minHeight: '320px', padding: '2.5rem', cursor: 'pointer', transition: 'all 0.3s ease', border: '2px solid transparent', position: 'relative', overflow: 'hidden' }}
+                  className="card game-card-hover"
+                  style={{ width: '100%', minHeight: '320px', cursor: 'pointer', transition: 'all 0.3s ease', border: '2px solid transparent', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = color; e.currentTarget.style.transform = 'translateY(-8px) scale(1.02)'; }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
                 >
@@ -205,7 +288,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame, onRoomJoined
           <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)', fontSize: '1.5rem', fontWeight: 900 }}>
             <Globe size={28} color="var(--success)" /> Information
           </h2>
-          <TechNewsTile onClick={onSelectNews} />
+          <NewsTile 
+            title="Latest Tech News"
+            desc="Stay up-to-date with curated news about latest tech trends."
+            icon={<Zap size={24} color="var(--success)" />}
+            color="var(--success)"
+            linkText="READ TECH NEWS →"
+            onClick={() => onSelectNews?.(
+              'Latest tech news', 
+              'Tech Industry Updates', 
+              'Curated global updates. Use the search below to track latest tech trends.'
+            )} 
+          />
+          <NewsTile 
+            title="Global & India News"
+            desc="Breaking stories and headlines from across the globe and the Indian subcontinent."
+            icon={<Globe size={24} color="var(--accent)" />}
+            color="var(--accent)"
+            linkText="READ GLOBAL NEWS →"
+            onClick={() => onSelectNews?.(
+              'Latest International and Indian News', 
+              'Global & India Headlines',
+              'Stay informed with the latest happenings across international borders and from every corner of India.'
+            )} 
+          />
+          <GlobalLeadersTile leaderboards={leaderboards} />
         </div>
 
       </div>

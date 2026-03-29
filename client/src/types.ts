@@ -1,6 +1,6 @@
 export interface PublicRoom {
   id: string;
-  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins';
+  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro';
   playerCount: number;
   hostName: string;
 }
@@ -16,7 +16,7 @@ export interface Player {
 
 export interface Room {
   id: string;
-  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins';
+  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro';
   hostId: string;
   players: Player[];
   gameState: 'waiting' | 'starting' | 'playing' | 'finished';
@@ -40,6 +40,7 @@ export interface GameState {
     chess: Record<string, number>;
     quiz: Record<string, number>;
     sudoku: Record<string, number>;
+    kakuro: Record<string, number>;
     sixteencoins: Record<string, number>;
     flappy: { name: string; score: number }[];
     cssbattle: { name: string; score: number; time: number }[];

@@ -283,7 +283,7 @@ p {
 .dashboard-layout {
   display: flex;
   flex-direction: row;
-  gap: 2.5rem;
+  gap: 3rem;
   align-items: flex-start;
   width: 100%;
 }
@@ -329,9 +329,16 @@ p {
   }
   .dashboard-layout {
     flex-direction: column;
+    gap: 4rem;
   }
   .dashboard-sidebar {
     width: 100%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+  }
+  .dashboard-sidebar > h2 {
+    grid-column: 1 / -1;
   }
 }
 
