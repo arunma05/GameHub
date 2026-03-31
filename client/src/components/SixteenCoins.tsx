@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { socket } from '../socket';
 import type { Room, Player } from '../types';
-import { Users, Sword, Box, Monitor } from 'lucide-react';
+import { Users, ArrowLeft } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { Vector3 } from 'three';
@@ -16,16 +16,16 @@ const SCALE = 60;
 const OFFSET = 40;
 
 const REAL_NODES = [
-  {x: 2, y: 0}, {x: 1, y: 1}, {x: 3, y: 1}, {x: 0, y: 2}, {x: 2, y: 2}, {x: 4, y: 2}, {x: 1, y: 3}, {x: 3, y: 3}, {x: 2, y: 4},
-  {x: 6, y: 0}, {x: 5, y: 1}, {x: 7, y: 1}, {x: 4, y: 2}, {x: 6, y: 2}, {x: 8, y: 2}, {x: 5, y: 3}, {x: 7, y: 3}, {x: 6, y: 4},
-  {x: 2, y: 8}, {x: 1, y: 7}, {x: 3, y: 7}, {x: 0, y: 6}, {x: 2, y: 6}, {x: 4, y: 6}, {x: 1, y: 5}, {x: 3, y: 5}, {x: 2, y: 4}, 
-  {x: 6, y: 8}, {x: 5, y: 7}, {x: 7, y: 7}, {x: 4, y: 6}, {x: 6, y: 6}, {x: 8, y: 6}, {x: 5, y: 5}, {x: 7, y: 5}, {x: 6, y: 4},
-  {x: 4, y: 4}
+  { x: 2, y: 0 }, { x: 1, y: 1 }, { x: 3, y: 1 }, { x: 0, y: 2 }, { x: 2, y: 2 }, { x: 4, y: 2 }, { x: 1, y: 3 }, { x: 3, y: 3 }, { x: 2, y: 4 },
+  { x: 6, y: 0 }, { x: 5, y: 1 }, { x: 7, y: 1 }, { x: 4, y: 2 }, { x: 6, y: 2 }, { x: 8, y: 2 }, { x: 5, y: 3 }, { x: 7, y: 3 }, { x: 6, y: 4 },
+  { x: 2, y: 8 }, { x: 1, y: 7 }, { x: 3, y: 7 }, { x: 0, y: 6 }, { x: 2, y: 6 }, { x: 4, y: 6 }, { x: 1, y: 5 }, { x: 3, y: 5 }, { x: 2, y: 4 },
+  { x: 6, y: 8 }, { x: 5, y: 7 }, { x: 7, y: 7 }, { x: 4, y: 6 }, { x: 6, y: 6 }, { x: 8, y: 6 }, { x: 5, y: 5 }, { x: 7, y: 5 }, { x: 6, y: 4 },
+  { x: 4, y: 4 }
 ];
 
 const uniqueNodes = Array.from(new Set(REAL_NODES.map(n => `${n.x},${n.y}`))).map(s => {
-  const [x,y] = s.split(',').map(Number);
-  return {x,y};
+  const [x, y] = s.split(',').map(Number);
+  return { x, y };
 });
 
 const ADJACENCY: Record<string, string[]> = {};
@@ -36,10 +36,10 @@ const addEdge = (a: string, b: string) => {
   if (!ADJACENCY[b].includes(a)) ADJACENCY[b].push(a);
 };
 
-[ [2,2], [6,2], [2,6], [6,6] ].forEach(([cx, cy]) => {
+[[2, 2], [6, 2], [2, 6], [6, 6]].forEach(([cx, cy]) => {
   const pts = {
-    t: `${cx},${cy-2}`, b: `${cx},${cy+2}`, l: `${cx-2},${cy}`, r: `${cx+2},${cy}`,
-    tl: `${cx-1},${cy-1}`, tr: `${cx+1},${cy-1}`, bl: `${cx-1},${cy+1}`, br: `${cx+1},${cy+1}`,
+    t: `${cx},${cy - 2}`, b: `${cx},${cy + 2}`, l: `${cx - 2},${cy}`, r: `${cx + 2},${cy}`,
+    tl: `${cx - 1},${cy - 1}`, tr: `${cx + 1},${cy - 1}`, bl: `${cx - 1},${cy + 1}`, br: `${cx + 1},${cy + 1}`,
     c: `${cx},${cy}`
   };
   addEdge(pts.t, pts.tr); addEdge(pts.tr, pts.r); addEdge(pts.r, pts.br); addEdge(pts.br, pts.b);
@@ -47,17 +47,15 @@ const addEdge = (a: string, b: string) => {
   addEdge(pts.l, pts.c); addEdge(pts.c, pts.r); addEdge(pts.t, pts.c); addEdge(pts.c, pts.b);
   addEdge(pts.tl, pts.c); addEdge(pts.c, pts.br); addEdge(pts.tr, pts.c); addEdge(pts.c, pts.bl);
 });
-const hubPoints = [ "4,2", "4,6", "2,4", "6,4", "3,3", "5,3", "3,5", "5,5" ];
+const hubPoints = ["4,2", "4,6", "2,4", "6,4", "3,3", "5,3", "3,5", "5,5"];
 hubPoints.forEach(p => addEdge("4,4", p));
 
 const CoinPiece3D: React.FC<{ color: string }> = ({ color }) => (
   <group>
-    {/* Main coin body with a subtle side texture feel */}
     <mesh castShadow position={[0, 0.06, 0]}>
       <cylinderGeometry args={[0.35, 0.35, 0.12, 40]} />
       <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.4} roughness={0.2} metalness={0.8} />
     </mesh>
-    {/* Polished top surface/rim */}
     <mesh position={[0, 0.121, 0]}>
       <cylinderGeometry args={[0.31, 0.31, 0.02, 40]} />
       <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.3} roughness={0.05} metalness={1.0} />
@@ -85,17 +83,14 @@ const Coin3D: React.FC<{ color: string; isSelected: boolean; isPossible: boolean
 
 const BoardBase3D: React.FC = () => (
   <group position={[0, -0.2, 0]}>
-    {/* Solid Industrial Base */}
     <mesh receiveShadow>
       <boxGeometry args={[9.8, 0.4, 9.8]} />
       <meshStandardMaterial color="#475569" roughness={0.7} metalness={0.4} />
     </mesh>
-    {/* Surface */}
     <mesh position={[0, 0.201, 0]} receiveShadow>
       <boxGeometry args={[9.4, 0.015, 9.4]} />
       <meshStandardMaterial color="#71717a" roughness={0.4} metalness={0.2} />
     </mesh>
-    {/* Metallic accent rim */}
     <mesh position={[0, 0.202, 0]}>
       <boxGeometry args={[9.6, 0.005, 9.6]} />
       <meshStandardMaterial color="#3f3f46" metalness={1.0} roughness={0.05} />
@@ -104,9 +99,9 @@ const BoardBase3D: React.FC = () => (
 );
 
 const Node3D: React.FC<{ x: number; y: number; onClick: () => void; isPossible: boolean }> = ({ x, y, onClick, isPossible }) => (
-  <mesh 
-    position={[x - 4, 0.015, y - 4]} 
-    receiveShadow 
+  <mesh
+    position={[x - 4, 0.015, y - 4]}
+    receiveShadow
     onClick={(e) => { e.stopPropagation(); onClick(); }}
     onPointerOver={(e) => { if (isPossible) { e.stopPropagation(); document.body.style.cursor = 'pointer'; } }}
     onPointerOut={() => { document.body.style.cursor = 'auto'; }}
@@ -119,21 +114,21 @@ const Node3D: React.FC<{ x: number; y: number; onClick: () => void; isPossible: 
 const AnimatedCoin3D: React.FC<{ targetX: number; targetY: number; color: string; isSelected: boolean; onClick: () => void; interactive: boolean }> = ({ targetX, targetY, color, isSelected, onClick, interactive }) => {
   const meshRef = useRef<any>(null);
   const targetPos = new Vector3(targetX - 4, 0.01, targetY - 4);
-  
+
   useEffect(() => {
     if (meshRef.current) {
       meshRef.current.position.copy(targetPos);
     }
-  }, []);
+  }, [targetPos]);
 
   useFrame(() => {
     if (meshRef.current) {
-      meshRef.current.position.lerp(targetPos, 0.08); // Cinematic Glide
+      meshRef.current.position.lerp(targetPos, 0.08);
     }
   });
 
   return (
-    <group 
+    <group
       ref={meshRef}
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       onPointerOver={(e) => { if (interactive) { e.stopPropagation(); document.body.style.cursor = 'pointer'; } }}
@@ -169,7 +164,7 @@ const LastMoveLine3D: React.FC<{ from: string; to: string }> = ({ from, to }) =>
   const [tx, ty] = to.split(',').map(Number);
   const length = Math.sqrt(Math.pow(tx - fx, 2) + Math.pow(ty - fy, 2));
   const angle = -Math.atan2(ty - fy, tx - fx);
-  
+
   return (
     <group position={[0, 0.015, 0]}>
       <mesh position={[(tx + fx) / 2 - 4, 0, (ty + fy) / 2 - 4]} rotation={[0, angle, 0]}>
@@ -182,28 +177,25 @@ const LastMoveLine3D: React.FC<{ from: string; to: string }> = ({ from, to }) =>
 
 const BoardLines3D: React.FC = () => {
   const lines: [number, number, number, number, number, number][] = [];
-  
-  // Reconstruct lines from SVG logic
   const addLine = (x1: number, y1: number, x2: number, y2: number) => {
     lines.push([x1 - 4, 0.005, y1 - 4, x2 - 4, 0.005, y2 - 4]);
   };
 
-  // Logic matched from SVG lines
-  addLine(2,0, 0,2); addLine(0,2, 2,4); addLine(2,4, 4,2); addLine(4,2, 2,0);
-  addLine(2,0, 2,4); addLine(0,2, 4,2); addLine(1,1, 3,3); addLine(3,1, 1,3);
-  addLine(6,0, 4,2); addLine(4,2, 6,4); addLine(6,4, 8,2); addLine(8,2, 6,0);
-  addLine(6,0, 6,4); addLine(4,2, 8,2); addLine(5,1, 7,3); addLine(7,1, 5,3);
-  addLine(2,8, 0,6); addLine(0,6, 2,4); addLine(2,4, 4,6); addLine(4,6, 2,8);
-  addLine(2,8, 2,4); addLine(0,6, 4,6); addLine(1,7, 3,5); addLine(3,7, 1,5);
-  addLine(6,8, 4,6); addLine(4,6, 6,4); addLine(6,4, 8,6); addLine(8,6, 6,8);
-  addLine(6,8, 6,4); addLine(4,6, 8,6); addLine(5,7, 7,5); addLine(7,7, 5,5);
-  addLine(2,4, 6,4); addLine(4,2, 4,6); addLine(2,2, 6,6); addLine(2,6, 6,2);
+  addLine(2, 0, 0, 2); addLine(0, 2, 2, 4); addLine(2, 4, 4, 2); addLine(4, 2, 2, 0);
+  addLine(2, 0, 2, 4); addLine(0, 2, 4, 2); addLine(1, 1, 3, 3); addLine(3, 1, 1, 3);
+  addLine(6, 0, 4, 2); addLine(4, 2, 6, 4); addLine(6, 4, 8, 2); addLine(8, 2, 6, 0);
+  addLine(6, 0, 6, 4); addLine(4, 2, 8, 2); addLine(5, 1, 7, 3); addLine(7, 1, 5, 3);
+  addLine(2, 8, 0, 6); addLine(0, 6, 2, 4); addLine(2, 4, 4, 6); addLine(4, 6, 2, 8);
+  addLine(2, 8, 2, 4); addLine(0, 6, 4, 6); addLine(1, 7, 3, 5); addLine(3, 7, 1, 5);
+  addLine(6, 8, 4, 6); addLine(4, 6, 6, 4); addLine(6, 4, 8, 6); addLine(8, 6, 6, 8);
+  addLine(6, 8, 6, 4); addLine(4, 6, 8, 6); addLine(5, 7, 7, 5); addLine(7, 7, 5, 5);
+  addLine(2, 4, 6, 4); addLine(4, 2, 4, 6); addLine(2, 2, 6, 6); addLine(2, 6, 6, 2);
 
   return (
     <group position={[0, 0.01, 0]}>
       {lines.map((l, i) => (
-        <mesh key={i} position={[(l[0] + l[3]) / 2, 0, (l[2] + l[5]) / 2]} 
-              rotation={[0, -Math.atan2(l[5] - l[2], l[3] - l[0]), 0]}>
+        <mesh key={i} position={[(l[0] + l[3]) / 2, 0, (l[2] + l[5]) / 2]}
+          rotation={[0, -Math.atan2(l[5] - l[2], l[3] - l[0]), 0]}>
           <boxGeometry args={[Math.sqrt(Math.pow(l[3] - l[0], 2) + Math.pow(l[5] - l[2], 2)), 0.005, 0.04]} />
           <meshStandardMaterial color="#ffffff" />
         </mesh>
@@ -218,10 +210,10 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
   const [hasJumpedInTurn, setHasJumpedInTurn] = useState(false);
   const [boardRotation, setBoardRotation] = useState(room.players[1]?.id === me.id ? 0 : 180);
   const [viewMode, setViewMode] = useState<'2d' | '3d'>('2d');
-  const [lastMovePositions, setLastMovePositions] = useState<{from: string, to: string} | null>(null);
+  const [lastMovePositions, setLastMovePositions] = useState<{ from: string, to: string } | null>(null);
   const [removedCoins, setRemovedCoins] = useState<string[]>([]);
-  const [p1Color, setP1Color] = useState('#ffff00');
-  const [p2Color, setP2Color] = useState('#00ff00');
+  const [p1Color] = useState('#ffff00');
+  const [p2Color] = useState('#00ff00');
 
   const gameData = room.gameData as any;
   const coins = gameData?.coins || {};
@@ -229,12 +221,11 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
   const p2Id = room.players[1]?.id;
   const isMyTurn = room.players[room.currentTurnIndex]?.id === me.id;
 
-  // Stable IDs for smooth animations
   const coinIdsRef = useRef<Record<string, string>>({});
   const nextCoinId = useRef(0);
   const prevCoinsDataRef = useRef<Record<string, string>>({});
 
-  useMemo(() => {
+  useEffect(() => {
     const prev = prevCoinsDataRef.current;
     const fromList = Object.keys(prev).filter(k => !coins[k]);
     const toList = Object.keys(coins).filter(k => !prev[k]);
@@ -243,13 +234,13 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
       Object.keys(coins).forEach(k => { coinIdsRef.current[k] = `coin_${nextCoinId.current++}`; });
     } else {
       if (toList.length === 1) {
-         const target = toList[0];
-         const owner = coins[target];
-         const from = fromList.find(fKey => prev[fKey] === owner);
-         if (from) {
-           coinIdsRef.current[target] = coinIdsRef.current[from];
-           delete coinIdsRef.current[from];
-         }
+        const target = toList[0];
+        const owner = coins[target];
+        const from = fromList.find(fKey => prev[fKey] === owner);
+        if (from) {
+          coinIdsRef.current[target] = coinIdsRef.current[from];
+          delete coinIdsRef.current[from];
+        }
       }
       toList.forEach(k => {
         if (!coinIdsRef.current[k]) coinIdsRef.current[k] = `coin_${nextCoinId.current++}`;
@@ -266,13 +257,13 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
     if (coins[key] === me.id) {
       if (hasJumpedInTurn) return;
       setSelected(key);
-      calculateMoves(key);
+      calculateMoves(key, coins, hasJumpedInTurn);
     } else if (selected && possibleMoves.includes(key)) {
       movePiece(selected, key);
     }
   };
 
-  const calculateMoves = (key: string, currentCoins: any = coins, hasJumped: boolean = hasJumpedInTurn) => {
+  const calculateMoves = React.useCallback((key: string, currentCoins: Record<string, string> = coins, hasJumped: boolean = hasJumpedInTurn) => {
     const neighbors = ADJACENCY[key] || [];
     const moves: string[] = [];
     if (!hasJumped) {
@@ -296,7 +287,7 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
     });
     setPossibleMoves(moves);
     return moves;
-  };
+  }, [coins, hasJumpedInTurn]);
 
   const movePiece = (from: string, to: string) => {
     const newCoins = { ...coins };
@@ -310,14 +301,10 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
       const midX = (fx + tx) / 2;
       const midY = (fy + ty) / 2;
       const midKey = `${midX},${midY}`;
-      
-      // Captured piece removal: ONLY if it's the opponent's coin
       if (coins[midKey] !== me.id) {
         delete newCoins[midKey];
       }
-      
       socket.emit('sixteencoins-move', { roomId: room.id, coins: newCoins });
-      
       const nextJumpMoves = calculateMoves(to, newCoins, true);
       if (nextJumpMoves.length === 0) {
         endTurn();
@@ -332,17 +319,13 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
   };
 
   useEffect(() => {
-    if (selected && hasJumpedInTurn) calculateMoves(selected);
-  }, [coins]);
+    if (selected && hasJumpedInTurn) calculateMoves(selected, coins, hasJumpedInTurn);
+  }, [coins, selected, hasJumpedInTurn, calculateMoves]);
 
   const [prevCoins, setPrevCoins] = useState<Record<string, string>>(coins);
   useEffect(() => {
-    // Detect movements and removals for animations
-    
-    // Simplistic diff to find movement
     const fromList = Object.keys(prevCoins).filter(k => !coins[k]);
     const toList = Object.keys(coins).filter(k => !prevCoins[k]);
-    
     if (toList.length === 1) {
       const target = toList[0];
       const owner = coins[target];
@@ -350,16 +333,17 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
       if (from) {
         setLastMovePositions({ from, to: target });
       }
-      
       const capturedCoins = fromList.filter(f => f !== from);
       if (capturedCoins.length > 0) {
         setRemovedCoins((prev: string[]) => [...prev, ...capturedCoins]);
-        setTimeout(() => setRemovedCoins((prev: string[]) => prev.filter((c: string) => !capturedCoins.includes(c))), 2000);
+        const timeout = setTimeout(() => {
+          setRemovedCoins((prev: string[]) => prev.filter((c: string) => !capturedCoins.includes(c)));
+        }, 2000);
+        return () => clearTimeout(timeout);
       }
     }
-    
     setPrevCoins(coins);
-  }, [coins]);
+  }, [coins, prevCoins]);
 
   const endTurn = () => {
     socket.emit('sixteencoins-endturn', { roomId: room.id });
@@ -370,90 +354,54 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}>
-      <div style={{ padding: '1rem 2rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+      {/* Top Header */}
+      <div style={{ padding: '0.85rem 1.5rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={onBack} className="btn btn-outline" style={{ padding: '0.5rem 1rem' }}>← Quit</button>
-          <h2 style={{ margin: 0, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 950 }}>
-            <Sword size={24} /> 16 COINS
-          </h2>
+          <button onClick={onBack} className="btn btn-outline" style={{ width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}>
+            <ArrowLeft size={18} />
+          </button>
+          <h2 style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 950, fontSize: '1.2rem', letterSpacing: '0.05em' }}>♟ 16 COINS</h2>
         </div>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
-          <div style={{ display: 'flex', background: 'var(--item-bg)', padding: '2px', borderRadius: '8px', border: '1px solid var(--item-border)' }}>
-            <button onClick={() => setViewMode('2d')} style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: viewMode === '2d' ? 'var(--accent)' : 'transparent', color: viewMode === '2d' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 900 }}>
-              <Monitor size={14} /> 2D
-            </button>
-            <button onClick={() => setViewMode('3d')} style={{ padding: '0.4rem 0.8rem', borderRadius: '6px', border: 'none', background: viewMode === '3d' ? 'var(--accent)' : 'transparent', color: viewMode === '3d' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.8rem', fontWeight: 900 }}>
-              <Box size={14} /> 3D
-            </button>
-          </div>
-          <div className="mobile-hide" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 700 }}>ROTATE:</span>
-            <input 
-              type="range" min="0" max="360" value={boardRotation}
-              onChange={(e) => setBoardRotation(Number(e.target.value))}
-              style={{ width: '100px', height: '6px', accentColor: 'var(--accent)' }}
-            />
-          </div>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', background: 'var(--item-bg)', padding: '4px 12px', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 800 }}>P1:</span>
-               <input type="color" value={p1Color} onChange={(e) => setP1Color(e.target.value)} style={{ width: 14, height: 14, cursor: 'pointer', border: 'none', background: 'transparent', padding: 0 }} />
-             </div>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 800 }}>P2:</span>
-               <input type="color" value={p2Color} onChange={(e) => setP2Color(e.target.value)} style={{ width: 14, height: 14, cursor: 'pointer', border: 'none', background: 'transparent', padding: 0 }} />
-             </div>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-            {room.players.map((p, i) => (
-              <div key={p.id} style={{ 
-                display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.3rem 0.75rem', borderRadius: '12px',
-                background: room.currentTurnIndex === i ? 'var(--accent-glow)' : 'transparent',
-                border: room.currentTurnIndex === i ? '1px solid var(--accent)' : '1px solid transparent'
-              }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: i === 0 ? p1Color : p2Color }} />
-                <div style={{ color: 'var(--text-primary)', fontWeight: 900, fontSize: '0.8rem' }}>{p.name}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 700 }}>{Object.values(coins).filter(id => id === p.id).length}</div>
-              </div>
-            ))}
-          </div>
+        <div style={{ padding: '0.4rem 1rem', background: 'var(--accent-glow)', color: 'var(--accent)', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 900, border: '1px solid var(--accent)' }}>
+          ID: {room.id}
         </div>
-
       </div>
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1rem', overflowY: 'auto', justifyContent: 'center' }}>
-        {room.gameState === 'waiting' ? (
-           <div className="card" style={{ padding: '3rem', textAlign: 'center', maxWidth: '400px', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
-              <Users size={48} color="var(--accent)" style={{ marginBottom: '1rem' }} />
-              <h2 style={{ color: 'var(--text-primary)', fontWeight: 900 }}>Waiting for Opponent</h2>
-              <button className="btn btn-primary" onClick={() => socket.emit('sixteencoins-ready', { roomId: room.id })} style={{ width: '100%', background: 'var(--accent)' }}>I'm Ready!</button>
-           </div>
-        ) : room.gameState === 'finished' ? (
-           <div className="card" style={{ 
-             padding: '3rem', textAlign: 'center', maxWidth: '500px', 
-             background: 'var(--card-bg)', 
-             border: `1px solid ${room.winner?.id === me.id ? 'var(--accent)' : 'var(--error)'}`, 
-             boxShadow: `0 0 40px ${room.winner?.id === me.id ? 'var(--accent-glow)' : 'var(--error-glow)'}` 
-           }}>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>
-                {room.winner?.id === me.id ? '🏆' : '💀'}
+
+      <div style={{ padding: 'clamp(1rem, 3vw, 2rem)', overflowY: 'auto', flex: 1 }}>
+        <div className="dashboard-layout" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
+            {room.gameState === 'waiting' ? (
+              <div className="card" style={{ padding: '4rem 2rem', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
+                <Users size={64} color="var(--accent)" style={{ marginBottom: '1.5rem', opacity: 0.8 }} />
+                <h2 style={{ color: 'var(--text-primary)', fontWeight: 950, fontSize: '2rem', marginBottom: '1rem' }}>Waiting for Opponent</h2>
+                <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', maxWidth: '300px' }}>The game will begin once a second player joins and both are ready.</p>
+                <button className="btn btn-primary" onClick={() => socket.emit('sixteencoins-ready', { roomId: room.id })} style={{ padding: '1rem 3rem', fontSize: '1.2rem', fontWeight: 900 }}>I'm Ready!</button>
               </div>
-              <h1 style={{ color: 'var(--text-primary)', fontSize: '2.5rem', marginBottom: '0.5rem', fontWeight: 950 }}>
-                {room.winner?.id === me.id ? 'YOU WON!' : 'DEFEATED!'}
-              </h1>
-              <div style={{ marginBottom: '2rem' }}>
-                <div style={{ color: room.winner?.id === me.id ? 'var(--accent)' : 'var(--error)', fontSize: '1.4rem', fontWeight: 900 }}>
-                  {room.winner?.name} remains victorious
+            ) : room.gameState === 'finished' ? (
+              <div className="card" style={{
+                padding: '4rem 2rem', textAlign: 'center', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                background: 'var(--card-bg)',
+                border: `3px solid ${room.winner?.id === me.id ? 'var(--success)' : 'var(--error)'}`,
+                boxShadow: `0 0 60px ${room.winner?.id === me.id ? 'var(--success-glow)' : 'var(--error-glow)'}`
+              }}>
+                <div style={{ fontSize: '6rem', marginBottom: '1.5rem' }}>
+                  {room.winner?.id === me.id ? '🏆' : '💀'}
                 </div>
-                <div style={{ color: 'var(--text-secondary)', fontSize: '1rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700 }}>
-                  {room.winner?.id === me.id ? `Opponent ${room.players.find(p => p.id !== me.id)?.name} was defeated` : 'Try again for a comeback!'}
+                <h1 style={{ color: 'var(--text-primary)', fontSize: '3.5rem', marginBottom: '0.5rem', fontWeight: 950 }}>
+                  {room.winner?.id === me.id ? 'VICTORY' : 'DEFEAT'}
+                </h1>
+                <div style={{ marginBottom: '3rem' }}>
+                  <div style={{ color: room.winner?.id === me.id ? 'var(--success)' : 'var(--error)', fontSize: '1.6rem', fontWeight: 900 }}>
+                    {room.winner?.name} conquered the board
+                  </div>
                   {(room.readyPlayers || []).some(id => id !== me.id) && (
-                    <span style={{ background: '#10b981', color: 'white', fontSize: '0.6rem', fontWeight: 950, padding: '2px 8px', borderRadius: '8px' }}>OPPONENT READY</span>
+                    <div style={{ background: 'var(--success-glow)', color: 'var(--success)', fontSize: '0.8rem', fontWeight: 950, padding: '6px 16px', borderRadius: '20px', display: 'inline-block', marginTop: '1rem', border: '1px solid var(--success)' }}>OPPONENT READY</div>
                   )}
                 </div>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', width: '100%' }}>
-                  <button 
-                    className="btn btn-primary" 
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', width: '100%', maxWidth: '400px' }}>
+                  <button
+                    className="btn btn-primary"
                     onClick={() => {
                       if (room.hostId === me.id) {
                         const othersReady = room.players.every(p => p.id === room.hostId || (room.readyPlayers || []).includes(p.id));
@@ -465,188 +413,213 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
                       } else {
                         socket.emit('play-again', { roomId: room.id });
                       }
-                    }} 
+                    }}
                     disabled={room.hostId === me.id && (room.players.length > 1 && !(room.players.every(p => p.id === room.hostId || (room.readyPlayers || []).includes(p.id)))) && (room.readyPlayers || []).includes(me.id)}
-                    style={{ background: 'var(--accent)', height: '60px', fontSize: '1.2rem', fontWeight: 950, border: 'none' }}
+                    style={{ height: '70px', fontSize: '1.4rem', fontWeight: 950 }}
                   >
-                    {room.hostId === me.id 
-                      ? (room.players.length === 1 || room.players.every(p => p.id === room.hostId || (room.readyPlayers || []).includes(p.id)) ? 'Start Rematch' : 'Waiting...') 
+                    {room.hostId === me.id
+                      ? (room.players.length === 1 || room.players.every(p => p.id === room.hostId || (room.readyPlayers || []).includes(p.id)) ? 'Start Rematch' : 'Waiting...')
                       : ((room.readyPlayers || []).includes(me.id) ? 'Ready!' : 'Play Again')}
                   </button>
-                  <button className="btn btn-outline" onClick={() => window.location.reload()} style={{ height: '60px' }}>Exit</button>
-              </div>
-           </div>
-        ) : (
-          <div style={{ flex: 1, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-            {viewMode === '2d' ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem' }}>
-              <div style={{ 
-                position: 'relative', width: 'min(90vw, 600px)', aspectRatio: '1/1',
-                transform: `rotate(${boardRotation}deg)`,
-                transition: 'transform 0.5s ease-out'
-              }}>
-                <svg width="100%" height="100%" viewBox="0 0 600 600">
-
-                    <g stroke="var(--item-border)" strokeWidth="3" opacity="0.8">
-                      <line x1={OFFSET+2*SCALE} y1={OFFSET+0*SCALE} x2={OFFSET+0*SCALE} y2={OFFSET+2*SCALE} />
-                      <line x1={OFFSET+0*SCALE} y1={OFFSET+2*SCALE} x2={OFFSET+2*SCALE} y2={OFFSET+4*SCALE} />
-                      <line x1={OFFSET+2*SCALE} y1={OFFSET+4*SCALE} x2={OFFSET+4*SCALE} y2={OFFSET+2*SCALE} />
-                      <line x1={OFFSET+4*SCALE} y1={OFFSET+2*SCALE} x2={OFFSET+2*SCALE} y2={OFFSET+0*SCALE} />
-                      <line x1={OFFSET+2*SCALE} y1={OFFSET+0*SCALE} x2={OFFSET+2*SCALE} y2={OFFSET+4*SCALE} />
-                      <line x1={OFFSET+0*SCALE} y1={OFFSET+2*SCALE} x2={OFFSET+4*SCALE} y2={OFFSET+2*SCALE} />
-                      <line x1={OFFSET+1*SCALE} y1={OFFSET+1*SCALE} x2={OFFSET+3*SCALE} y2={OFFSET+3*SCALE} />
-                      <line x1={OFFSET+3*SCALE} y1={OFFSET+1*SCALE} x2={OFFSET+1*SCALE} y2={OFFSET+3*SCALE} />
-                      <line x1={OFFSET+6*SCALE} y1={OFFSET+0*SCALE} x2={OFFSET+4*SCALE} y2={OFFSET+2*SCALE} />
-                      <line x1={OFFSET+4*SCALE} y1={OFFSET+2*SCALE} x2={OFFSET+6*SCALE} y2={OFFSET+4*SCALE} />
-                      <line x1={OFFSET+6*SCALE} y1={OFFSET+4*SCALE} x2={OFFSET+8*SCALE} y2={OFFSET+2*SCALE} />
-                      <line x1={OFFSET+8*SCALE} y1={OFFSET+2*SCALE} x2={OFFSET+6*SCALE} y2={OFFSET+0*SCALE} />
-                      <line x1={OFFSET+6*SCALE} y1={OFFSET+0*SCALE} x2={OFFSET+6*SCALE} y2={OFFSET+4*SCALE} />
-                      <line x1={OFFSET+4*SCALE} y1={OFFSET+2*SCALE} x2={OFFSET+8*SCALE} y2={OFFSET+2*SCALE} />
-                      <line x1={OFFSET+5*SCALE} y1={OFFSET+1*SCALE} x2={OFFSET+7*SCALE} y2={OFFSET+3*SCALE} />
-                      <line x1={OFFSET+7*SCALE} y1={OFFSET+1*SCALE} x2={OFFSET+5*SCALE} y2={OFFSET+3*SCALE} />
-                      <line x1={OFFSET+2*SCALE} y1={OFFSET+8*SCALE} x2={OFFSET+0*SCALE} y2={OFFSET+6*SCALE} />
-                      <line x1={OFFSET+0*SCALE} y1={OFFSET+6*SCALE} x2={OFFSET+2*SCALE} y2={OFFSET+4*SCALE} />
-                      <line x1={OFFSET+2*SCALE} y1={OFFSET+4*SCALE} x2={OFFSET+4*SCALE} y2={OFFSET+6*SCALE} />
-                      <line x1={OFFSET+4*SCALE} y1={OFFSET+6*SCALE} x2={OFFSET+2*SCALE} y2={OFFSET+8*SCALE} />
-                      <line x1={OFFSET+2*SCALE} y1={OFFSET+8*SCALE} x2={OFFSET+2*SCALE} y2={OFFSET+4*SCALE} />
-                      <line x1={OFFSET+0*SCALE} y1={OFFSET+6*SCALE} x2={OFFSET+4*SCALE} y2={OFFSET+6*SCALE} />
-                      <line x1={OFFSET+1*SCALE} y1={OFFSET+7*SCALE} x2={OFFSET+3*SCALE} y2={OFFSET+5*SCALE} />
-                      <line x1={OFFSET+3*SCALE} y1={OFFSET+7*SCALE} x2={OFFSET+1*SCALE} y2={OFFSET+5*SCALE} />
-                      <line x1={OFFSET+6*SCALE} y1={OFFSET+8*SCALE} x2={OFFSET+4*SCALE} y2={OFFSET+6*SCALE} />
-                      <line x1={OFFSET+4*SCALE} y1={OFFSET+6*SCALE} x2={OFFSET+6*SCALE} y2={OFFSET+4*SCALE} />
-                      <line x1={OFFSET+6*SCALE} y1={OFFSET+4*SCALE} x2={OFFSET+8*SCALE} y2={OFFSET+6*SCALE} />
-                      <line x1={OFFSET+8*SCALE} y1={OFFSET+6*SCALE} x2={OFFSET+6*SCALE} y2={OFFSET+8*SCALE} />
-                      <line x1={OFFSET+6*SCALE} y1={OFFSET+8*SCALE} x2={OFFSET+6*SCALE} y2={OFFSET+4*SCALE} />
-                      <line x1={OFFSET+4*SCALE} y1={OFFSET+6*SCALE} x2={OFFSET+8*SCALE} y2={OFFSET+6*SCALE} />
-                      <line x1={OFFSET+5*SCALE} y1={OFFSET+7*SCALE} x2={OFFSET+7*SCALE} y2={OFFSET+5*SCALE} />
-                      <line x1={OFFSET+7*SCALE} y1={OFFSET+7*SCALE} x2={OFFSET+5*SCALE} y2={OFFSET+5*SCALE} />
-                      <line x1={OFFSET+2*SCALE} y1={OFFSET+4*SCALE} x2={OFFSET+6*SCALE} y2={OFFSET+4*SCALE} />
-                      <line x1={OFFSET+4*SCALE} y1={OFFSET+2*SCALE} x2={OFFSET+4*SCALE} y2={OFFSET+6*SCALE} />
-                      <line x1={OFFSET+2*SCALE} y1={OFFSET+2*SCALE} x2={OFFSET+6*SCALE} y2={OFFSET+6*SCALE} />
-                      <line x1={OFFSET+2*SCALE} y1={OFFSET+6*SCALE} x2={OFFSET+6*SCALE} y2={OFFSET+2*SCALE} />
-                    </g>
-                    {/* Shadow/Ghost of last move */}
-                    {lastMovePositions && (
-                      <line 
-                        x1={OFFSET + Number(lastMovePositions.from.split(',')[0]) * SCALE} 
-                        y1={OFFSET + Number(lastMovePositions.from.split(',')[1]) * SCALE}
-                        x2={OFFSET + Number(lastMovePositions.to.split(',')[0]) * SCALE} 
-                        y2={OFFSET + Number(lastMovePositions.to.split(',')[1]) * SCALE}
-                        stroke="var(--accent)" strokeWidth="6" strokeDasharray="8 4" opacity="0.5"
-                      />
-                    )}
-                    {uniqueNodes.map(node => {
-                      const key = `${node.x},${node.y}`;
-                      const ownerId = coins[key];
-                      const isSelected = selected === key;
-                      const isPossible = possibleMoves.includes(key);
-                      const isRemoved = removedCoins.includes(key);
-                      const cx = OFFSET + node.x * SCALE;
-                      const cy = OFFSET + node.y * SCALE;
-                      return (
-                        <g key={key} onClick={() => handleNodeClick(key)} style={{ cursor: 'pointer' }}>
-                          <circle cx={cx} cy={cy} r={8} fill="var(--item-bg)" stroke="var(--item-border)" strokeWidth="2" />
-                          {isPossible && <circle cx={cx} cy={cy} r={12} fill="var(--accent-glow)" stroke="var(--accent)" strokeWidth="2" strokeDasharray="4 4" />}
-                          {ownerId && (
-                            <g style={{ 
-                              transition: 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)', 
-                              transform: isSelected ? 'scale(1.2)' : 'scale(1)', 
-                              transformOrigin: `${cx}px ${cy}px`,
-                            }}>
-                              <circle 
-                                cx={cx} cy={cy} r={20} 
-                                fill={ownerId === p1Id ? p1Color : (ownerId === p2Id ? p2Color : '#94a3b8')}
-                                stroke={isSelected ? '#fff' : 'rgba(255,255,255,0.2)'} 
-                                strokeWidth="2.5"
-                                style={{ 
-                                  filter: isSelected ? 'drop-shadow(0 0 10px #fff)' : 'none',
-                                  transition: 'cx 0.8s ease-in-out, cy 0.8s ease-in-out'
-                                }}
-                              />
-                            </g>
-                          )}
-                          {isRemoved && (
-                            <circle 
-                              cx={cx} cy={cy} r={20} 
-                              fill="rgba(255,255,255,0.2)" 
-                              stroke="#fff" strokeWidth="2"
-                              style={{ animation: 'fadeOutScale 1.5s forwards' }}
-                            />
-                          )}
-                        </g>
-                      );
-                    })}
-                  </svg>
+                  <button className="btn btn-outline" onClick={() => window.location.reload()} style={{ height: '70px', fontWeight: 800 }}>Exit</button>
                 </div>
-                {isMyTurn && (
-                  <button className="btn btn-primary" onClick={endTurn} disabled={!hasJumpedInTurn} style={{ padding: '0.75rem 2rem', background: 'var(--accent)', border: 'none', fontWeight: 900 }}>Confirm Turn Ended</button>
-                )}
-                {!isMyTurn && <div style={{ color: 'var(--text-secondary)', fontWeight: 800 }}>Waiting for opponent...</div>}
               </div>
             ) : (
-              <div style={{ width: '100%', height: 'calc(100vh - 80px)', position: 'relative' }}>
-                <Canvas shadows gl={{ antialias: true }}>
-                  <PerspectiveCamera makeDefault position={[0, 8, 8]} fov={50} />
-                  <ambientLight intensity={0.7} />
-                  <pointLight position={[10, 10, 10]} intensity={1.5} castShadow />
-                  <pointLight position={[-10, 5, -5]} intensity={0.8} />
-                  <spotLight position={[0, 10, 0]} angle={0.3} penumbra={1} intensity={2} castShadow />
-                  
-                  <group rotation={[0, boardRotation * (Math.PI / 180), 0]}>
-                    <BoardBase3D />
-                    <BoardLines3D />
-                    {lastMovePositions && <LastMoveLine3D from={lastMovePositions.from} to={lastMovePositions.to} />}
-                    {uniqueNodes.map(node => {
-                      const key = `${node.x},${node.y}`;
-                      const isPossible = possibleMoves.includes(key);
-                      return (
-                        <Node3D key={key} x={node.x} y={node.y} onClick={() => handleNodeClick(key)} isPossible={isPossible} />
-                      );
-                    })}
-                    {removedCoins.map(key => {
-                      const [x, y] = key.split(',').map(Number);
-                      const lastOwnerId = prevCoins[key];
-                      const color = lastOwnerId === p1Id ? p1Color : (lastOwnerId === p2Id ? p2Color : '#94a3b8');
-                      return <RemovedCoin3D key={`rem-${key}`} x={x} y={y} color={color} />;
-                    })}
-                    {Object.entries(coins).map(([key, ownerId]) => {
-                      const [x, y] = key.split(',').map(Number);
-                      const isSelected = selected === key;
-                      const color = (ownerId as string) === p1Id ? p1Color : ((ownerId as string) === p2Id ? p2Color : '#94a3b8');
-                      const interactive = isMyTurn && ownerId === me.id;
-                      const coinId = coinIdsRef.current[key];
-                      return (
-                        <AnimatedCoin3D 
-                          key={coinId || key} 
-                          targetX={x} targetY={y} 
-                          color={color} 
-                          isSelected={isSelected} 
-                          interactive={interactive}
-                          onClick={() => handleNodeClick(key)} 
+              <div className="card" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', position: 'relative', background: 'var(--item-bg)', border: '1px solid var(--item-border)', borderRadius: '24px', minHeight: '650px' }}>
+                {viewMode === '2d' ? (
+                  <div style={{
+                    position: 'relative', width: 'min(85vw, 550px)', aspectRatio: '1/1',
+                    transform: `rotate(${boardRotation}deg)`,
+                    transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+                  }}>
+                    <svg width="100%" height="100%" viewBox="0 0 600 600">
+                      <g stroke="var(--item-border)" strokeWidth="3" opacity="0.6">
+                        <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 0 * SCALE} x2={OFFSET + 0 * SCALE} y2={OFFSET + 2 * SCALE} />
+                        <line x1={OFFSET + 0 * SCALE} y1={OFFSET + 2 * SCALE} x2={OFFSET + 2 * SCALE} y2={OFFSET + 4 * SCALE} />
+                        <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 4 * SCALE} x2={OFFSET + 4 * SCALE} y2={OFFSET + 2 * SCALE} />
+                        <line x1={OFFSET + 4 * SCALE} y1={OFFSET + 2 * SCALE} x2={OFFSET + 2 * SCALE} y2={OFFSET + 0 * SCALE} />
+                        <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 0 * SCALE} x2={OFFSET + 2 * SCALE} y2={OFFSET + 4 * SCALE} />
+                        <line x1={OFFSET + 0 * SCALE} y1={OFFSET + 2 * SCALE} x2={OFFSET + 4 * SCALE} y2={OFFSET + 2 * SCALE} />
+                        <line x1={OFFSET + 1 * SCALE} y1={OFFSET + 1 * SCALE} x2={OFFSET + 3 * SCALE} y2={OFFSET + 3 * SCALE} />
+                        <line x1={OFFSET + 3 * SCALE} y1={OFFSET + 1 * SCALE} x2={OFFSET + 1 * SCALE} y2={OFFSET + 3 * SCALE} />
+                        <line x1={OFFSET + 6 * SCALE} y1={OFFSET + 0 * SCALE} x2={OFFSET + 4 * SCALE} y2={OFFSET + 2 * SCALE} />
+                        <line x1={OFFSET + 4 * SCALE} y1={OFFSET + 2 * SCALE} x2={OFFSET + 6 * SCALE} y2={OFFSET + 4 * SCALE} />
+                        <line x1={OFFSET + 6 * SCALE} y1={OFFSET + 4 * SCALE} x2={OFFSET + 8 * SCALE} y2={OFFSET + 2 * SCALE} />
+                        <line x1={OFFSET + 8 * SCALE} y1={OFFSET + 2 * SCALE} x2={OFFSET + 6 * SCALE} y2={OFFSET + 0 * SCALE} />
+                        <line x1={OFFSET + 6 * SCALE} y1={OFFSET + 0 * SCALE} x2={OFFSET + 6 * SCALE} y2={OFFSET + 4 * SCALE} />
+                        <line x1={OFFSET + 4 * SCALE} y1={OFFSET + 2 * SCALE} x2={OFFSET + 8 * SCALE} y2={OFFSET + 2 * SCALE} />
+                        <line x1={OFFSET + 5 * SCALE} y1={OFFSET + 1 * SCALE} x2={OFFSET + 7 * SCALE} y2={OFFSET + 3 * SCALE} />
+                        <line x1={OFFSET + 7 * SCALE} y1={OFFSET + 1 * SCALE} x2={OFFSET + 5 * SCALE} y2={OFFSET + 3 * SCALE} />
+                        <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 8 * SCALE} x2={OFFSET + 0 * SCALE} y2={OFFSET + 6 * SCALE} />
+                        <line x1={OFFSET + 0 * SCALE} y1={OFFSET + 6 * SCALE} x2={OFFSET + 2 * SCALE} y2={OFFSET + 4 * SCALE} />
+                        <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 4 * SCALE} x2={OFFSET + 4 * SCALE} y2={OFFSET + 6 * SCALE} />
+                        <line x1={OFFSET + 4 * SCALE} y1={OFFSET + 6 * SCALE} x2={OFFSET + 2 * SCALE} y2={OFFSET + 8 * SCALE} />
+                        <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 8 * SCALE} x2={OFFSET + 2 * SCALE} y2={OFFSET + 4 * SCALE} />
+                        <line x1={OFFSET + 0 * SCALE} y1={OFFSET + 6 * SCALE} x2={OFFSET + 4 * SCALE} y2={OFFSET + 6 * SCALE} />
+                        <line x1={OFFSET + 1 * SCALE} y1={OFFSET + 7 * SCALE} x2={OFFSET + 3 * SCALE} y2={OFFSET + 5 * SCALE} />
+                        <line x1={OFFSET + 3 * SCALE} y1={OFFSET + 7 * SCALE} x2={OFFSET + 1 * SCALE} y2={OFFSET + 5 * SCALE} />
+                        <line x1={OFFSET + 6 * SCALE} y1={OFFSET + 8 * SCALE} x2={OFFSET + 4 * SCALE} y2={OFFSET + 6 * SCALE} />
+                        <line x1={OFFSET + 4 * SCALE} y1={OFFSET + 6 * SCALE} x2={OFFSET + 6 * SCALE} y2={OFFSET + 4 * SCALE} />
+                        <line x1={OFFSET + 6 * SCALE} y1={OFFSET + 4 * SCALE} x2={OFFSET + 8 * SCALE} y2={OFFSET + 6 * SCALE} />
+                        <line x1={OFFSET + 8 * SCALE} y1={OFFSET + 6 * SCALE} x2={OFFSET + 6 * SCALE} y2={OFFSET + 8 * SCALE} />
+                        <line x1={OFFSET + 6 * SCALE} y1={OFFSET + 8 * SCALE} x2={OFFSET + 6 * SCALE} y2={OFFSET + 4 * SCALE} />
+                        <line x1={OFFSET + 4 * SCALE} y1={OFFSET + 6 * SCALE} x2={OFFSET + 8 * SCALE} y2={OFFSET + 6 * SCALE} />
+                        <line x1={OFFSET + 5 * SCALE} y1={OFFSET + 7 * SCALE} x2={OFFSET + 7 * SCALE} y2={OFFSET + 5 * SCALE} />
+                        <line x1={OFFSET + 7 * SCALE} y1={OFFSET + 7 * SCALE} x2={OFFSET + 5 * SCALE} y2={OFFSET + 5 * SCALE} />
+                        <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 4 * SCALE} x2={OFFSET + 6 * SCALE} y2={OFFSET + 4 * SCALE} />
+                        <line x1={OFFSET + 4 * SCALE} y1={OFFSET + 2 * SCALE} x2={OFFSET + 4 * SCALE} y2={OFFSET + 6 * SCALE} />
+                        <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 2 * SCALE} x2={OFFSET + 6 * SCALE} y2={OFFSET + 6 * SCALE} />
+                        <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 6 * SCALE} x2={OFFSET + 6 * SCALE} y2={OFFSET + 2 * SCALE} />
+                      </g>
+                      {lastMovePositions && (
+                        <line
+                          x1={OFFSET + Number(lastMovePositions.from.split(',')[0]) * SCALE}
+                          y1={OFFSET + Number(lastMovePositions.from.split(',')[1]) * SCALE}
+                          x2={OFFSET + Number(lastMovePositions.to.split(',')[0]) * SCALE}
+                          y2={OFFSET + Number(lastMovePositions.to.split(',')[1]) * SCALE}
+                          stroke="var(--accent)" strokeWidth="6" strokeDasharray="8 4" opacity="0.4"
                         />
-                      );
-                    })}
-                  </group>
-                  
-                  <OrbitControls enablePan={false} maxPolarAngle={Math.PI / 2.1} minDistance={5} maxDistance={15} />
-                </Canvas>
-                <div style={{ position: 'absolute', bottom: '2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                  {isMyTurn && (
-                    <button className="btn btn-primary" onClick={endTurn} disabled={!hasJumpedInTurn} style={{ padding: '0.75rem 2rem', background: '#6366f1', boxShadow: '0 4px 15px rgba(99,102,241,0.4)' }}>Confirm Turn Ended</button>
-                  )}
-                  {!isMyTurn && <div style={{ color: 'var(--text-primary)', background: 'var(--card-bg)', border: '1px solid var(--item-border)', padding: '0.5rem 1.5rem', borderRadius: '20px', backdropFilter: 'blur(5px)' }}>Waiting for opponent...</div>}
-                </div>
+                      )}
+                      {uniqueNodes.map(node => {
+                        const key = `${node.x},${node.y}`;
+                        const ownerId = coins[key];
+                        const isSelected = selected === key;
+                        const isPossible = possibleMoves.includes(key);
+                        const cx = OFFSET + node.x * SCALE;
+                        const cy = OFFSET + node.y * SCALE;
+                        return (
+                          <g key={key} onClick={() => handleNodeClick(key)} style={{ cursor: 'pointer' }}>
+                            <circle cx={cx} cy={cy} r={8} fill="var(--bg-primary)" stroke="var(--item-border)" strokeWidth="2" />
+                            {isPossible && <circle cx={cx} cy={cy} r={14} fill="var(--accent-glow)" stroke="var(--accent)" strokeWidth="2" strokeDasharray="4 2" />}
+                            {ownerId && (
+                              <g style={{
+                                transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
+                                transform: isSelected ? 'scale(1.2)' : 'scale(1)',
+                                transformOrigin: `${cx}px ${cy}px`,
+                              }}>
+                                <circle
+                                  cx={cx} cy={cy} r={22}
+                                  fill={ownerId === p1Id ? p1Color : (ownerId === p2Id ? p2Color : '#94a3b8')}
+                                  stroke={isSelected ? '#fff' : 'rgba(0,0,0,0.1)'}
+                                  strokeWidth="2.5"
+                                />
+                              </g>
+                            )}
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
+                ) : (
+                  <div style={{ width: '100%', height: '600px' }}>
+                    <Canvas shadows gl={{ antialias: true }}>
+                      <PerspectiveCamera makeDefault position={[0, 10, 10]} fov={50} />
+                      <ambientLight intensity={0.6} />
+                      <pointLight position={[10, 10, 10]} intensity={1.5} castShadow />
+
+                      <group rotation={[0, boardRotation * (Math.PI / 180), 0]}>
+                        <BoardBase3D />
+                        <BoardLines3D />
+                        {uniqueNodes.map(node => {
+                          const key = `${node.x},${node.y}`;
+                          const isPossible = possibleMoves.includes(key);
+                          return (
+                            <Node3D key={key} x={node.x} y={node.y} onClick={() => handleNodeClick(key)} isPossible={isPossible} />
+                          );
+                        })}
+                        {Object.entries(coins).map(([key, ownerId]) => {
+                          const [x, y] = key.split(',').map(Number);
+                          const isSelected = selected === key;
+                          const color = (ownerId as string) === p1Id ? p1Color : ((ownerId as string) === p2Id ? p2Color : '#94a3b8');
+                          const interactive = isMyTurn && ownerId === me.id;
+                          const coinId = coinIdsRef.current[key];
+                          return (
+                            <AnimatedCoin3D
+                              key={coinId || key}
+                              targetX={x} targetY={y}
+                              color={color}
+                              isSelected={isSelected}
+                              interactive={interactive}
+                              onClick={() => handleNodeClick(key)}
+                            />
+                          );
+                        })}
+                        {lastMovePositions && <LastMoveLine3D from={lastMovePositions.from} to={lastMovePositions.to} />}
+                        {removedCoins.map(key => {
+                          const [x, y] = key.split(',').map(Number);
+                          return <RemovedCoin3D key={`rem-${key}`} x={x} y={y} color="#ef4444" />;
+                        })}
+                      </group>
+                      <OrbitControls enablePan={false} maxPolarAngle={Math.PI / 2.1} minDistance={5} maxDistance={15} />
+                    </Canvas>
+                  </div>
+                )}
+
               </div>
             )}
-            <style>{`
-              @keyframes fadeOutScale {
-                0% { transform: scale(1); opacity: 0.8; }
-                100% { transform: scale(3.5); opacity: 0; }
-              }
-            `}</style>
+            {/* END TURN / WAITING — below the board */}
+            {room.gameState === 'playing' && (
+              <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '0.5rem' }}>
+                {isMyTurn ? (
+                  <button className="btn btn-primary" onClick={endTurn} disabled={!hasJumpedInTurn} style={{ padding: '0.75rem 2.5rem', fontWeight: 950, minWidth: '160px' }}>END TURN</button>
+                ) : (
+                  <div style={{ color: 'var(--text-primary)', background: 'var(--card-bg)', border: '1px solid var(--item-border)', padding: '0.6rem 1.5rem', borderRadius: '25px', fontWeight: 800 }}>WAITING...</div>
+                )}
+              </div>
+            )}
           </div>
-        )}
+
+          {/* Sidebar */}
+          <div className="dashboard-sidebar">
+            <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 800, textTransform: 'uppercase' }}>Players</span>
+                {room.players.map((p, i) => (
+                  <div key={p.id} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', borderRadius: '12px',
+                    background: room.currentTurnIndex === i ? 'var(--accent-glow)' : 'var(--item-bg)',
+                    border: `1px solid ${room.currentTurnIndex === i ? 'var(--accent)' : 'var(--item-border)'}`
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ width: 12, height: 12, borderRadius: '50%', background: i === 0 ? p1Color : p2Color }} />
+                      <div style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: '0.9rem' }}>{p.name}</div>
+                    </div>
+                    <div style={{ fontSize: '1rem', fontWeight: 900, color: 'var(--text-primary)' }}>
+                      {Object.values(coins).filter(id => id === p.id).length}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={{ height: '1px', background: 'var(--item-border)', opacity: 0.3 }} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 800, textTransform: 'uppercase' }}>Settings</span>
+
+                <div style={{ display: 'flex', background: 'var(--item-bg)', padding: '4px', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
+                  <button onClick={() => setViewMode('2d')} style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none', background: viewMode === '2d' ? 'var(--accent)' : 'transparent', color: viewMode === '2d' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: 900, fontSize: '0.8rem' }}>2D</button>
+                  <button onClick={() => setViewMode('3d')} style={{ flex: 1, padding: '0.5rem', borderRadius: '8px', border: 'none', background: viewMode === '3d' ? 'var(--accent)' : 'transparent', color: viewMode === '3d' ? 'white' : 'var(--text-secondary)', cursor: 'pointer', fontWeight: 900, fontSize: '0.8rem' }}>3D</button>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Rotation</span>
+                  <input type="range" min="0" max="360" value={boardRotation} onChange={(e) => setBoardRotation(Number(e.target.value))} style={{ width: '100%', height: '6px', accentColor: 'var(--accent)' }} />
+                </div>
+              </div>
+
+              <button onClick={onBack} className="btn btn-outline" style={{ marginTop: 'auto', width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}><ArrowLeft size={18} /></button>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <style>{`
+        @keyframes fadeOutScale {
+          0% { transform: scale(1); opacity: 0.8; }
+          100% { transform: scale(3.5); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 };

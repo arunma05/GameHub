@@ -10,7 +10,7 @@ interface LobbyProps {
 
 export const Lobby: React.FC<LobbyProps> = ({ room, me }) => {
   const isHost = room.hostId === me.id;
-  const isSinglePlayer = room.type === 'flappy' || room.type === 'sudoku' || room.type === 'kakuro';
+  const isSinglePlayer = room.type === 'flappy' || room.type === 'sudoku' || room.type === 'kakuro' || room.type === 'quiz' || room.type === 'typeracer';
   const canStart = isSinglePlayer ? room.players.length >= 1 : room.players.length >= 2;
 
   const handleCopyCode = async () => {

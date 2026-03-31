@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { socket } from '../socket';
 import type { Player, Room } from '../types';
-import { Trophy, RefreshCw, Zap, TrendingUp, Play, X } from 'lucide-react';
+import { Trophy, RefreshCw, Zap, TrendingUp, Play, Activity, ArrowLeft } from 'lucide-react';
 
 interface FlappyProps {
   room: Room | null;
@@ -28,8 +28,13 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
   const [isStarted, setIsStarted] = useState(false);
   const [nameInput, setNameInput] = useState(_me?.name || '');
   const [isJoining, setIsJoining] = useState(false);
-  
-  // Sync isStarted with room state to prevent reset on remount
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   useEffect(() => {
     if (room?.gameState === 'playing' || room?.gameState === 'starting') {
       setIsStarted(true);
@@ -39,8 +44,6 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
     }
   }, [room?.gameState]);
 
-  
-  // Game state refs for the loop
   const gameState = useRef({
     birdY: 300,
     birdV: 0,
@@ -49,7 +52,7 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
     score: 0,
     level: 1,
     active: true,
-    isFlying: false // New: wait for first flap
+    isFlying: false
   });
 
   const requestRef = useRef<number>(null);
@@ -78,22 +81,20 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
   const jump = () => {
     if (!isStarted) {
       setIsStarted(true);
-      return; 
+      return;
     }
     if (gameState.current.active) {
-      gameState.current.isFlying = true; // Start physics on flap
+      gameState.current.isFlying = true;
       gameState.current.birdV = JUMP;
     }
   };
 
   const handleStartRequest = () => {
     if (!nameInput.trim() || isJoining) return;
-    
     if (room && _me) {
-        setIsStarted(true);
-        return;
+      setIsStarted(true);
+      return;
     }
-
     setIsJoining(true);
     socket.emit('create-room', { playerName: nameInput.trim(), type: 'flappy', isPublic: false }, (res: any) => {
       if (res.success && res.player) {
@@ -101,7 +102,6 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
         socket.emit('start-game', { roomId: res.roomId });
         setIsJoining(false);
         setIsStarted(true);
-        // Do NOT set isFlying yet
         gameState.current.active = true;
         gameState.current.birdY = 300;
         gameState.current.birdV = 0;
@@ -134,11 +134,10 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
 
     const loop = () => {
       if (!isStarted) {
-         drawIntro(ctx, canvas);
-         requestRef.current = requestAnimationFrame(loop);
-         return;
+        drawIntro(ctx, canvas);
+        requestRef.current = requestAnimationFrame(loop);
+        return;
       }
-
       update();
       draw();
       requestRef.current = requestAnimationFrame(loop);
@@ -146,57 +145,39 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
 
     const update = () => {
       if (!gameState.current.active) return;
-      if (!gameState.current.isFlying) return; // Wait for first click
-
+      if (!gameState.current.isFlying) return;
       const gs = gameState.current;
-      
-      // Calculate Difficulty based on 10KM intervals
       const currentLevel = Math.floor(gs.score / 10000) + 1;
       const currentSpeed = BASE_SPEED + (currentLevel - 1) * KM_SPEED_INC;
       const currentGap = Math.max(MIN_GAP, BASE_GAP - (currentLevel - 1) * KM_GAP_DEC);
-      
       gs.level = currentLevel;
       gs.birdV += GRAVITY;
       gs.birdY += gs.birdV;
-
-      // Distance score (increment by speed each frame)
       gs.score += currentSpeed;
       setScore(Math.floor(gs.score));
-
-      // Pipe generation
       gs.frameCount++;
-      const pipeSpawnRate = Math.max(50, 90 - (currentLevel - 1) * 5); // Faster spawn as level increases
+      const pipeSpawnRate = Math.max(50, 90 - (currentLevel - 1) * 5);
       if (gs.frameCount % pipeSpawnRate === 0) {
         const top = Math.random() * (canvas.height - currentGap - 150) + 50;
         gs.pipes.push({ x: canvas.width, top, gap: currentGap, passed: false });
       }
-
-      // Pipe movement and collision
       for (let i = gs.pipes.length - 1; i >= 0; i--) {
         const p = gs.pipes[i];
         p.x -= currentSpeed;
-
-        // Collision
-        const birdLeft = 100 - BIRD_SIZE/2 + 5;
-        const birdRight = 100 + BIRD_SIZE/2 - 5;
-        const birdTop = gs.birdY - BIRD_SIZE/2 + 5;
-        const birdBottom = gs.birdY + BIRD_SIZE/2 - 5;
-
-        // Collision check
+        const birdLeft = 100 - BIRD_SIZE / 2 + 5;
+        const birdRight = 100 + BIRD_SIZE / 2 - 5;
+        const birdTop = gs.birdY - BIRD_SIZE / 2 + 5;
+        const birdBottom = gs.birdY + BIRD_SIZE / 2 - 5;
         if (birdRight > p.x && birdLeft < p.x + PIPE_WIDTH) {
           if (birdTop < p.top || birdBottom > p.top + p.gap) {
             gameOver();
           }
         }
-
-        // Remove offscreen
         if (p.x + PIPE_WIDTH < 0) {
           gs.pipes.splice(i, 1);
         }
       }
-
-      // Floor/Ceiling collision
-      if (gs.birdY + BIRD_SIZE/2 > canvas.height || gs.birdY - BIRD_SIZE/2 < 0) {
+      if (gs.birdY + BIRD_SIZE / 2 > canvas.height || gs.birdY - BIRD_SIZE / 2 < 0) {
         gameOver();
       }
     };
@@ -208,10 +189,8 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
         setHighScore(gameState.current.score);
         localStorage.setItem('flappy_highscore', String(gameState.current.score));
       }
-      
       const currentRoomId = roomRef.current?.id;
       const playerName = _me?.name || nameInput;
-      // Store name on socket for flappy score tracking
       (socket as any).playerName = playerName;
       if (currentRoomId) {
         socket.emit('flappy-score', { roomId: currentRoomId, score: gameState.current.score, name: playerName });
@@ -222,303 +201,254 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Background gradient
       const bgGrade = ctx.createLinearGradient(0, 0, 0, canvas.height);
       const isLightTheme = document.body.getAttribute('data-theme') === 'light';
       bgGrade.addColorStop(0, isLightTheme ? '#bae6fd' : '#0f172a');
       bgGrade.addColorStop(1, isLightTheme ? '#e0f2fe' : '#1e293b');
       ctx.fillStyle = bgGrade;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Starfield/Cloud pattern
       ctx.fillStyle = isLightTheme ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.06)';
-      for(let i=0; i<canvas.width; i+=40) {
-          for(let j=0; j<canvas.height; j+=40) {
-              ctx.beginPath();
-              ctx.arc(i + (j%30), j + (i%20), 1, 0, Math.PI*2);
-              ctx.fill();
-          }
+      for (let i = 0; i < canvas.width; i += 40) {
+        for (let j = 0; j < canvas.height; j += 40) {
+          ctx.beginPath();
+          ctx.arc(i + (j % 30), j + (i % 20), 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
-
       const gs = gameState.current;
-
-      // Draw Pipes
       gs.pipes.forEach(p => {
         const pipeGrad = ctx.createLinearGradient(p.x, 0, p.x + PIPE_WIDTH, 0);
         pipeGrad.addColorStop(0, '#10b981');
         pipeGrad.addColorStop(0.5, '#34d399');
         pipeGrad.addColorStop(1, '#059669');
-
         ctx.fillStyle = pipeGrad;
-        
-        // Draw top pipe with rounded cap
         ctx.beginPath();
         ctx.roundRect(p.x, -50, PIPE_WIDTH, p.top + 50, [0, 0, 8, 8]);
         ctx.fill();
-        
-        // Draw bottom pipe with rounded cap
         ctx.beginPath();
         ctx.roundRect(p.x, p.top + p.gap, PIPE_WIDTH, canvas.height - (p.top + p.gap) + 50, [8, 8, 0, 0]);
         ctx.fill();
       });
-
-      // Draw Bird
       ctx.save();
       ctx.translate(100, gs.birdY);
-      const rotation = Math.min(Math.PI/4, Math.max(-Math.PI/4, gs.birdV * 0.1));
+      const rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, gs.birdV * 0.1));
       ctx.rotate(rotation);
-
-      // Body
-      const birdGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, BIRD_SIZE/2);
+      const birdGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, BIRD_SIZE / 2);
       birdGrad.addColorStop(0, '#fbbf24');
       birdGrad.addColorStop(1, '#d97706');
       ctx.fillStyle = birdGrad;
       ctx.beginPath();
-      ctx.arc(0, 0, BIRD_SIZE/2, 0, Math.PI*2);
+      ctx.arc(0, 0, BIRD_SIZE / 2, 0, Math.PI * 2);
       ctx.fill();
-
-      // Eye
       ctx.fillStyle = 'white';
       ctx.beginPath();
-      ctx.arc(8, -5, 6, 0, Math.PI*2);
+      ctx.arc(8, -5, 6, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = 'black';
       ctx.beginPath();
-      ctx.arc(10, -5, 3, 0, Math.PI*2);
+      ctx.arc(10, -5, 3, 0, Math.PI * 2);
       ctx.fill();
-
-      // Wing
       ctx.fillStyle = '#f59e0b';
       ctx.beginPath();
-      ctx.ellipse(-10, 2, 12, 8, -Math.PI/6, 0, Math.PI*2);
+      ctx.ellipse(-10, 2, 12, 8, -Math.PI / 6, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.restore();
     };
 
     const drawIntro = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Background
-        const bgGrade = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        const isLightTheme = document.body.getAttribute('data-theme') === 'light';
-        bgGrade.addColorStop(0, isLightTheme ? '#bae6fd' : '#0f172a');
-        bgGrade.addColorStop(1, isLightTheme ? '#e0f2fe' : '#1e293b');
-        ctx.fillStyle = bgGrade;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Stars/Clouds
-        ctx.fillStyle = isLightTheme ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.06)';
-        for(let i=0; i<canvas.width; i+=40) {
-            for(let j=0; j<canvas.height; j+=40) {
-                ctx.beginPath();
-                ctx.arc(i + (j%30), j + (i%20), 1, 0, Math.PI*2);
-                ctx.fill();
-            }
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const bgGrade = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      const isLightTheme = document.body.getAttribute('data-theme') === 'light';
+      bgGrade.addColorStop(0, isLightTheme ? '#bae6fd' : '#0f172a');
+      bgGrade.addColorStop(1, isLightTheme ? '#e0f2fe' : '#1e293b');
+      ctx.fillStyle = bgGrade;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = isLightTheme ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.06)';
+      for (let i = 0; i < canvas.width; i += 40) {
+        for (let j = 0; j < canvas.height; j += 40) {
+          ctx.beginPath();
+          ctx.arc(i + (j % 30), j + (i % 20), 1, 0, Math.PI * 2);
+          ctx.fill();
         }
-
-        // DRAW STATIC BIRD FOR PREVIEW
-        ctx.save();
-        ctx.translate(100, 300);
-        
-        // Body
-        const birdGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, BIRD_SIZE/2);
-        birdGrad.addColorStop(0, '#fbbf24');
-        birdGrad.addColorStop(1, '#d97706');
-        ctx.fillStyle = birdGrad;
-        ctx.beginPath();
-        ctx.arc(0, 0, BIRD_SIZE/2, 0, Math.PI*2);
-        ctx.fill();
-
-        // Eye
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(8, -5, 6, 0, Math.PI*2);
-        ctx.fill();
-        ctx.fillStyle = 'black';
-        ctx.beginPath();
-        ctx.arc(10, -5, 3, 0, Math.PI*2);
-        ctx.fill();
-
-        // Wing
-        ctx.fillStyle = '#f59e0b';
-        ctx.beginPath();
-        ctx.ellipse(-10, 2, 12, 8, -Math.PI/6, 0, Math.PI*2);
-        ctx.fill();
-
-        ctx.restore();
+      }
+      ctx.save();
+      ctx.translate(100, 300);
+      const birdGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, BIRD_SIZE / 2);
+      birdGrad.addColorStop(0, '#fbbf24');
+      birdGrad.addColorStop(1, '#d97706');
+      ctx.fillStyle = birdGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, BIRD_SIZE / 2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(8, -5, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'black';
+      ctx.beginPath();
+      ctx.arc(10, -5, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.ellipse(-10, 2, 12, 8, -Math.PI / 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     };
 
     loop();
     return () => {
-        if (requestRef.current) cancelAnimationFrame(requestRef.current);
+      if (requestRef.current) cancelAnimationFrame(requestRef.current);
     };
   }, [isStarted, highScore]);
 
   return (
-    <div style={{ 
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', 
-      minHeight: '100vh', width: '100vw', background: 'var(--bg-primary)', padding: '2rem' 
-    }}>
-      
-      {/* Header Stats & Exit */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-        <div style={{ 
-          display: 'flex', gap: '2rem', 
-          padding: '0.75rem 2rem', background: 'var(--item-bg)', 
-          borderRadius: '50px', border: '1px solid var(--item-border)', 
-          backdropFilter: 'blur(8px)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-            <Zap size={20} color="#fbbf24" fill="#fbbf24" />
-            <span style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-primary)' }}>{(score / 1000).toFixed(2)} KM</span>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}>
+      {/* Top Header */}
+      <div style={{ padding: '0.75rem 1rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: isMobile ? 'flex-start' : 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: '0.4rem', zIndex: 10 }}>
+        {/* Row 1: Back + Title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <button onClick={() => window.location.reload()} className="btn btn-outline" style={{ width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', flexShrink: 0 }}><ArrowLeft size={18} /></button>
+          <h2 style={{ margin: 0, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 950, fontSize: '1.2rem', whiteSpace: 'nowrap' }}>
+            <Zap size={20} fill="var(--accent)" /> FLAPPY BIRD
+          </h2>
+        </div>
+        {/* Stats: right on desktop, below title on mobile */}
+        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', paddingLeft: isMobile ? '50px' : '0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-primary)', fontWeight: 900, fontSize: '0.85rem' }}>
+            <Activity size={14} color="var(--accent)" />
+            <span>{(score / 1000).toFixed(2)} KM</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'var(--success)' }}>
-            <TrendingUp size={18} />
-            <span style={{ fontSize: '1rem', fontWeight: 950 }}>LVL {gameState.current.level}</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', opacity: 0.8 }}>
-            <Trophy size={18} color="#fbbf24" />
-            <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{(highScore / 1000).toFixed(2)} KM</span>
+          <div style={{ width: '1px', height: '16px', background: 'var(--item-border)', opacity: 0.4 }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--success)', fontWeight: 900, fontSize: '0.85rem' }}>
+            <TrendingUp size={14} />
+            <span>LVL {gameState.current.level}</span>
           </div>
         </div>
-        <button 
-          onClick={() => window.location.reload()}
-          style={{ 
-            width: '45px', height: '45px', borderRadius: '50%', border: '1px solid var(--item-border)',
-            background: 'var(--error-glow)', color: 'var(--error)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--error)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'var(--error-glow)'}
-        >
-          <X size={20} />
-        </button>
       </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', alignItems: 'flex-start', justifyContent: 'center', width: '100%', maxWidth: '1000px' }}>
-        
-        {/* Game Area */}
-        <div style={{ position: 'relative', borderRadius: '32px', overflow: 'hidden', border: '6px solid var(--card-border)', maxWidth: '100%', boxShadow: 'var(--card-shadow)' }}>
-          <canvas 
-            ref={canvasRef} 
-            width={450} 
-            height={650} 
-            onClick={jump}
-            style={{ display: 'block', maxWidth: '100%', height: 'auto', touchAction: 'none', cursor: !isStarted || isGameOver ? 'default' : 'pointer' }}
-          />
+      <div style={{ padding: 'clamp(1rem, 3vw, 2rem)', overflowY: 'auto', flex: 1 }}>
+        <div className="dashboard-layout" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
 
-          {!isStarted && (
-            <div style={{ 
-              position: 'absolute', inset: 0, 
-              background: 'var(--card-bg)', backdropFilter: 'blur(12px)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: '2.5rem', padding: '2rem'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 800, letterSpacing: '0.2em', marginBottom: '0.5rem' }}>BIRD PILOT</div>
-                {_me ? (
-                  <h1 style={{ fontSize: '3rem', fontWeight: 950, margin: 0, color: 'var(--text-primary)', textTransform: 'uppercase' }}>{_me.name}</h1>
-                ) : (
-                  <div className="input-group">
-                    <input 
-                      className="input-field" 
-                      placeholder="ENTER YOUR NAME..." 
-                      value={nameInput}
-                      onChange={(e) => setNameInput(e.target.value)}
-                      style={{ fontSize: '1.4rem', padding: '1.25rem', textAlign: 'center', width: '280px' }}
-                      maxLength={15}
-                    />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
+            <div style={{ position: 'relative', borderRadius: '32px', overflow: 'hidden', border: '6px solid #334155', maxWidth: '100%', boxShadow: 'var(--card-shadow)', background: '#000' }}>
+              <canvas
+                ref={canvasRef}
+                width={450}
+                height={650}
+                onClick={jump}
+                style={{ display: 'block', maxWidth: '100%', height: 'auto', touchAction: 'none', cursor: !isStarted || isGameOver ? 'default' : 'pointer', margin: '0 auto' }}
+              />
+
+              {!isStarted && (
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'var(--card-bg)', backdropFilter: 'blur(12px)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: '2.5rem', padding: '2rem', zIndex: 100
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 800, letterSpacing: '0.2em', marginBottom: '0.5rem' }}>BIRD PILOT</div>
+                    {_me ? (
+                      <h1 style={{ fontSize: '3rem', fontWeight: 950, margin: 0, color: 'var(--text-primary)', textTransform: 'uppercase' }}>{_me.name}</h1>
+                    ) : (
+                      <div className="input-group">
+                        <input
+                          className="input-field"
+                          placeholder="ENTER NAME..."
+                          value={nameInput}
+                          onChange={(e) => setNameInput(e.target.value)}
+                          style={{ fontSize: '1.4rem', padding: '1.25rem', textAlign: 'center', width: '280px' }}
+                          maxLength={15}
+                        />
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              <button 
-                  className="btn btn-primary" 
-                  onClick={handleStartRequest} 
-                  disabled={!nameInput.trim() || isJoining}
-                  style={{ width: '240px', height: '70px', fontSize: '1.4rem', fontWeight: 900, borderRadius: '20px', boxShadow: '0 0 40px rgba(59,130,246,0.3)', opacity: !nameInput.trim() || isJoining ? 0.6 : 1 }}
-              >
-                {isJoining ? '...' : <><Play size={24} fill="currentColor" /> START GAME</>}
-              </button>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleStartRequest}
+                    disabled={!nameInput.trim() || isJoining}
+                    style={{ width: '240px', height: '70px', fontSize: '1.4rem', fontWeight: 900, borderRadius: '20px', boxShadow: '0 0 40px rgba(59,130,246,0.3)', opacity: !nameInput.trim() || isJoining ? 0.6 : 1 }}
+                  >
+                    {isJoining ? '...' : <><Play size={24} fill="currentColor" /> START GAME</>}
+                  </button>
 
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 900, letterSpacing: '0.15em' }}>MOUSE CLICK TO FLY</div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 900, letterSpacing: '0.15em' }}>CLICK OR SPACE TO FLY</div>
+                </div>
+              )}
+
+              {isGameOver && (
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: 'var(--card-bg)', backdropFilter: 'blur(12px)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  gap: '2rem', zIndex: 100
+                }}>
+                  <div style={{ textAlign: 'center' }}>
+                    <TrendingUp size={64} color="var(--error)" style={{ marginBottom: '1rem' }} />
+                    <h1 style={{ fontSize: '3.5rem', fontWeight: 950, margin: 0, color: 'var(--text-primary)' }}>CRASHED!</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 900 }}>Distance: {(score / 1000).toFixed(2)} KM</p>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '1rem', width: '80%', maxWidth: '400px' }}>
+                    <button className="btn btn-primary" onClick={resetGame} style={{ flex: 1, height: '60px', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                      <RefreshCw size={20} /> TRY AGAIN
+                    </button>
+                    <button className="btn btn-outline" onClick={() => window.location.reload()} style={{ width: '60px', height: '60px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '16px', flexShrink: 0 }}>
+                      <ArrowLeft size={22} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-
-          {isGameOver && (
-            <div style={{ 
-              position: 'absolute', inset: 0, 
-              background: 'var(--card-bg)', backdropFilter: 'blur(12px)',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: '2rem'
-            }}>
-              <div style={{ textAlign: 'center' }}>
-                <TrendingUp size={64} color="var(--error)" style={{ marginBottom: '1rem' }} />
-                <h1 style={{ fontSize: '3.5rem', fontWeight: 950, margin: 0, color: 'var(--text-primary)' }}>CRASHED!</h1>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 900 }}>You flew a distance of {(score / 1000).toFixed(2)} KM</p>
-              </div>
-
-              <div style={{ display: 'flex', gap: '1rem', width: '80%' }}>
-                <button className="btn btn-primary" onClick={resetGame} style={{ flex: 1, height: '60px', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                  <RefreshCw size={20} /> TRY AGAIN
-                </button>
-                <button className="btn btn-outline" onClick={() => window.location.reload()} style={{ flex: 1, height: '60px', fontWeight: 700 }}>
-                  EXIT
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Side Leaderboard Box */}
-        <div style={{ 
-          width: '320px', padding: '2rem', 
-          background: 'var(--card-bg)', backdropFilter: 'blur(10px)',
-          borderRadius: '32px', border: '1px solid var(--item-border)',
-          alignSelf: 'stretch', display: 'flex', flexDirection: 'column'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', justifyContent: 'center' }}>
-            <Trophy color="#fbbf24" size={24} />
-            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em' }}>TOP FLYERS</h3>
           </div>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', overflowY: 'auto' }}>
-            {[...leaderboard]
-                .sort((a, b) => b.score - a.score)
-                .slice(0, 10)
-                .map((entry, i) => (
-                    <div key={`${entry.name}-${i}`} style={{ 
-                        display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', 
-                        background: i < 3 ? 'var(--accent-glow)' : 'var(--item-bg)', 
-                        borderRadius: '12px', fontSize: '0.9rem',
-                        border: '1px solid var(--item-border)'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                            <span style={{ 
-                                color: i === 0 ? '#fbbf24' : i === 1 ? '#cbd5e1' : i === 2 ? '#d97706' : 'var(--text-secondary)', 
-                                fontWeight: 900, fontSize: '0.8rem', width: '1.5rem'
-                            }}>
-                                {i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}
-                            </span>
-                            <span style={{ color: i < 3 ? 'var(--text-primary)' : 'var(--text-secondary)', fontWeight: i < 3 ? 950 : 700 }}>{entry.name}</span>
+
+          <div className="dashboard-sidebar">
+            <div className="card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                  <Trophy color="#fbbf24" size={24} />
+                  <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 950, color: 'var(--text-primary)', letterSpacing: '0.05em' }}>TOP FLYERS</h3>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                  {[...leaderboard]
+                    .sort((a, b) => b.score - a.score)
+                    .slice(0, 10)
+                    .map((entry, i) => (
+                      <div key={`${entry.name}-${i}`} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '0.4rem 0.5rem',
+                        borderRadius: '8px',
+                        background: i < 3 ? 'var(--accent-glow)' : 'transparent',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontWeight: 950, fontSize: '0.8rem', width: '1.5rem', color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'var(--text-secondary)' }}>
+                            {i === 0 ? '👑' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
+                          </span>
+                          <span style={{ color: 'var(--text-primary)', fontWeight: i < 3 ? 800 : 600, fontSize: '0.85rem' }}>{entry.name}</span>
                         </div>
-                        <span style={{ color: i < 3 ? 'var(--accent)' : 'var(--text-primary)', fontWeight: 900 }}>{(entry.score / 1000).toFixed(2)} KM</span>
-                    </div>
-                ))
-            }
-            {leaderboard.length === 0 && (
-                <div style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem', padding: '2rem' }}>Be the first to fly!</div>
-            )}
+                        <span style={{ color: i < 3 ? 'var(--accent)' : 'var(--text-secondary)', fontWeight: 800, fontSize: '0.8rem' }}>{(entry.score / 1000).toFixed(2)} KM</span>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+
+              <div style={{ height: '1px', background: 'var(--item-border)', opacity: 0.3 }} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', background: 'var(--accent-glow)', padding: '1.5rem', borderRadius: '24px', border: '1px solid var(--accent)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--accent)' }}>
+                  <TrendingUp size={20} />
+                  <span style={{ fontWeight: 950, fontSize: '1rem' }}>PERSONAL BEST</span>
+                </div>
+                <div style={{ fontSize: '2rem', fontWeight: 950, color: 'var(--text-primary)' }}>{(highScore / 1000).toFixed(2)} <span style={{ fontSize: '1rem', opacity: 0.6 }}>KM</span></div>
+              </div>
+            </div>
           </div>
         </div>
-
       </div>
-
-      <p style={{ marginTop: '2rem', color: 'var(--text-secondary)', opacity: 0.6, fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.2em' }}>
-        SPACEBAR TO JUMP · CLICK TO PLAY
-      </p>
     </div>
   );
 };

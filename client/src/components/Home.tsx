@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { socket } from '../socket';
 import type { Player, PublicRoom } from '../types';
-import { Sparkles, Users, Trophy, Timer, Globe, Lock, Unlock, Zap, Brain, Paintbrush, Grid3X3, Sword } from 'lucide-react';
-import { Logo } from './Logo';
+import { Sparkles, Users, Trophy, Timer, Globe, Lock, Unlock, Zap, Brain, Paintbrush, Grid3X3, Sword, RefreshCw } from 'lucide-react';
 
 interface HomeProps {
   onRoomJoined: (me: Player) => void;
@@ -16,8 +15,9 @@ interface HomeProps {
     sudoku: Record<string, number>;
     kakuro: Record<string, number>;
     sixteencoins: Record<string, number>;
+    crossword: Record<string, number>;
   };
-  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | null;
+  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword' | null;
   publicRooms: PublicRoom[];
 }
 
@@ -65,9 +65,30 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
 
 
   const currentLeaderboard = selectedGame ? leaderboards[selectedGame] : {};
-  const topPlayers = Object.entries(currentLeaderboard)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5);
+  let topPlayers: [string, any][] = [];
+
+  if (Array.isArray(currentLeaderboard)) {
+    // Array of objects (flappy, cssbattle)
+    if (selectedGame === 'cssbattle') {
+       topPlayers = (currentLeaderboard as any[])
+         .sort((a, b) => a.time - b.time)
+         .slice(0, 5)
+         .map(item => [item.name, item.time]);
+    } else {
+       topPlayers = (currentLeaderboard as any[])
+         .sort((a, b) => b.score - a.score)
+         .slice(0, 5)
+         .map(item => [item.name, item.score]);
+    }
+  } else {
+    // Record<string, number> (sudoku, crossword, etc)
+    const entries = Object.entries(currentLeaderboard);
+    if (selectedGame === 'crossword') {
+      topPlayers = entries.sort(([, a], [, b]) => (a as number) - (b as number)).slice(0, 5);
+    } else {
+      topPlayers = entries.sort(([, a], [, b]) => (b as number) - (a as number)).slice(0, 5);
+    }
+  }
 
   return (
     <div className="container responsive-flex" style={{ alignItems: 'flex-start', gap: '3rem', padding: '4rem 2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -82,9 +103,7 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
           ← Back to Dashboard
         </button>
 
-        <div style={{ alignSelf: 'center', marginBottom: '1rem' }}>
-          <Logo size={42} />
-        </div>
+
 
         <div style={{ textAlign: 'center' }}>
           <h1 className="responsive-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '0.5rem', fontWeight: 900 }}>
@@ -96,6 +115,7 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
              selectedGame === 'sudoku' ? <Grid3X3 size={48} color="#22d3ee" /> :
              selectedGame === 'sixteencoins' ? <Sword size={48} color="#6366f1" /> :
              selectedGame === 'kakuro' ? <Brain size={48} color="#a78bfa" /> :
+             selectedGame === 'crossword' ? <RefreshCw size={48} color="#fb7185" /> :
              <Sparkles size={48} color="#60a5fa" />}
             {selectedGame === 'typeracer' ? 'Type Racer' : 
              selectedGame === 'chess' ? 'Chess' : 
@@ -105,6 +125,7 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
              selectedGame === 'sudoku' ? 'Sudoku' :
              selectedGame === 'sixteencoins' ? '16 Coins' :
              selectedGame === 'kakuro' ? 'Kakuro' :
+             selectedGame === 'crossword' ? 'Cross-Tech' :
              'BINGO'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
@@ -116,6 +137,7 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
              selectedGame === 'sudoku' ? 'Classic 9x9 puzzle' :
              selectedGame === 'sixteencoins' ? 'Capture pieces in this strategy classic' :
              selectedGame === 'kakuro' ? 'Challenging number crossword puzzle' :
+             selectedGame === 'crossword' ? 'The ultimate tech industry crossword' :
              'Real-time multiplayer bingo experience'}
           </p>
         </div>
@@ -303,6 +325,7 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
                  selectedGame === 'sudoku' ? 'Sudoku Masters' :
                  selectedGame === 'sixteencoins' ? 'Board Tacticians' :
                  selectedGame === 'kakuro' ? 'Kakuro Brainiacs' :
+                 selectedGame === 'crossword' ? 'Tech Gurus' :
                  'Bingo Champions'}
               </h3>
             </div>

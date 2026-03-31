@@ -13,11 +13,12 @@ import { CssBattle } from './components/CssBattle';
 import { Sudoku } from './components/Sudoku';
 import { SixteenCoins } from './components/SixteenCoins';
 import { Kakuro } from './components/Kakuro';
+import { Crossword } from './components/Crossword';
 import { NewsView } from './components/NewsView';
 
 export const App: React.FC = () => {
-  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'news'>('dashboard');
-  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | null>(null);
+  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword' | 'news'>('dashboard');
+  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword' | null>(null);
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [isDark, setIsDark] = useState<boolean>(() => {
     const saved = localStorage.getItem('theme');
@@ -33,12 +34,16 @@ export const App: React.FC = () => {
     document.title = "Fun Arcade";
   }, [isDark]);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [view]);
+
   const toggleTheme = () => setIsDark(prev => !prev);
 
   const [gameState, setGameState] = useState<GameState>({
     room: null,
     me: null,
-    leaderboards: { bingo: {}, typeracer: {}, chess: {}, quiz: {}, sudoku: {}, kakuro: {}, sixteencoins: {},
+    leaderboards: { bingo: {}, typeracer: {}, chess: {}, quiz: {}, sudoku: {}, kakuro: {}, sixteencoins: {}, crossword: {},
       flappy: [], cssbattle: []
     },
     error: null,
@@ -91,13 +96,14 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleSelectGame = (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro') => {
+  const handleSelectGame = (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword') => {
     setSelectedGame(type);
     setGameState(prev => ({ ...prev, room: null, me: null })); 
     if (type === 'flappy') setView('flappy');
     else if (type === 'cssbattle') setView('cssbattle');
     else if (type === 'sudoku') setView('sudoku');
     else if (type === 'sixteencoins') setView('sixteencoins');
+    else if (type === 'crossword') setView('crossword');
     else if (type === 'kakuro') setView('home'); 
     else setView('home');
   };
@@ -107,7 +113,7 @@ export const App: React.FC = () => {
     setView('lobby');
   };
 
-  const handleDashboardJoin = (me: GameState['me'], gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro') => {
+  const handleDashboardJoin = (me: GameState['me'], gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword') => {
     setSelectedGame(gameType);
     setGameState(prev => ({ ...prev, me }));
     setView('lobby');
@@ -154,6 +160,10 @@ export const App: React.FC = () => {
       return <SixteenCoins room={gameState.room} me={gameState.me} onBack={() => setView('dashboard')} />;
     }
 
+    if (view === 'crossword') {
+      return <Crossword me={gameState.me || undefined} onBack={() => setView('dashboard')} />;
+    }
+
     if (!gameState.room || !gameState.me) {
       return (
         <Home 
@@ -188,6 +198,8 @@ export const App: React.FC = () => {
         return <Quiz room={gameState.room} me={gameState.me} />;
       } else if (gameState.room.type === 'kakuro') {
         return <Kakuro room={gameState.room} me={gameState.me} leaderboard={gameState.leaderboards.kakuro} onBack={() => setView('dashboard')} />;
+      } else if (gameState.room.type === 'crossword') {
+         return <Crossword me={gameState.me || undefined} onBack={() => setView('dashboard')} />;
       }
       return <Game room={gameState.room} me={gameState.me} />;
     }
@@ -203,8 +215,8 @@ export const App: React.FC = () => {
           bottom: '1.5rem',
           right: '1.5rem',
           zIndex: 9999,
-          width: '42px',
-          height: '42px',
+          width: '32px',
+          height: '32px',
           borderRadius: '50%',
           background: 'var(--card-bg)',
           border: '1px solid var(--card-border)',
@@ -213,7 +225,7 @@ export const App: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: '1.2rem',
+          fontSize: '0.9rem',
           transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
         onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1) rotate(15deg)'}

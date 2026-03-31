@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { socket } from '../socket';
 import { getSudoku } from 'sudoku-gen';
-import { Grid3X3, Trophy, CheckCircle, RotateCcw } from 'lucide-react';
+import { Grid3X3, Trophy, CheckCircle, RotateCcw, ArrowLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface SudokuProps {
@@ -19,18 +19,18 @@ interface SaveState {
 export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
   const [playerName, setPlayerName] = useState('');
   const [gameState, setGameState] = useState<'login' | 'resume-prompt' | 'playing' | 'won'>('login');
-  
+  const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'expert'>('easy');
+
   const [board, setBoard] = useState<string[]>([]);
   const [initialBoard, setInitialBoard] = useState<string[]>([]);
   const [solution, setSolution] = useState<string>('');
-  
+
   const [timeElapsed, setTimeElapsed] = useState(0);
   const [activeSessionElapsed, setActiveSessionElapsed] = useState(0);
   const [startTime, setStartTime] = useState(0);
-  
+
   const [savedState, setSavedState] = useState<SaveState | null>(null);
 
-  // Sync Timer while playing
   useEffect(() => {
     if (gameState === 'playing') {
       const interval = setInterval(() => {
@@ -55,7 +55,7 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
   };
 
   const startNewGame = () => {
-    const puzzle = getSudoku('easy');
+    const puzzle = getSudoku(difficulty);
     setInitialBoard(puzzle.puzzle.split(''));
     setBoard(puzzle.puzzle.split(''));
     setSolution(puzzle.solution);
@@ -78,9 +78,9 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
   };
 
   const saveDraft = (init: string, curr: string, sol: string, time: number) => {
-    socket.emit('sudoku-save', { 
-      name: playerName, 
-      state: { puzzle: init, current: curr, solution: sol, timeElapsed: time } 
+    socket.emit('sudoku-save', {
+      name: playerName,
+      state: { puzzle: init, current: curr, solution: sol, timeElapsed: time }
     });
   };
 
@@ -92,10 +92,8 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
     newBoard[index] = val === '' ? '-' : val;
     setBoard(newBoard);
 
-    // Auto save
     saveDraft(initialBoard.join(''), newBoard.join(''), solution, timeElapsed + activeSessionElapsed);
 
-    // Check win
     const currentString = newBoard.join('');
     if (!currentString.includes('-') && currentString === solution) {
       handleWin();
@@ -119,24 +117,17 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '2rem', background: 'var(--bg-primary)' }}>
         <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '3rem', textAlign: 'center', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
           <Grid3X3 size={60} color="var(--accent)" style={{ marginBottom: '1rem' }} />
-          <h1 className="responsive-title" style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>SUDOKU</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2rem' }}>
-            Enter your name to start a new game or resume a saved one.
-          </p>
-          <input 
-            className="input-field" 
-            placeholder="Enter your name" 
-            value={playerName} 
-            onChange={e => setPlayerName(e.target.value)} 
-            onKeyDown={e => e.key === 'Enter' && handleLogin()}
-            style={{ width: '100%', marginBottom: '1.5rem', textAlign: 'center' }}
-          />
-          <button className="btn btn-primary" onClick={handleLogin} style={{ width: '100%', background: 'var(--accent)', border: 'none', color: 'white' }} disabled={!playerName.trim()}>
-            Play Sudoku
-          </button>
-          <button className="btn btn-outline" onClick={onBack} style={{ width: '100%', marginTop: '1rem' }}>
-            Back to Dashboard
-          </button>
+          <h1 style={{ color: 'var(--text-primary)', marginBottom: '1rem', fontWeight: 950 }}>SUDOKU</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2rem' }}>Classic 9x9 physical puzzle challenge.</p>
+          <input className="input-field" placeholder="YOUR NAME" value={playerName} onChange={e => setPlayerName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ width: '100%', marginBottom: '1rem', textAlign: 'center' }} />
+          <select className="input-field" value={difficulty} onChange={e => setDifficulty(e.target.value as any)} style={{ width: '100%', marginBottom: '1.5rem', textAlign: 'center' }}>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+            <option value="expert">Expert</option>
+          </select>
+          <button className="btn btn-primary" onClick={handleLogin} style={{ width: '100%', height: '56px', fontWeight: 900 }} disabled={!playerName.trim()}>START GAME</button>
+          <button className="btn btn-outline" onClick={onBack} style={{ width: '100%', marginTop: '1rem' }}>EXIT</button>
         </div>
       </div>
     );
@@ -146,17 +137,11 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '2rem', background: 'var(--bg-primary)' }}>
         <div className="card" style={{ maxWidth: '450px', width: '100%', padding: '3rem', textAlign: 'center', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
-          <h1 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Welcome Back, {playerName}!</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2rem' }}>
-            We found an incomplete Sudoku game saved under your name (Time: {formatTime(savedState?.timeElapsed || 0)}). Would you like to resume?
-          </p>
+          <h1 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Welcome Back!</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2rem' }}>We found a saved game. Resume or start fresh?</p>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <button className="btn btn-outline" onClick={startNewGame} style={{ flex: 1 }}>
-              Start New Game
-            </button>
-            <button className="btn btn-primary" onClick={resumeGame} style={{ flex: 1, background: 'var(--accent)', border: 'none', color: 'white' }}>
-              Resume Game
-            </button>
+            <button className="btn btn-outline" onClick={startNewGame} style={{ flex: 1, height: '50px' }}>NEW GAME</button>
+            <button className="btn btn-primary" onClick={resumeGame} style={{ flex: 1, height: '50px' }}>RESUME</button>
           </div>
         </div>
       </div>
@@ -165,125 +150,99 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}>
-      {/* Navbar */}
-      <div style={{ padding: '1.5rem 2rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      {/* Header */}
+      <div style={{ padding: '0.85rem 1.5rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <button onClick={() => {
-            // Save current time before quitting
-            if (gameState === 'playing') {
-              saveDraft(initialBoard.join(''), board.join(''), solution, timeElapsed + activeSessionElapsed);
-            }
+            if (gameState === 'playing') saveDraft(initialBoard.join(''), board.join(''), solution, timeElapsed + activeSessionElapsed);
             onBack();
-          }} className="btn btn-outline" style={{ padding: '0.5rem 1rem' }}>
-            ← Quit
+          }} className="btn btn-outline" style={{ width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}>
+            <ArrowLeft size={18} />
           </button>
-          <h2 style={{ margin: 0, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 900 }}>
-            <Grid3X3 /> Sudoku
+          <h2 style={{ margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 950, fontSize: '1.2rem' }}>
+            <Grid3X3 size={20} color="var(--accent)" /> SUDOKU
           </h2>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 800 }}>TIME ELAPSED</div>
-          <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--accent)' }}>
-            {formatTime(displayTime)}
-          </div>
+          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 800 }}>TIMER</div>
+          <div style={{ fontSize: '1.3rem', fontWeight: 950, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>{formatTime(displayTime)}</div>
         </div>
       </div>
 
-      <div className="mobile-column" style={{ flex: 1, display: 'flex', gap: '2rem', padding: 'clamp(1rem, 3vw, 2rem)', overflowY: 'auto', justifyContent: 'center', alignItems: 'center' }}>
-
-        
-        {/* Play Area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: '600px' }}>
-          {gameState === 'won' ? (
-            <div className="card animate-fade-in" style={{ padding: '3rem', textAlign: 'center', background: 'var(--success-glow)', border: '2px solid var(--success)', width: '100%', marginBottom: '2rem' }}>
-              <CheckCircle size={60} color="var(--success)" style={{ margin: '0 auto 1rem auto' }} />
-              <h2 style={{ color: 'var(--success)', margin: '0 0 0.5rem 0', fontSize: '2.5rem', fontWeight: 950 }}>Puzzle Solved!</h2>
-              <p style={{ color: 'var(--text-primary)', marginBottom: '1.5rem', fontSize: '1.2rem', fontWeight: 700 }}>You completed it in <strong>{formatTime(displayTime)}</strong>.</p>
-              <button className="btn btn-primary" onClick={startNewGame} style={{ padding: '1rem 2rem', fontSize: '1.1rem', fontWeight: 950, background: 'var(--success)', border: 'none' }}>
-                <RotateCcw size={18} style={{ display: 'inline', marginRight: '0.5rem', verticalAlign: 'middle' }} /> Play Again
-              </button>
-            </div>
-          ) : (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(9, 1fr)',
-              background: 'var(--item-border)',
-              padding: '4px',
-              borderRadius: '8px',
-              border: '2px solid var(--item-border)',
-              width: 'min(100%, 500px)',
-              aspectRatio: '1',
-              gap: '1px'
-            }}>
-              {board.map((cell, idx) => {
-                const row = Math.floor(idx / 9);
-                const col = idx % 9;
-                const isGiven = initialBoard[idx] !== '-';
-                
-                // Add thicker borders around 3x3 blocks
-                const borderRight = col % 3 === 2 && col !== 8 ? '2px solid var(--text-primary)' : '1px solid var(--item-border)';
-                const borderBottom = row % 3 === 2 && row !== 8 ? '2px solid var(--text-primary)' : '1px solid var(--item-border)';
-
-                return (
-                  <input
-                    key={idx}
-                    type="text"
-                    maxLength={1}
-                    value={cell === '-' ? '' : cell}
-                    onChange={(e) => handleChange(idx, e.target.value)}
-                    disabled={isGiven || gameState !== 'playing'}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      background: isGiven ? 'var(--item-bg)' : 'var(--bg-secondary)',
-                      color: isGiven ? 'var(--text-secondary)' : 'var(--accent)',
-                      border: 'none',
-                      borderRight,
-                      borderBottom,
-                      textAlign: 'center',
-                      fontSize: 'clamp(1rem, 4vw, 1.5rem)',
-                      fontWeight: isGiven ? 700 : 950,
-
-                      outline: 'none',
-                      cursor: isGiven ? 'default' : 'text'
-                    }}
-                    onFocus={e => !isGiven && (e.target.style.background = 'var(--accent-glow)')}
-                    onBlur={e => !isGiven && (e.target.style.background = 'var(--bg-secondary)')}
-                  />
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Leaderboard Column */}
-        <div style={{ width: '100%', maxWidth: '350px' }}>
-          <h3 style={{ color: 'var(--text-primary)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 900, justifyContent: 'center' }}>
-             <Trophy size={18} color="#fbbf24" /> Sudoku Masters
-          </h3>
-
-          <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
-            {Object.entries(leaderboard || {}).length > 0 ? (
-              Object.entries(leaderboard)
-                .sort((a, b) => b[1] - a[1])
-                .map(([name, wins], i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: i % 2 === 0 ? 'var(--item-bg)' : 'transparent', borderRadius: '8px' }}>
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                    <span style={{ color: i === 0 ? '#fbbf24' : 'var(--text-secondary)', fontWeight: 900, minWidth: '20px' }}>#{i+1}</span>
-                    <span style={{ color: 'var(--text-primary)', fontWeight: 700 }}>{name}</span>
-                  </div>
-                  <div style={{ color: 'var(--success)', fontWeight: 800 }}>
-                    {wins} {wins === 1 ? 'win' : 'wins'}
-                  </div>
-                </div>
-              ))
+      <div style={{ padding: 'clamp(1rem, 3vw, 2rem)', overflowY: 'auto', flex: 1 }}>
+        <div className="dashboard-layout" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
+          
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem', minWidth: 0 }}>
+            {gameState === 'won' ? (
+              <div className="card" style={{ padding: '3rem', textAlign: 'center', background: 'var(--success-glow)', border: '2px solid var(--success)', borderRadius: '24px', width: '100%', maxWidth: '500px' }}>
+                <CheckCircle size={56} color="var(--success)" style={{ margin: '0 auto 1rem auto' }} />
+                <h2 style={{ color: 'var(--success)', margin: '0 0 0.5rem 0', fontSize: '2.5rem', fontWeight: 950 }}>SOLVED!</h2>
+                <p style={{ color: 'var(--text-primary)', marginBottom: '1.5rem', fontSize: '1.2rem', fontWeight: 700 }}>Time: {formatTime(displayTime)}</p>
+                <button className="btn btn-primary" onClick={startNewGame} style={{ background: 'var(--success)', border: 'none', fontWeight: 950, padding: '1rem 2rem' }}>
+                   <RotateCcw size={18} style={{ display: 'inline', marginRight: '0.5rem' }} /> PLAY AGAIN
+                </button>
+              </div>
             ) : (
-              <div style={{ color: '#64748b', textAlign: 'center', padding: '1rem' }}>No masters yet. Solve a puzzle!</div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(9, 1fr)',
+                background: 'var(--item-border)',
+                padding: '4px',
+                borderRadius: '16px',
+                border: '2px solid var(--item-border)',
+                width: 'min(100%, 500px)',
+                aspectRatio: '1',
+                gap: '1px'
+              }}>
+                {board.map((cell, idx) => {
+                  const row = Math.floor(idx / 9);
+                  const col = idx % 9;
+                  const isGiven = initialBoard[idx] !== '-';
+                  const borderRight = col % 3 === 2 && col !== 8 ? '2px solid var(--text-primary)' : '1px solid var(--item-border)';
+                  const borderBottom = row % 3 === 2 && row !== 8 ? '2px solid var(--text-primary)' : '1px solid var(--item-border)';
+                  return (
+                    <input key={idx} type="text" maxLength={1} value={cell === '-' ? '' : cell}
+                      onChange={(e) => handleChange(idx, e.target.value)}
+                      disabled={isGiven || gameState !== 'playing'}
+                      style={{
+                        width: '100%', height: '100%', background: isGiven ? 'var(--item-bg)' : 'var(--card-bg)',
+                        color: isGiven ? 'var(--text-secondary)' : 'var(--accent)',
+                        border: 'none', borderRight, borderBottom, textAlign: 'center',
+                        fontSize: 'clamp(1rem, 4.5vw, 1.4rem)', fontWeight: isGiven ? 700 : 950, outline: 'none'
+                      }}
+                    />
+                  );
+                })}
+              </div>
             )}
           </div>
-        </div>
 
+          <div className="dashboard-sidebar">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div className="card" style={{ padding: '1.5rem', borderRadius: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', justifyContent: 'center' }}>
+                   <Trophy size={20} color="#fbbf24" />
+                   <span style={{ fontSize: '0.8rem', fontWeight: 950, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sudoku Masters</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {Object.entries(leaderboard || {}).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([name, wins], i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.85rem 1rem', background: i < 3 ? 'var(--accent-glow)' : 'var(--item-bg)', borderRadius: '12px', border: i < 3 ? '1px solid var(--accent)' : '1px solid transparent' }}>
+                       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                         <span style={{ color: i === 0 ? '#fbbf24' : 'var(--text-secondary)', fontWeight: 950, fontSize: '0.75rem' }}>#{i+1}</span>
+                         <span style={{ color: 'var(--text-primary)', fontWeight: 800 }}>{name}</span>
+                       </div>
+                       <span style={{ color: 'var(--success)', fontWeight: 950 }}>{wins}🏆</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
       </div>
     </div>
   );
 };
+
+export default Sudoku;

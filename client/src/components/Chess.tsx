@@ -207,7 +207,7 @@ const CAPTURED_SYMBOLS: Record<string, string> = {
 
 const CapturedSidebar: React.FC<{
   pieces: string[];
-  isWhitePieces: boolean;  // true = showing white pieces (captured by black)
+  isWhitePieces: boolean;
   advantage: number;
   label: string;
 }> = ({ pieces, isWhitePieces, advantage, label }) => {
@@ -215,39 +215,34 @@ const CapturedSidebar: React.FC<{
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center',
-      gap: '3px', padding: '8px 4px',
+      gap: '5px', padding: '12px 15px',
       background: 'var(--item-bg)',
-      borderRadius: '10px',
+      borderRadius: '16px',
       border: '1px solid var(--item-border)',
-      minWidth: '36px', width: '44px',
-      minHeight: '80px',
+      minWidth: '120px', flex: 1
     }}>
-      {/* Rotated label */}
       <div style={{
-        fontSize: '0.5rem', color: 'var(--text-secondary)', fontWeight: 900,
+        fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 900,
         textTransform: 'uppercase', letterSpacing: '0.1em',
-        writingMode: 'vertical-rl', transform: 'rotate(180deg)',
-        marginBottom: '4px', whiteSpace: 'nowrap',
+        marginBottom: '8px', whiteSpace: 'nowrap',
       }}>{label}</div>
-      {/* Piece symbols */}
-      {sorted.map((p, i) => (
-        <span key={i} style={{
-          fontSize: '1.1rem', lineHeight: 1,
-          color: isWhitePieces ? '#f5efe0' : '#8B6F5E',
-          textShadow: isWhitePieces
-            ? '0 1px 4px rgba(0,0,0,0.9)'
-            : '0 1px 4px rgba(0,0,0,0.5)',
-          filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.6))',
-        }}>{CAPTURED_SYMBOLS[p]}</span>
-      ))}
-      {/* Advantage badge */}
-      {advantage > 0 && (
-        <span style={{
-          fontSize: '0.72rem', fontWeight: 900,
-          color: 'var(--success)', marginLeft: '4px',
-          letterSpacing: '0.03em',
-        }}>+{advantage}</span>
-      )}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', justifyContent: 'center' }}>
+        {sorted.map((p, i) => (
+          <span key={i} style={{
+            fontSize: '1.2rem', lineHeight: 1,
+            color: isWhitePieces ? '#f5efe0' : '#8B6F5E',
+            textShadow: '0 1px 4px rgba(0,0,0,0.5)',
+            filter: 'drop-shadow(0 0 2px rgba(0,0,0,0.4))',
+          }}>{CAPTURED_SYMBOLS[p]}</span>
+        ))}
+        {advantage > 0 && (
+          <span style={{
+            fontSize: '0.8rem', fontWeight: 950,
+            color: 'var(--success)', marginLeft: '4px',
+            alignSelf: 'center'
+          }}>+{advantage}</span>
+        )}
+      </div>
     </div>
   );
 };
@@ -297,8 +292,8 @@ const Board2D: React.FC<{
         border: '6px solid #3d2b1f',
         borderRadius: '6px',
         boxShadow: '0 0 0 2px #7c5c3e, var(--card-shadow)',
-        width: 'min(78vh, 78vw)',
-        height: 'min(78vh, 78vw)',
+        width: 'min(62vh, 62vw)',
+        height: 'min(62vh, 62vw)',
         overflow: 'hidden',
       }}>
         {ranks.flatMap((rank, ri) =>
@@ -578,9 +573,9 @@ const Chess: React.FC<ChessProps> = ({ room, me }) => {
 
       {/* ── Header ── */}
       <div style={{
-        padding: '0.85rem 1.5rem',
+        padding: '0.65rem 1.5rem',
         display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem',
-        background: 'var(--item-bg)',
+        background: 'rgba(0,0,0,0.1)',
         borderBottom: '1px solid var(--item-border)',
         flexShrink: 0,
       }}>
@@ -596,198 +591,112 @@ const Chess: React.FC<ChessProps> = ({ room, me }) => {
           <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 950, letterSpacing: '0.1em', color: 'var(--text-primary)' }}>♟ CHESS</h2>
           <span style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.75rem' }}>{room.id}</span>
         </div>
+      </div>
 
-        <div className="mobile-hide" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-
-          {/* 2D / 3D toggle */}
-          <div style={{
-            display: 'flex',
-            background: 'var(--item-bg)',
-            borderRadius: '8px',
-            padding: '3px',
-            gap: '2px',
-            border: '1px solid var(--item-border)'
-          }}>
-            {(['2d', '3d'] as const).map(v => (
-              <button
-                key={v}
-                onClick={() => setBoardView(v)}
-                style={{
-                  padding: '0.3rem 0.8rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: 900,
-                  fontSize: '0.78rem',
-                  letterSpacing: '0.05em',
-                  background: boardView === v ? 'var(--accent)' : 'transparent',
-                  color: boardView === v ? '#fff' : 'var(--text-secondary)',
-                  transition: 'all 0.18s ease',
-                }}
-              >
-                {v.toUpperCase()}
-              </button>
-            ))}
+      <div style={{ padding: '0 3vw 1rem 3vw', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Unified Dash - ABOVE Board */}
+          <div className="card" style={{ marginTop: '1.5rem', padding: '0.85rem 1rem', display: 'flex', gap: '1rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)', borderRadius: '24px', alignItems: 'stretch', flexWrap: 'wrap', boxShadow: 'var(--card-shadow)', zIndex: 10 }}>
+              <CapturedSidebar
+                pieces={myCaptured}
+                isWhitePieces={!amIWhite}
+                advantage={myAdv}
+                label="You took"
+              />
+              <CapturedSidebar
+                pieces={theirCaptured}
+                isWhitePieces={amIWhite}
+                advantage={theirAdv}
+                label={`${(opponent?.name ?? 'Opponent')}`}
+              />
+              <div style={{ padding: '0.65rem 1rem', background: 'var(--item-bg)', borderRadius: '16px', border: '1px solid var(--item-border)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.45rem', justifyContent: 'center', minWidth: '160px', flex: 1 }}>
+                <span style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.1em' }}>View Mode</span>
+                <div style={{ display: 'flex', background: 'var(--card-bg)', borderRadius: '10px', padding: '3px', gap: '4px', border: '1px solid var(--item-border)', alignItems: 'stretch' }}>
+                  {(['2d', '3d'] as const).map(v => (
+                    <button key={v} onClick={() => setBoardView(v)} style={{ padding: '0.35rem 1rem', borderRadius: '7px', border: 'none', cursor: 'pointer', fontWeight: 900, fontSize: '0.78rem', background: boardView === v ? 'var(--accent)' : 'transparent', color: boardView === v ? 'white' : 'var(--text-secondary)', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', flex: 1 }}>
+                      {v.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
           </div>
 
-          <div style={{ color: 'var(--text-primary)', fontWeight: 900, textAlign: 'right', fontSize: '0.9rem' }}>
-            <div>
-              {me.name}
-              <span style={{ color: 'var(--accent)', marginLeft: '0.4em' }}>
-                ({amIWhite ? '♙ White' : '♟ Black'})
-              </span>
+          {/* Main Game Area */}
+          <div style={{ position: 'relative', width: '100%', height: 'min(70vh, 100vw)', overflow: 'hidden', borderRadius: '24px', padding: '25px', marginTop: '0.25rem' }}>
+
+            {/* In-Box Turn Indicator */}
+            {room.gameState === 'playing' && (
+              <div style={{
+                position: 'absolute', top: 10, left: 10, zIndex: 100,
+                padding: '0.4rem 1rem', background: 'var(--card-bg)', backdropFilter: 'blur(15px)',
+                borderRadius: '12px', border: `2px solid ${isMyTurn ? 'var(--success)' : 'var(--item-border)'}`,
+                boxShadow: 'var(--card-shadow)', pointerEvents: 'none',
+              }}>
+                <span style={{ color: isMyTurn ? 'var(--success)' : 'var(--text-secondary)', fontWeight: 950, fontSize: '0.7rem', letterSpacing: '0.08em' }}>
+                  {isMyTurn ? '✓ YOUR TURN' : `⏳ ${(opponent?.name || 'OPPONENT').toUpperCase()}'S TURN`}
+                </span>
+              </div>
+            )}
+            
+            {/* Player Legends In-Box - Centered bottom edge */}
+            <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 100, display: 'flex', gap: '1rem', background: 'rgba(0,0,0,0.6)', padding: '5px 15px', borderRadius: '12px', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: amIWhite ? '#f5efe0' : '#8B6F5E' }} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'white' }}>{me.name}</span>
+               </div>
+               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: amIWhite ? '#8B6F5E' : '#f5efe0' }} />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 900, color: 'white' }}>{opponent?.name || 'OPP'}</span>
+               </div>
             </div>
-            {opponent && (
-              <div style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', opacity: 0.8 }}>vs {opponent.name}</div>
+
+            {/* Game over banner */}
+            {room.gameState === 'finished' && (() => {
+              const won = room.winner?.id === me.id;
+              const draw = !room.winner;
+              const color = won ? 'var(--success)' : draw ? 'var(--text-secondary)' : 'var(--error)';
+              const bannerLabel = won ? '🎉 YOU WON!' : draw ? '🤝 DRAW!' : `🏆 ${room.winner?.name} WINS!`;
+              return (
+                <div style={{
+                  position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                  zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem',
+                  background: 'var(--card-bg)', backdropFilter: 'blur(20px)',
+                  border: `3px solid ${color}`, borderRadius: '32px', padding: '2rem 3rem', boxShadow: '0 0 60px rgba(0,0,0,0.5)',
+                  animation: 'zoomIn 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+                }}>
+                  <Trophy size={60} color={color} />
+                  <h2 style={{ color, fontWeight: 950, fontSize: '1.8rem', letterSpacing: '0.06em', margin: 0 }}>{bannerLabel}</h2>
+                  <button
+                      className="btn btn-primary"
+                      onClick={() => room.hostId === me.id ? socket.emit('reset-room', { roomId: room.id }) : socket.emit('play-again', { roomId: room.id })}
+                      style={{ padding: '0.75rem 2rem', fontSize: '1.2rem', borderRadius: '15px', background: 'var(--accent)', border: 'none', fontWeight: 950, width: '100%' }}
+                  >
+                    REMATCH
+                  </button>
+                </div>
+              );
+            })()}
+
+            {boardView === '2d' ? (
+              <div style={{ width: '100%', height: 'calc(100% - 50px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Board2D chess={chess} onMove={handleMove} flipped={!amIWhite} />
+              </div>
+            ) : (
+              <div style={{ width: '100%', height: '100%', position: 'absolute', inset: 0 }}>
+                <Canvas shadows camera={{ position: [0, 11, amIWhite ? 12 : -12], fov: 40 }}>
+                  <ambientLight intensity={0.5} />
+                  <directionalLight castShadow position={[10, 20, 10]} intensity={2} shadow-mapSize={[2048, 2048]} shadow-camera-left={-10} shadow-camera-right={10} shadow-camera-top={10} shadow-camera-bottom={-10} />
+                  <pointLight position={[-10, 10, -10]} intensity={1} color="#e8f0ff" />
+                  <OrbitControls enablePan={false} maxPolarAngle={Math.PI / 2.1} minDistance={6} maxDistance={25} />
+                  <group position={[0, -0.2, 0]}>
+                    <Board3D chess={chess} onMove={handleMove} flipped={!amIWhite} />
+                  </group>
+                </Canvas>
+              </div>
             )}
           </div>
         </div>
-      </div>
-
-      {/* ── Turn indicator ── */}
-      {room.gameState === 'playing' && (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '0.5rem 0', flexShrink: 0 }}>
-          <div style={{
-            padding: '0.45rem 1.5rem',
-            background: 'var(--item-bg)',
-            borderRadius: '25px',
-            border: `2px solid ${isMyTurn ? 'var(--success)' : 'var(--item-border)'}`,
-            transition: 'all 0.3s ease',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-          }}>
-            <span style={{ color: isMyTurn ? 'var(--success)' : 'var(--text-secondary)', fontWeight: 950, fontSize: '0.85rem', letterSpacing: '0.1em' }}>
-              {isMyTurn
-                ? '✓ YOUR TURN'
-                : opponent?.name
-                  ? `⏳ ${opponent.name.toUpperCase()}'S TURN`
-                  : 'WAITING FOR OPPONENT'}
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* ── Board area ── */}
-      <div className="mobile-column" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', gap: '8px', padding: '6px' }}>
-
-
-        {/* LEFT sidebar — pieces opponent captured from me */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <CapturedSidebar
-            pieces={theirCaptured}
-            isWhitePieces={amIWhite}
-            advantage={theirAdv}
-            label={`${(opponent?.name ?? 'Opp').slice(0, 6)} took`}
-          />
-        </div>
-
-
-        {/* CENTER — board + winner banner */}
-        <div style={{ flex: 2, position: 'relative', minHeight: 'min(80vw, 80vh)', maxHeight: '100%' }}>
-
-
-          {/* Game over banner */}
-          {room.gameState === 'finished' && (() => {
-            const won = room.winner?.id === me.id;
-            const draw = !room.winner;
-            const color = won ? 'var(--success)' : draw ? 'var(--text-secondary)' : 'var(--error)';
-            const bannerLabel = won ? '🎉 YOU WON!' : draw ? '🤝 DRAW!' : `🏆 ${room.winner?.name} WINS!`;
-            return (
-              <div style={{
-                position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
-                zIndex: 10, display: 'flex', alignItems: 'center', gap: '1rem',
-                background: 'var(--card-bg)',
-                backdropFilter: 'blur(12px)',
-                border: `2px solid ${color}`,
-                borderRadius: '50px',
-                padding: '0.6rem 1.5rem',
-                boxShadow: 'var(--card-shadow)',
-                animation: 'slideDown 0.4s cubic-bezier(0.34,1.56,0.64,1)',
-              }}>
-                <Trophy size={22} color={color} />
-                <span style={{ color, fontWeight: 950, fontSize: '1rem', letterSpacing: '0.06em', whiteSpace: 'nowrap' }}>
-                  {bannerLabel}
-                </span>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                  <button
-                    className="btn btn-primary"
-                    onClick={() => {
-                      if (room.hostId === me.id) {
-                        const othersReady = room.players.every(p => p.id === room.hostId || (room.readyPlayers || []).includes(p.id));
-                        if (othersReady) {
-                          socket.emit('reset-room', { roomId: room.id });
-                        } else {
-                          socket.emit('play-again', { roomId: room.id });
-                        }
-                      } else {
-                        socket.emit('play-again', { roomId: room.id });
-                      }
-                    }}
-                    disabled={room.hostId === me.id && (room.players.length > 1 && !(room.players.every(p => p.id === room.hostId || (room.readyPlayers || []).includes(p.id)))) && (room.readyPlayers || []).includes(me.id)}
-                    style={{ padding: '0.35rem 1.2rem', fontSize: '0.85rem', borderRadius: '20px', marginLeft: '0.4rem', background: 'var(--accent)', border: 'none', fontWeight: 950 }}
-                  >
-                    {(() => {
-                      if (room.hostId !== me.id) {
-                        return (room.readyPlayers || []).includes(me.id) ? 'Ready!' : 'Rematch';
-                      }
-                      const opponent = room.players.find(p => p.id !== room.hostId);
-                      const opponentReady = opponent && (room.readyPlayers || []).includes(opponent.id);
-                      if (!opponent || opponentReady) return 'Start Rematch';
-                      return `Waiting for ${opponent.name}...`;
-                    })()}
-                  </button>
-                  {(room.readyPlayers || []).some(id => id !== me.id) && (
-                    <div style={{ fontSize: '0.65rem', color: 'var(--success)', fontWeight: 950, textAlign: 'center', marginTop: '2px' }}>OPPONENT READY</div>
-                  )}
-                </div>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => window.location.reload()}
-                  style={{ padding: '0.3rem 0.9rem', fontSize: '0.78rem', borderRadius: '20px', marginLeft: '0.4rem' }}
-                >
-                  Exit
-                </button>
-              </div>
-            );
-          })()}
-
-          {boardView === '2d' ? (
-            <Board2D chess={chess} onMove={handleMove} flipped={!amIWhite} />
-          ) : (
-            <Canvas shadows camera={{ position: [0, 11, amIWhite ? 11 : -11], fov: 42 }}>
-              <ambientLight intensity={0.4} />
-              <directionalLight
-                castShadow
-                position={[6, 16, 8]}
-                intensity={1.8}
-                shadow-mapSize={[2048, 2048]}
-              />
-              <pointLight position={[-6, 12, -6]} intensity={1.2} color="#ffffff" />
-              <pointLight position={[6, 10,  6]} intensity={1.0} color="#fffbe8" />
-              <pointLight position={[ 0, 14,  0]} intensity={0.8} color="#e8f0ff" />
-              <pointLight position={[-5,  4, 10]} intensity={0.6} color="#a78bfa" />
-              <OrbitControls
-                enablePan={false}
-                maxPolarAngle={Math.PI / 2.15}
-                minDistance={5}
-                maxDistance={22}
-              />
-              <group position={[0, -0.5, 0]}>
-                <Board3D chess={chess} onMove={handleMove} flipped={!amIWhite} />
-              </group>
-            </Canvas>
-          )}
-        </div>
-
-        {/* RIGHT sidebar — pieces I captured from opponent */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', flexShrink: 0 }}>
-          <CapturedSidebar
-            pieces={myCaptured}
-            isWhitePieces={!amIWhite}
-            advantage={myAdv}
-            label="You took"
-          />
-        </div>
-
       </div>
     </div>
   );
