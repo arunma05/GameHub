@@ -282,31 +282,7 @@ export const Home: React.FC<HomeProps> = ({
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {selectedGame === 'gridorder' && (
-            <div style={{ marginBottom: '0.5rem' }}>
-              <label className="input-label" style={{ fontSize: '0.8rem' }}>GRID SIZE</label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
-                {[3, 4, 5, 6, 7].map(size => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => setGridSize(size)}
-                    className="btn btn-outline"
-                    style={{ 
-                      padding: '0.75rem', 
-                      fontSize: '0.9rem', 
-                      fontWeight: 900,
-                      borderColor: gridSize === size ? 'var(--accent)' : 'var(--item-border)',
-                      background: gridSize === size ? 'var(--accent-glow)' : 'var(--card-bg)',
-                      color: gridSize === size ? 'var(--accent)' : 'var(--text-secondary)'
-                    }}
-                  >
-                    {size}x{size}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+
           {selectedGame === 'gridorder' && (
             <div style={{ marginBottom: '1.5rem' }}>
               <label className="input-label" style={{ fontSize: '0.8rem' }}>SELECT GRID SIZE</label>
