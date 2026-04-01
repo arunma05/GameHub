@@ -13,12 +13,13 @@ import { CssBattle } from './components/CssBattle';
 import { Sudoku } from './components/Sudoku';
 import { SixteenCoins } from './components/SixteenCoins';
 import { Kakuro } from './components/Kakuro';
-import { Crossword } from './components/Crossword';
+import { GridOrder } from './components/GridOrder';
+import { MemoryGame } from './components/MemoryGame';
 import { NewsView } from './components/NewsView';
 
 export const App: React.FC = () => {
-  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword' | 'news'>('dashboard');
-  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword' | null>(null);
+  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'news'>('dashboard');
+  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | null>(null);
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [isDark, setIsDark] = useState<boolean>(() => {
     const saved = localStorage.getItem('theme');
@@ -27,6 +28,7 @@ export const App: React.FC = () => {
   const [newsQuery, setNewsQuery] = useState('Latest tech news');
   const [newsTitle, setNewsTitle] = useState('Tech Industry Updates');
   const [newsSubtitle, setNewsSubtitle] = useState('Stay updated with fresh industry insights.');
+  const [memoryLevel, setMemoryLevel] = useState<number>(6);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -43,8 +45,9 @@ export const App: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>({
     room: null,
     me: null,
-    leaderboards: { bingo: {}, typeracer: {}, chess: {}, quiz: {}, sudoku: {}, kakuro: {}, sixteencoins: {}, crossword: {},
-      flappy: [], cssbattle: []
+    leaderboards: { 
+      bingo: {}, typeracer: [], chess: {}, quiz: {}, sudoku: {}, kakuro: {}, sixteencoins: {}, gridorder: {},
+      flappy: [], cssbattle: {}, memory: {}
     },
     error: null,
   });
@@ -96,15 +99,15 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleSelectGame = (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword') => {
+  const handleSelectGame = (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory') => {
     setSelectedGame(type);
     setGameState(prev => ({ ...prev, room: null, me: null })); 
     if (type === 'flappy') setView('flappy');
     else if (type === 'cssbattle') setView('cssbattle');
     else if (type === 'sudoku') setView('sudoku');
     else if (type === 'sixteencoins') setView('sixteencoins');
-    else if (type === 'crossword') setView('crossword');
     else if (type === 'kakuro') setView('home'); 
+    else if (type === 'memory') setView('home');
     else setView('home');
   };
 
@@ -113,7 +116,7 @@ export const App: React.FC = () => {
     setView('lobby');
   };
 
-  const handleDashboardJoin = (me: GameState['me'], gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword') => {
+  const handleDashboardJoin = (me: GameState['me'], gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory') => {
     setSelectedGame(gameType);
     setGameState(prev => ({ ...prev, me }));
     setView('lobby');
@@ -149,7 +152,7 @@ export const App: React.FC = () => {
     }
 
     if (view === 'cssbattle') {
-      return <CssBattle room={gameState.room} me={gameState.me} leaderboard={gameState.leaderboards.cssbattle} onBack={() => setView('dashboard')} />;
+      return <CssBattle room={gameState.room} me={gameState.me} leaderboard={[]} onBack={() => setView('dashboard')} />;
     }
 
     if (view === 'sudoku') {
@@ -160,8 +163,13 @@ export const App: React.FC = () => {
       return <SixteenCoins room={gameState.room} me={gameState.me} onBack={() => setView('dashboard')} />;
     }
 
-    if (view === 'crossword') {
-      return <Crossword me={gameState.me || undefined} onBack={() => setView('dashboard')} />;
+    if (view === 'memory') {
+      return <MemoryGame 
+        room={gameState.room || undefined} 
+        me={gameState.me || undefined} 
+        level={memoryLevel} 
+        onBack={() => setView('dashboard')} 
+      />;
     }
 
     if (!gameState.room || !gameState.me) {
@@ -171,6 +179,8 @@ export const App: React.FC = () => {
           leaderboards={gameState.leaderboards}
           selectedGame={selectedGame}
           publicRooms={publicRooms}
+          memoryLevel={memoryLevel}
+          onMemoryLevelChange={setMemoryLevel}
         />
       );
     }
@@ -189,7 +199,7 @@ export const App: React.FC = () => {
       } else if (gameState.room.type === 'flappy') {
         return <Flappy room={gameState.room} me={gameState.me} leaderboard={gameState.leaderboards.flappy} onRoomJoined={(me) => setGameState(prev => ({ ...prev, me }))} />;
       } else if (gameState.room.type === 'cssbattle') {
-        return <CssBattle room={gameState.room} me={gameState.me} leaderboard={gameState.leaderboards.cssbattle} onBack={() => setView('dashboard')} />;
+        return <CssBattle room={gameState.room} me={gameState.me} leaderboard={[]} onBack={() => setView('dashboard')} />;
       } else if (gameState.room.type === 'sudoku') {
         return <Sudoku leaderboard={gameState.leaderboards.sudoku} onBack={() => setView('dashboard')} />;
       } else if (gameState.room.type === 'sixteencoins') {
@@ -198,8 +208,10 @@ export const App: React.FC = () => {
         return <Quiz room={gameState.room} me={gameState.me} />;
       } else if (gameState.room.type === 'kakuro') {
         return <Kakuro room={gameState.room} me={gameState.me} leaderboard={gameState.leaderboards.kakuro} onBack={() => setView('dashboard')} />;
-      } else if (gameState.room.type === 'crossword') {
-         return <Crossword me={gameState.me || undefined} onBack={() => setView('dashboard')} />;
+      } else if (gameState.room.type === 'gridorder') {
+        return <GridOrder room={gameState.room} me={gameState.me} leaderboard={{}} onBack={() => setView('dashboard')} />;
+      } else if (gameState.room.type === 'memory') {
+        return <MemoryGame room={gameState.room} me={gameState.me} level={memoryLevel} onBack={() => setView('dashboard')} />;
       }
       return <Game room={gameState.room} me={gameState.me} />;
     }

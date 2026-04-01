@@ -1,6 +1,6 @@
 export interface PublicRoom {
   id: string;
-  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword';
+  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory';
   playerCount: number;
   hostName: string;
 }
@@ -16,7 +16,7 @@ export interface Player {
 
 export interface Room {
   id: string;
-  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword';
+  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory';
   hostId: string;
   players: Player[];
   gameState: 'waiting' | 'starting' | 'playing' | 'finished';
@@ -36,14 +36,18 @@ export interface GameState {
   error: string | null;
   leaderboards: {
     bingo: Record<string, number>;
-    typeracer: Record<string, number>;
+    typeracer: { name: string; wpm: number }[];
     chess: Record<string, number>;
     quiz: Record<string, number>;
     sudoku: Record<string, number>;
     kakuro: Record<string, number>;
     sixteencoins: Record<string, number>;
-    crossword: Record<string, number>;
     flappy: { name: string; score: number }[];
-    cssbattle: { name: string; score: number; time: number }[];
+    cssbattle: Record<number, { name: string; time: number }[]>;
+    gridorder: Record<number, { 
+      bestTimes: { name: string; time: number }[]; 
+      bestMoves: { name: string; moves: number }[]; 
+    }>;
+    memory: Record<number, { name: string; time: number }[]>;
   };
 }

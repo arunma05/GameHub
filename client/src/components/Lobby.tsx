@@ -10,7 +10,7 @@ interface LobbyProps {
 
 export const Lobby: React.FC<LobbyProps> = ({ room, me }) => {
   const isHost = room.hostId === me.id;
-  const isSinglePlayer = room.type === 'flappy' || room.type === 'sudoku' || room.type === 'kakuro' || room.type === 'quiz' || room.type === 'typeracer';
+  const isSinglePlayer = room.type === 'flappy' || room.type === 'sudoku' || room.type === 'kakuro' || room.type === 'quiz' || room.type === 'typeracer' || room.type === 'gridorder' || room.type === 'memory';
   const canStart = isSinglePlayer ? room.players.length >= 1 : room.players.length >= 2;
 
   const handleCopyCode = async () => {
@@ -54,6 +54,7 @@ export const Lobby: React.FC<LobbyProps> = ({ room, me }) => {
               room.type === 'sudoku' ? '🧩 SUDOKU LOBBY' :
               room.type === 'kakuro' ? '🧩 KAKURO LOBBY' :
               room.type === 'sixteencoins' ? '⚔️ 16 COINS LOBBY' :
+              room.type === 'memory' ? '🧠 REMEMBER ME LOBBY' :
               '🎱 BINGO LOBBY'}
           </div>
           <h2 style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>

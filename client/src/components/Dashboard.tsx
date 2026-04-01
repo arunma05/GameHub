@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Gamepad2, Timer, Trophy, Globe, Users, Zap, Brain, Paintbrush, Grid3X3, Sword, RefreshCw } from 'lucide-react';
+import { Gamepad2, Timer, Trophy, Globe, Users, Zap, Brain, Paintbrush, Grid3X3, Sword, LayoutGrid, Lightbulb, HelpCircle } from 'lucide-react';
 import { socket } from '../socket';
 import { Logo } from './Logo';
 import type { Player, PublicRoom } from '../types';
 
 interface DashboardProps {
-  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword') => void;
-  onRoomJoined: (me: Player, gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword') => void;
+  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory') => void;
+  onRoomJoined: (me: Player, gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory') => void;
   publicRooms: PublicRoom[];
   leaderboards: Record<string, any>;
   onSelectNews?: (query: string, title: string, subtitle: string) => void;
@@ -17,12 +17,13 @@ const GAME_META: Record<string, { color: string; label: string; icon: React.Reac
   typeracer: { color: '#3b82f6', label: 'Type Racer', icon: <Timer size={13} /> },
   chess: { color: '#8b5cf6', label: 'Chess', icon: <span style={{ fontSize: '0.85rem' }}>♘</span> },
   flappy: { color: '#fbbf24', label: 'Flappy Bird', icon: <Zap size={13} /> },
-  quiz: { color: '#ec4899', label: 'Tech Quiz', icon: <Brain size={13} /> },
+  quiz: { color: '#ec4899', label: 'Tech Quiz', icon: <HelpCircle size={13} /> },
   cssbattle: { color: '#f43f5e', label: 'CSS Battle', icon: <Paintbrush size={13} /> },
   sudoku: { color: '#22d3ee', label: 'Sudoku', icon: <Grid3X3 size={13} /> },
   kakuro: { color: '#a78bfa', label: 'Kakuro', icon: <Brain size={13} /> },
   sixteencoins: { color: '#6366f1', label: '16 Coins', icon: <Sword size={13} /> },
-  crossword: { color: '#fb7185', label: 'Cross-Tech', icon: <RefreshCw size={13} /> }
+  gridorder: { color: '#f59e0b', label: 'Grid Order', icon: <LayoutGrid size={13} /> },
+  memory: { color: '#ec4899', label: 'Remember Me', icon: <Lightbulb size={13} /> }
 };
 
 const NewsTile: React.FC<{ 
@@ -59,41 +60,50 @@ const NewsTile: React.FC<{
 
 const GlobalLeadersTile: React.FC<{ leaderboards: Record<string, any> }> = ({ leaderboards }) => {
   const getTopPlayer = (gameType: string, data: any) => {
-    if (Array.isArray(data)) {
-      if (data.length === 0) return null;
+    if (gameType === 'typeracer') {
+      if (!Array.isArray(data) || data.length === 0) return null;
       const top = data[0];
-
-      if (gameType === 'flappy') {
-        return { 
-          name: top.name || 'Anonymous', 
-          score: `${(top.score / 1000).toFixed(2)} km`
-        };
-      }
-      if (gameType === 'cssbattle') {
-        const t = top.time || top.score;
-        const m = Math.floor(t / 60);
-        const s = Math.floor(t % 60);
-        return { 
-          name: top.name || 'Anonymous', 
-          score: `${m}:${s < 10 ? '0' : ''}${s}s`
-        };
-      }
-      const unit = 'pts';
-      return { 
-        name: top.name || 'Anonymous', 
-        score: `${Math.round(top.score)}${unit}`
-      };
+      return { name: top.name, score: `${top.wpm} WPM` };
     }
-    if (data && typeof data === 'object') {
+    if (gameType === 'flappy') {
+      if (!Array.isArray(data) || data.length === 0) return null;
+      const top = data[0];
+      return { name: top.name, score: `${(top.score / 1000).toFixed(2)} km` };
+    }
+    if (gameType === 'cssbattle') {
+      // Find level 1 best if exists
+      if (data && data[1] && data[1].length > 0) {
+        const top = data[1][0];
+        const m = Math.floor(top.time / 60);
+        const s = Math.floor(top.time % 60);
+        return { name: top.name, score: `L1 - ${m}:${s < 10 ? '0' : ''}${s}` };
+      }
+      return null;
+    }
+    if (gameType === 'gridorder') {
+      // Find 3x3 best time if exists
+      if (data && data[3] && data[3].bestTimes && data[3].bestTimes.length > 0) {
+        const top = data[3].bestTimes[0];
+        const m = Math.floor(top.time / 60);
+        const s = Math.floor(top.time % 60);
+        return { name: top.name, score: `3x3 - ${m}:${s < 10 ? '0' : ''}${s}` };
+      }
+      return null;
+    }
+    
+    if (gameType === 'memory') {
+      if (data && data[6] && data[6].length > 0) {
+        const top = data[6][0];
+        const m = Math.floor(top.time / 60);
+        const s = top.time % 60;
+        return { name: top.name, score: `Lvl 6 - ${m}:${s < 10 ? '0' : ''}${s}` };
+      }
+      return null;
+    }
+    
+    if (data && typeof data === 'object' && !Array.isArray(data)) {
       const entries = Object.entries(data);
       if (entries.length === 0) return null;
-      if (gameType === 'crossword') {
-        const sorted = entries.sort((a, b) => (a[1] as number) - (b[1] as number));
-        const t = sorted[0][1] as number;
-        const m = Math.floor(t / 60);
-        const s = Math.floor(t % 60);
-        return { name: sorted[0][0], score: `${m}:${s < 10 ? '0' : ''}${s}s` };
-      }
       const sorted = entries.sort((a, b) => (b[1] as number) - (a[1] as number));
       return { name: sorted[0][0], score: `${sorted[0][1]} wins` };
     }
@@ -266,13 +276,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame, onRoomJoined
                 { type: 'bingo' as const, players: 'Multiplayer', color: '#10b981', icon: <Gamepad2 size={32} color="#10b981" />, title: 'BINGO', desc: 'Classic Bingo with a competitive twist. Complete 5 lines to win!' },
                 { type: 'typeracer' as const, players: 'Single/Multiplayer', color: '#3b82f6', icon: <Timer size={32} color="#3b82f6" />, title: 'TYPE RACER', desc: 'Speed typing test. Complete the paragraph first without errors.' },
                 { type: 'chess' as const, players: '2 Player', color: '#8b5cf6', icon: <span style={{ fontSize: '2rem', color: '#8b5cf6' }}>♘</span>, title: 'CHESS', desc: 'Classic game of strategy in full 3D. Checkmate your opponent!' },
-                { type: 'quiz' as const, players: 'Single/Multiplayer', color: '#ec4899', icon: <Brain size={32} color="#ec4899" />, title: 'TECH QUIZ', desc: 'Test your tech knowledge in this fast-paced trivia game!' },
+                { type: 'quiz' as const, players: 'Single/Multiplayer', color: '#ec4899', icon: <HelpCircle size={32} color="#ec4899" />, title: 'TECH QUIZ', desc: 'Test your tech knowledge in this fast-paced trivia game!' },
                 { type: 'cssbattle' as const, players: 'Single Player', color: '#f43f5e', icon: <Paintbrush size={32} color="#f43f5e" />, title: 'CSS BATTLE', desc: 'Code HTML & CSS to match target shapes. Beat the clock and get 100% match!' },
                 { type: 'flappy' as const, players: 'Single Player', color: '#fbbf24', icon: <Zap size={32} color="#fbbf24" />, title: 'FLAPPY BIRD', desc: 'Navigate the bird through pipes. Beat your high score in this fly-high challenge!' },
                 { type: 'sudoku' as const, players: 'Single Player', color: '#22d3ee', icon: <Grid3X3 size={32} color="#22d3ee" />, title: 'SUDOKU', desc: 'Classic 9x9 puzzle. Saves your progress so you can resume anytime!' },
                 { type: 'kakuro' as const, players: 'Single/Multiplayer', color: '#a78bfa', icon: <Brain size={32} color="#a78bfa" />, title: 'KAKURO', desc: 'Challenging number crossword puzzle. Solve single player or race in multiplayer!' },
                 { type: 'sixteencoins' as const, players: '2 Player', color: '#6366f1', icon: <Sword size={32} color="#6366f1" />, title: '16 COINS', desc: 'Classic strategy board game in stunning 3D. Capture all opponent coins to win!' },
-                { type: 'crossword' as const, players: 'Single Player', color: '#fb7185', icon: <RefreshCw size={32} color="#fb7185" />, title: 'CROSS-TECH', desc: 'Tech-themed crossword puzzle. Test your industry knowledge across multiple levels!' },
+                { type: 'gridorder' as const, players: 'Single/Multiplayer', color: '#f59e0b', icon: <LayoutGrid size={32} color="#f59e0b" />, title: 'GRID ORDER', desc: 'Shuffle the numbers into the right order. Race against others or beat your own best time!' },
+                { type: 'memory' as const, players: 'Single/Multiplayer', color: '#ec4899', icon: <Lightbulb size={32} color="#ec4899" />, title: 'REMEMBER ME', desc: 'Test your memory! Match all pairs of cards as fast as you can. Solve single player or race in multiplayer!' },
               ].map(({ type, players, color, icon, title, desc }) => (
                 <div
                   key={type}

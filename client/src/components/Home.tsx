@@ -1,39 +1,53 @@
 import React, { useState } from 'react';
 import { socket } from '../socket';
 import type { Player, PublicRoom } from '../types';
-import { Sparkles, Users, Trophy, Timer, Globe, Lock, Unlock, Zap, Brain, Paintbrush, Grid3X3, Sword, RefreshCw } from 'lucide-react';
+import { Sparkles, Users, Trophy, Timer, Globe, Lock, Unlock, Zap, Brain, Paintbrush, Grid3X3, Sword, LayoutGrid } from 'lucide-react';
 
 interface HomeProps {
   onRoomJoined: (me: Player) => void;
   leaderboards: { 
     bingo: Record<string, number>; 
-    typeracer: Record<string, number>; 
+    typeracer: { name: string; wpm: number }[]; 
     chess: Record<string, number>;
     quiz: Record<string, number>;
     flappy: { name: string; score: number }[];
-    cssbattle: { name: string; score: number; time: number }[];
+    cssbattle: Record<number, { name: string; time: number }[]>;
     sudoku: Record<string, number>;
     kakuro: Record<string, number>;
     sixteencoins: Record<string, number>;
-    crossword: Record<string, number>;
+    gridorder: Record<number, { 
+      bestTimes: { name: string; time: number }[]; 
+      bestMoves: { name: string; moves: number }[]; 
+    }>;
+    memory: Record<number, { name: string; time: number }[]>;
   };
-  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword' | null;
+  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | null;
   publicRooms: PublicRoom[];
+  memoryLevel: number;
+  onMemoryLevelChange: (level: number) => void;
 }
 
-export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selectedGame, publicRooms }) => {
+export const Home: React.FC<HomeProps> = ({ 
+  onRoomJoined, 
+  leaderboards, 
+  selectedGame, 
+  publicRooms, 
+  memoryLevel, 
+  onMemoryLevelChange
+}) => {
   const [name, setName] = useState('');
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [quizAmount, setQuizAmount] = useState(10);
+  const [gridSize, setGridSize] = useState(3);
 
 
   const handleCreateRoom = (isPublic: boolean) => {
     if (!name.trim()) return setError('Please enter your name');
     setIsLoading(true);
-    socket.emit('create-room', { playerName: name, type: selectedGame || 'bingo', isPublic, quizAmount }, (response: { success: boolean; player?: Player; message?: string }) => {
+    socket.emit('create-room', { playerName: name, type: selectedGame || 'bingo', isPublic, quizAmount, gridSize, memoryLevel }, (response: { success: boolean; player?: Player; message?: string }) => {
       if (response.success && response.player) {
         onRoomJoined(response.player);
       } else {
@@ -64,31 +78,131 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
     : publicRooms;
 
 
-  const currentLeaderboard = selectedGame ? leaderboards[selectedGame] : {};
-  let topPlayers: [string, any][] = [];
+  const formatTime = (secs: number) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
 
-  if (Array.isArray(currentLeaderboard)) {
-    // Array of objects (flappy, cssbattle)
+  const renderLeaderboardRows = () => {
+    if (!selectedGame || !leaderboards) return null;
+    const data = leaderboards[selectedGame];
+    if (!data) return null;
+
+    if (selectedGame === 'typeracer') {
+      const top = [...(data as { name: string; wpm: number }[])].sort((a,b) => b.wpm - a.wpm).slice(0, 10);
+      if (top.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+      return top.map((item, index) => (
+        <div key={index} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
+          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <span style={{ width: '24px', opacity: 0.5, fontWeight: 800 }}>#{index+1}</span>
+            <span style={{ fontWeight: 600 }}>{item.name}</span>
+          </div>
+          <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{item.wpm} WPM</span>
+        </div>
+      ));
+    }
+
     if (selectedGame === 'cssbattle') {
-       topPlayers = (currentLeaderboard as any[])
-         .sort((a, b) => a.time - b.time)
-         .slice(0, 5)
-         .map(item => [item.name, item.time]);
-    } else {
-       topPlayers = (currentLeaderboard as any[])
-         .sort((a, b) => b.score - a.score)
-         .slice(0, 5)
-         .map(item => [item.name, item.score]);
+        // Safety: older db might have array for cssbattle or different structure
+        if (typeof data !== 'object' || Array.isArray(data)) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+        
+        const battleData = data as Record<number, { name: string; time: number }[]>;
+        const entries = Object.entries(battleData).filter(([_, rec]) => Array.isArray(rec));
+        
+        if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+        return entries.map(([lvlId, records]) => (
+            <div key={lvlId} style={{ marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Level {lvlId}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {records.slice(0, 3).map((r, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)', fontSize: '0.9rem' }}>
+                           <span style={{ fontWeight: 600 }}>{r.name}</span>
+                           <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{formatTime(r.time)}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        ));
     }
-  } else {
-    // Record<string, number> (sudoku, crossword, etc)
-    const entries = Object.entries(currentLeaderboard);
-    if (selectedGame === 'crossword') {
-      topPlayers = entries.sort(([, a], [, b]) => (a as number) - (b as number)).slice(0, 5);
-    } else {
-      topPlayers = entries.sort(([, a], [, b]) => (b as number) - (a as number)).slice(0, 5);
+
+    if (selectedGame === 'gridorder') {
+        // Safety for type transition
+        if (typeof data !== 'object' || Array.isArray(data)) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+
+        const gridData = data as Record<number, { bestTimes: any[]; bestMoves: any[] }>;
+        const entries = Object.entries(gridData).filter(([_, rec]) => rec && typeof rec === 'object' && ('bestTimes' in rec || 'bestMoves' in rec));
+        
+        if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+        return entries.map(([size, record]) => (
+            <div key={size} style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(0,0,0,0.1)', borderRadius: '16px', border: '1px solid var(--item-border)' }}>
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--accent)', marginBottom: '1rem', textAlign: 'center' }}>{size}x{size} CHALLENGE</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1rem' }}>
+                    <div>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>BEST TIMES</div>
+                        {Array.isArray(record.bestTimes) && record.bestTimes.length > 0 ? record.bestTimes.slice(0, 3).map((r, i) => (
+                            <div key={i} style={{ fontSize: '0.85rem', marginBottom: '0.4rem', color: 'var(--text-primary)' }}>
+                                {i+1}. {r.name} - <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{formatTime(r.time)}</span>
+                            </div>
+                        )) : <div style={{ fontSize: '0.75rem', opacity: 0.3 }}>N/A</div>}
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>FEWEST MOVES</div>
+                        {Array.isArray(record.bestMoves) && record.bestMoves.length > 0 ? record.bestMoves.slice(0, 3).map((r, i) => (
+                            <div key={i} style={{ fontSize: '0.85rem', marginBottom: '0.4rem', color: 'var(--text-primary)' }}>
+                                {i+1}. {r.name} - <span style={{ color: '#10b981', fontWeight: 800 }}>{r.moves}</span>
+                            </div>
+                        )) : <div style={{ fontSize: '0.75rem', opacity: 0.3 }}>N/A</div>}
+                    </div>
+                </div>
+            </div>
+        ));
     }
-  }
+
+    if (selectedGame === 'memory') {
+        if (typeof data !== 'object' || Array.isArray(data)) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+        const memoryData = data as Record<number, { name: string; time: number }[]>;
+        const entries = Object.entries(memoryData).filter(([_, rec]) => Array.isArray(rec));
+        if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+        return entries.map(([lvl, records]) => (
+            <div key={lvl} style={{ marginBottom: '1.5rem' }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Level {lvl} Cards</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {records.slice(0, 3).map((r, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)', fontSize: '0.9rem' }}>
+                           <span style={{ fontWeight: 600 }}>{r.name}</span>
+                           <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{formatTime(r.time)}</span>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        ));
+    }
+
+    if (selectedGame === 'flappy') {
+        const flappy = [...(data as { name: string; score: number }[])].sort((a,b) => b.score - a.score).slice(0, 10);
+        if (flappy.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+        return flappy.map((item, index) => (
+          <div key={index} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
+            <span style={{ fontWeight: 600 }}>{item.name}</span>
+            <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{item.score} <small style={{fontSize: '0.6rem', opacity: 0.6}}>KM</small></span>
+          </div>
+        ));
+    }
+
+    // Default Win Records
+    const entries = Object.entries(data as Record<string, number>).sort(([, a], [, b]) => b - a).slice(0, 10);
+    if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No wins yet</div>;
+    return entries.map(([pName, wins], index) => (
+      <div key={pName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: index === 0 ? '#fbbf24' : 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: index === 0 ? '#000' : 'var(--text-primary)' }}>{index + 1}</span>
+          <span style={{ fontWeight: 600 }}>{pName}</span>
+        </div>
+        <div style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 800 }}>{wins} {wins === 1 ? 'Win' : 'Wins'}</div>
+      </div>
+    ));
+  };
 
   return (
     <div className="container responsive-flex" style={{ alignItems: 'flex-start', gap: '3rem', padding: '4rem 2rem', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -115,7 +229,8 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
              selectedGame === 'sudoku' ? <Grid3X3 size={48} color="#22d3ee" /> :
              selectedGame === 'sixteencoins' ? <Sword size={48} color="#6366f1" /> :
              selectedGame === 'kakuro' ? <Brain size={48} color="#a78bfa" /> :
-             selectedGame === 'crossword' ? <RefreshCw size={48} color="#fb7185" /> :
+             selectedGame === 'gridorder' ? <LayoutGrid size={48} color="#f59e0b" /> :
+             selectedGame === 'memory' ? <Brain size={48} color="#ec4899" /> :
              <Sparkles size={48} color="#60a5fa" />}
             {selectedGame === 'typeracer' ? 'Type Racer' : 
              selectedGame === 'chess' ? 'Chess' : 
@@ -125,7 +240,8 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
              selectedGame === 'sudoku' ? 'Sudoku' :
              selectedGame === 'sixteencoins' ? '16 Coins' :
              selectedGame === 'kakuro' ? 'Kakuro' :
-             selectedGame === 'crossword' ? 'Cross-Tech' :
+             selectedGame === 'gridorder' ? 'Grid Order' :
+             selectedGame === 'memory' ? 'Remember Me' :
              'BINGO'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
@@ -137,7 +253,8 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
              selectedGame === 'sudoku' ? 'Classic 9x9 puzzle' :
              selectedGame === 'sixteencoins' ? 'Capture pieces in this strategy classic' :
              selectedGame === 'kakuro' ? 'Challenging number crossword puzzle' :
-             selectedGame === 'crossword' ? 'The ultimate tech industry crossword' :
+             selectedGame === 'gridorder' ? 'Shuffle the numbers into the right order' :
+             selectedGame === 'memory' ? 'Test your memory and race to match cards' :
              'Real-time multiplayer bingo experience'}
           </p>
         </div>
@@ -165,6 +282,66 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {selectedGame === 'gridorder' && (
+            <div style={{ marginBottom: '0.5rem' }}>
+              <label className="input-label" style={{ fontSize: '0.8rem' }}>GRID SIZE</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+                {[3, 4, 5, 6, 7].map(size => (
+                  <button
+                    key={size}
+                    type="button"
+                    onClick={() => setGridSize(size)}
+                    className="btn btn-outline"
+                    style={{ 
+                      padding: '0.75rem', 
+                      fontSize: '0.9rem', 
+                      fontWeight: 900,
+                      borderColor: gridSize === size ? 'var(--accent)' : 'var(--item-border)',
+                      background: gridSize === size ? 'var(--accent-glow)' : 'var(--card-bg)',
+                      color: gridSize === size ? 'var(--accent)' : 'var(--text-secondary)'
+                    }}
+                  >
+                    {size}x{size}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {selectedGame === 'gridorder' && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="input-label" style={{ fontSize: '0.8rem' }}>SELECT GRID SIZE</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+                {[3, 4, 5, 6, 7].map(size => (
+                  <button
+                    key={size}
+                    onClick={() => setGridSize(size)}
+                    className={`btn ${gridSize === size ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ padding: '0.5rem', fontSize: '0.9rem', height: '40px' }}
+                  >
+                    {size}x{size}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {selectedGame === 'memory' && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="input-label" style={{ fontSize: '0.8rem' }}>SELECT NUMBER OF CARDS</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+                {[6, 8, 10, 12, 14, 16, 18, 20, 22, 24].map(level => (
+                  <button
+                    key={level}
+                    onClick={() => onMemoryLevelChange(level)}
+                    className={`btn ${memoryLevel === level ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ padding: '0.5rem', fontSize: '0.9rem', height: '40px' }}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {selectedGame === 'quiz' && (
             <div style={{ marginBottom: '0.5rem' }}>
               <label className="input-label" style={{ fontSize: '0.8rem' }}>NUMBER OF QUESTIONS</label>
@@ -202,13 +379,13 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
             </button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', margin: '0.5rem 0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', margin: '1rem 0' }}>
             <div style={{ flex: 1, height: '1px', background: 'var(--item-border)' }}></div>
             <span style={{ padding: '0 1.5rem', color: 'var(--text-secondary)', opacity: 0.5, fontSize: '0.85rem', fontWeight: 800, letterSpacing: '0.1em' }}>OR JOIN BY CODE</span>
             <div style={{ flex: 1, height: '1px', background: 'var(--item-border)' }}></div>
           </div>
 
-          <div className="input-group" style={{ marginBottom: 0 }}>
+          <div className="input-group" style={{ marginBottom: '1rem' }}>
             <input
               className="input-field"
               type="text"
@@ -312,45 +489,26 @@ export const Home: React.FC<HomeProps> = ({ onRoomJoined, leaderboards, selected
         </div>
 
         {/* Leaderboard Section */}
-        {showLeaderboard && topPlayers.length > 0 && (
+        {showLeaderboard && (
           <div className="card animate-fade-in" style={{ padding: '2rem', border: '1px solid var(--accent)', background: 'var(--item-bg)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
               <Trophy color="#fbbf24" size={24} />
               <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                {selectedGame === 'typeracer' ? 'Racer Hall of Fame' : 
+                {selectedGame === 'typeracer' ? 'Top WPM Records' : 
                  selectedGame === 'chess' ? 'Chess Grandmasters' : 
                  selectedGame === 'flappy' ? 'Top Flyers' :
                  selectedGame === 'quiz' ? 'Quiz Brainiacs' :
-                 selectedGame === 'cssbattle' ? 'CSS Masters' :
+                 selectedGame === 'cssbattle' ? 'CSS Masters (By Level)' :
                  selectedGame === 'sudoku' ? 'Sudoku Masters' :
                  selectedGame === 'sixteencoins' ? 'Board Tacticians' :
                  selectedGame === 'kakuro' ? 'Kakuro Brainiacs' :
-                 selectedGame === 'crossword' ? 'Tech Gurus' :
+                 selectedGame === 'gridorder' ? 'Grid Overlords (By Size)' :
                  'Bingo Champions'}
               </h3>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {topPlayers.map(([pName, wins], index) => (
-                <div key={pName} style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px',
-                  border: '1px solid var(--item-border)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <span style={{
-                      width: '28px', height: '28px', borderRadius: '50%', background: index === 0 ? '#fbbf24' : 'var(--bg-secondary)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: index === 0 ? '#000' : 'var(--text-primary)'
-                    }}>
-                      {index + 1}
-                    </span>
-                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{pName}</span>
-                  </div>
-                  <div style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 800 }}>
-                    {wins} {wins === 1 ? 'Win' : 'Wins'}
-                  </div>
-                </div>
-              ))}
+              {renderLeaderboardRows()}
             </div>
           </div>
         )}

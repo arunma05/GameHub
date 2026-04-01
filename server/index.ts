@@ -8,6 +8,35 @@ import https from 'https';
 import { generateCard, countCompletedLines } from './utils';
 import { RACER_SENTENCES, getRandomSentence } from './sentences';
 
+function generateSolvableBoard(size: number) {
+  const tiles = [];
+  for (let i = 1; i < size * size; i++) tiles.push(i);
+  tiles.push(null);
+
+  let shuffled = [...tiles];
+  let emptyIndex = size * size - 1;
+  let movesToMake = size * size * 25;
+
+  const getNeighbors = (idx: number, sz: number) => {
+    const res = [];
+    const r = Math.floor(idx / sz);
+    const c = idx % sz;
+    if (r > 0) res.push(idx - sz);
+    if (r < sz - 1) res.push(idx + sz);
+    if (c > 0) res.push(idx - 1);
+    if (c < sz - 1) res.push(idx + 1);
+    return res;
+  };
+
+  for (let i = 0; i < movesToMake; i++) {
+    const ns = getNeighbors(emptyIndex, size);
+    const rand = ns[Math.floor(Math.random() * ns.length)];
+    [shuffled[emptyIndex], shuffled[rand]] = [shuffled[rand], shuffled[emptyIndex]];
+    emptyIndex = rand;
+  }
+  return shuffled;
+}
+
 const app = express();
 app.use(cors());
 
@@ -21,59 +50,93 @@ const CLIENT_DIST = fs.existsSync(path.join(process.cwd(), 'client/dist'))
 
 // Initialize DB if doesn't exist
 if (!fs.existsSync(DB_PATH)) {
-  fs.writeFileSync(DB_PATH, JSON.stringify({ bingo: {}, typeracer: {}, chess: {}, flappy: {}, quiz: {}, cssbattle: [], sudoku: {}, kakuro: {}, crossword: {}, sudokuSaves: {}, sixteencoins: {} }));
+  fs.writeFileSync(DB_PATH, JSON.stringify({ 
+    bingo: {}, typeracer: [], chess: {}, flappy: [], quiz: {}, 
+    cssbattle: {}, sudoku: {}, kakuro: {}, gridorder: {}, memory: {}, sudokuSaves: {}, sixteencoins: {} 
+  }));
 }
 
 function getDB(): any {
   try {
     const data = fs.readFileSync(DB_PATH, 'utf8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    return { 
+      bingo: {}, typeracer: [], chess: {}, flappy: [], quiz: {}, 
+      cssbattle: {}, sudoku: {}, kakuro: {}, gridorder: {}, memory: {}, sudokuSaves: {}, sixteencoins: {}, ...parsed 
+    };
   } catch (e) {
-    return { bingo: {}, typeracer: {}, chess: {}, flappy: [], quiz: {}, cssbattle: [], sudoku: {}, kakuro: {}, sudokuSaves: {}, sixteencoins: {} };
+    return { 
+      bingo: {}, typeracer: [], chess: {}, flappy: [], quiz: {}, 
+      cssbattle: {}, sudoku: {}, kakuro: {}, gridorder: {}, memory: {}, sudokuSaves: {}, sixteencoins: {} 
+    };
   }
 }
 
-function getLeaderboards(): { bingo: Record<string, number>; typeracer: Record<string, number>; chess: Record<string, number>; quiz: Record<string, number>; sudoku: Record<string, number>; kakuro: Record<string, number>; sixteencoins: Record<string, number>; crossword: Record<string, number>; flappy: { name: string; score: number }[]; cssbattle: { name: string; score: number; time: number }[] } {
+function getLeaderboards(): any {
   const db = getDB();
-  
   return { 
     bingo: db.bingo || {}, 
-    typeracer: db.typeracer || {},
+    typeracer: Array.isArray(db.typeracer) ? db.typeracer : [],
     chess: db.chess || {},
     quiz: db.quiz || {},
     sudoku: db.sudoku || {},
     kakuro: db.kakuro || {},
     sixteencoins: db.sixteencoins || {},
-    crossword: db.crossword || {},
+    gridorder: db.gridorder || {},
+    memory: db.memory || {},
     flappy: Array.isArray(db.flappy) ? db.flappy : [],
-    cssbattle: Array.isArray(db.cssbattle) ? db.cssbattle : []
+    cssbattle: db.cssbattle || {}
   };
 }
 
 
-function updatePlayerWin(name: string, type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'kakuro' | 'sixteencoins' | 'crossword', score?: number, time?: number) {
+function updatePlayerWin(name: string, type: string, score?: number, time?: number, level?: number) {
   const db = getDB();
+  
   if (type === 'flappy' && score !== undefined) {
     if (!Array.isArray(db.flappy)) db.flappy = [];
     db.flappy.push({ name, score });
     db.flappy.sort((a: any, b: any) => b.score - a.score);
-    if (db.flappy.length > 100) db.flappy = db.flappy.slice(0, 100);
-  } else if (type === 'cssbattle' && score !== undefined && time !== undefined) {
-    if (!Array.isArray(db.cssbattle)) db.cssbattle = [];
-    db.cssbattle.push({ name, score, time });
-    db.cssbattle.sort((a: any, b: any) => b.score === a.score ? a.time - b.time : b.score - a.score);
-    if (db.cssbattle.length > 100) db.cssbattle = db.cssbattle.slice(0, 100);
-  } else if (type === 'crossword' && time !== undefined) {
-    if (!db.crossword) db.crossword = {};
-    const oldTime = db.crossword[name];
-    if (oldTime === undefined || time < oldTime) {
-      db.crossword[name] = time;
+    if (db.flappy.length > 50) db.flappy = db.flappy.slice(0, 50);
+  } else if (type === 'typeracer' && score !== undefined) {
+    if (!Array.isArray(db.typeracer)) db.typeracer = [];
+    db.typeracer.push({ name, wpm: score });
+    db.typeracer.sort((a: any, b: any) => b.wpm - a.wpm);
+    if (db.typeracer.length > 50) db.typeracer = db.typeracer.slice(0, 50);
+  } else if (type === 'cssbattle' && time !== undefined && level !== undefined) {
+    if (!db.cssbattle) db.cssbattle = {};
+    if (!Array.isArray(db.cssbattle[level])) db.cssbattle[level] = [];
+    db.cssbattle[level].push({ name, time });
+    db.cssbattle[level].sort((a: any, b: any) => a.time - b.time);
+    if (db.cssbattle[level].length > 10) db.cssbattle[level] = db.cssbattle[level].slice(0, 10);
+  } else if (type === 'gridorder' && level !== undefined) {
+    if (!db.gridorder) db.gridorder = {};
+    if (!db.gridorder[level]) db.gridorder[level] = { bestTimes: [], bestMoves: [] };
+    
+    if (time !== undefined) {
+      db.gridorder[level].bestTimes.push({ name, time });
+      db.gridorder[level].bestTimes.sort((a: any, b: any) => a.time - b.time);
+      if (db.gridorder[level].bestTimes.length > 10) db.gridorder[level].bestTimes = db.gridorder[level].bestTimes.slice(0, 10);
     }
-  } else if (type !== 'flappy' && type !== 'cssbattle' && type !== 'crossword') {
+    if (score !== undefined) {
+      db.gridorder[level].bestMoves.push({ name, moves: score });
+      db.gridorder[level].bestMoves.sort((a: any, b: any) => a.moves - b.moves);
+      if (db.gridorder[level].bestMoves.length > 10) db.gridorder[level].bestMoves = db.gridorder[level].bestMoves.slice(0, 10);
+    }
+  } else if (type === 'memory' && time !== undefined && level !== undefined) {
+    if (!db.memory) db.memory = {};
+    if (!Array.isArray(db.memory[level])) db.memory[level] = [];
+    db.memory[level].push({ name, time });
+    db.memory[level].sort((a: any, b: any) => a.time - b.time);
+    if (db.memory[level].length > 10) db.memory[level] = db.memory[level].slice(0, 10);
+  } else {
+    // Standard win count games
     if (!db[type]) db[type] = {};
-    const game = db[type] as Record<string, number>;
-    game[name] = (game[name] || 0) + 1;
+    if (typeof db[type] === 'object' && !Array.isArray(db[type])) {
+       db[type][name] = (db[type][name] || 0) + 1;
+    }
   }
+  
   fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
 }
 
@@ -93,7 +156,7 @@ interface Player {
 
 interface Room {
   id: string;
-  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'crossword';
+  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory';
   hostId: string;
   players: Player[];
   gameState: 'waiting' | 'starting' | 'playing' | 'finished';
@@ -145,7 +208,7 @@ io.on('connection', (socket: Socket) => {
   });
 
   /* ─── CREATE ROOM ─── */
-  socket.on('create-room', ({ playerName, type, isPublic, quizAmount }: { playerName: string; type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro', isPublic?: boolean, quizAmount?: number }, callback: Function) => {
+  socket.on('create-room', ({ playerName, type, isPublic, quizAmount, gridSize, memoryLevel }: { playerName: string; type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory', isPublic?: boolean, quizAmount?: number, gridSize?: number, memoryLevel?: number }, callback: Function) => {
     let roomId = generateRoomCode();
     while (rooms[roomId]) roomId = generateRoomCode();
 
@@ -168,7 +231,9 @@ io.on('connection', (socket: Socket) => {
       gameData: type === 'typeracer' ? getRandomSentence() : 
                 (type === 'chess' ? { fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', turnIndex: 0 } : 
                 (type === 'quiz' ? { quizAmount: quizAmount || 10 } : 
-                (type === 'sixteencoins' ? { coins: {}, readyCount: 0 } : null))),
+                (type === 'gridorder' ? { gridSize: gridSize || 3 } : 
+                (type === 'memory' ? { level: memoryLevel || 6 } :
+                (type === 'sixteencoins' ? { coins: {}, readyCount: 0 } : null))))),
       readyPlayers: [],
     };
 
@@ -210,7 +275,7 @@ io.on('connection', (socket: Socket) => {
     if (!room || room.hostId !== socket.id || room.gameState !== 'waiting') return;
     
     // Single player games or puzzles can start with 1 player
-    const minPlayers = (room.type === 'flappy' || room.type === 'kakuro' || room.type === 'sudoku' || room.type === 'quiz' || room.type === 'typeracer') ? 1 : 2;
+    const minPlayers = (room.type === 'flappy' || room.type === 'kakuro' || room.type === 'sudoku' || room.type === 'quiz' || room.type === 'typeracer' || room.type === 'gridorder' || room.type === 'memory') ? 1 : 2;
     if (room.players.length < minPlayers) return;
 
     if (room.type === 'typeracer') {
@@ -303,6 +368,38 @@ io.on('connection', (socket: Socket) => {
       room.gameData = { level: Math.floor(Math.random() * 2147483647) }; 
       io.to(roomId).emit('game-started', room);
       broadcastActiveRooms();
+    } else if (room.type === 'gridorder') {
+      const size = room.gameData && (room.gameData as any).gridSize ? (room.gameData as any).gridSize : 3;
+      const board = generateSolvableBoard(size);
+      room.gameState = 'playing';
+      room.gameData = { size, board, gridSize: size };
+      io.to(roomId).emit('game-started', room);
+      broadcastActiveRooms();
+    } else if (room.type === 'memory') {
+      const level = room.gameData?.level || 6;
+      const numPairs = level / 2;
+      const icons = Array.from({length: 18}, (_, i) => i);
+      const selected = icons.sort(() => Math.random() - 0.5).slice(0, numPairs);
+      const board = [...selected, ...selected].sort(() => Math.random() - 0.5);
+      
+      room.gameData = { 
+        level, 
+        board, 
+        progress: {} 
+      };
+      room.players.forEach(p => room.gameData!.progress[p.id] = 0);
+      room.gameState = 'starting';
+      io.to(roomId).emit('game-started', room);
+      broadcastActiveRooms();
+
+      setTimeout(() => {
+        const r = rooms[roomId];
+        if (r && r.gameState === 'starting') {
+          r.gameState = 'playing';
+          io.to(roomId).emit('room-updated', r);
+          broadcastActiveRooms();
+        }
+      }, 3500); 
     } else {
       room.players.forEach(p => { 
         p.card = generateCard(); 
@@ -481,6 +578,31 @@ io.on('connection', (socket: Socket) => {
       room.gameData = { level: Math.floor(Math.random() * 2147483647) }; 
       io.to(roomId).emit('game-started', room);
       broadcastActiveRooms();
+    } else if (room.type === 'memory') {
+      const level = room.gameData?.level || 6;
+      const numPairs = level / 2;
+      const icons = Array.from({length: 18}, (_, i) => i);
+      const selected = icons.sort(() => Math.random() - 0.5).slice(0, numPairs);
+      const board = [...selected, ...selected].sort(() => Math.random() - 0.5);
+      
+      room.gameData = { 
+        level, 
+        board, 
+        progress: {} 
+      };
+      room.players.forEach(p => room.gameData!.progress[p.id] = 0);
+      room.gameState = 'starting';
+      io.to(roomId).emit('game-started', room);
+      broadcastActiveRooms();
+
+      setTimeout(() => {
+        const r = rooms[roomId];
+        if (r && r.gameState === 'starting') {
+          r.gameState = 'playing';
+          io.to(roomId).emit('room-updated', r);
+          broadcastActiveRooms();
+        }
+      }, 3500); 
     } else {
       room.players.forEach(p => { 
         p.card = generateCard(); 
@@ -636,7 +758,7 @@ io.on('connection', (socket: Socket) => {
 
       room.winners = [player];
 
-      updatePlayerWin(player.name, 'typeracer');
+      updatePlayerWin(player.name, 'typeracer', player.wpm);
       io.to(roomId).emit('game-over', { winner: player, room });
       io.emit('leaderboard-updated', getLeaderboards());
       broadcastActiveRooms();
@@ -762,8 +884,8 @@ io.on('connection', (socket: Socket) => {
   });
 
   /* ─── CSSBATTLE: SCORE ─── */
-  socket.on('cssbattle-score', ({ name, match, time }: { name: string; match: number; time: number }) => {
-    updatePlayerWin(name, 'cssbattle', match, time);
+  socket.on('cssbattle-score', ({ name, level, time }: { name: string; level: number; time: number }) => {
+    updatePlayerWin(name, 'cssbattle', undefined, time, level);
     io.emit('leaderboard-updated', getLeaderboards());
   });
 
@@ -790,6 +912,64 @@ io.on('connection', (socket: Socket) => {
     } catch(e) {
       callback({ success: false });
     }
+  });
+
+  socket.on('gridorder-win', ({ roomId, time, moves }: { roomId: string, time: number, moves: number }) => {
+    const room = rooms[roomId];
+    if (!room || room.gameState !== 'playing' || room.type !== 'gridorder') return;
+    
+    room.gameState = 'finished';
+    const player = room.players.find(p => p.id === socket.id);
+    if (player) {
+      room.winner = player;
+      room.winners = [player];
+      const size = room.gameData.gridSize || 3;
+      updatePlayerWin(player.name, 'gridorder', moves, time, size);
+      io.to(roomId).emit('game-over', { winner: player, room });
+      io.emit('leaderboard-updated', getLeaderboards());
+      broadcastActiveRooms();
+    }
+  });
+
+  socket.on('gridorder-score', ({ score, time, name, gridSize }: { score: number, time: number, name: string, gridSize: number }) => {
+    updatePlayerWin(name, 'gridorder', score, time, gridSize);
+    io.emit('leaderboard-updated', getLeaderboards());
+  });
+
+  /* ─── MEMORY: SCORE ─── */
+  socket.on('memory-score', ({ name, level, time }: { name: string; level: number; time: number }) => {
+    updatePlayerWin(name, 'memory', undefined, time, level);
+    io.emit('leaderboard-updated', getLeaderboards());
+  });
+
+  socket.on('memory-match', ({ roomId, matches }: { roomId: string; matches: number }) => {
+    const room = rooms[roomId];
+    if (!room || room.gameState !== 'playing' || room.type !== 'memory') return;
+    if (room.gameData && room.gameData.progress) {
+      room.gameData.progress[socket.id] = matches;
+      io.to(roomId).emit('room-updated', room);
+    }
+  });
+
+  socket.on('memory-win', ({ roomId, time }: { roomId: string; time: number }) => {
+    const room = rooms[roomId];
+    if (!room || room.gameState !== 'playing' || room.type !== 'memory') return;
+    
+    const player = room.players.find(p => p.id === socket.id);
+    if (!player) return;
+
+    if (!room.winners) room.winners = [];
+    room.winners.push(player);
+    
+    room.gameState = 'finished';
+    room.winner = player;
+
+    const level = room.gameData.level || 6;
+    updatePlayerWin(player.name, 'memory', undefined, time, level);
+    
+    io.to(roomId).emit('game-over', { winner: room.winner, room });
+    io.emit('leaderboard-updated', getLeaderboards());
+    broadcastActiveRooms();
   });
 
   socket.on('sudoku-win', ({ name }: { name: string }) => {
@@ -819,17 +999,6 @@ io.on('connection', (socket: Socket) => {
         broadcastActiveRooms();
       }
     }
-  });
-
-  // --- CROSSWORD handlers ---
-  socket.on('crossword-win', ({ name, time }: { name: string; time: number }) => {
-    updatePlayerWin(name, 'crossword', undefined, time);
-    io.emit('leaderboard-updated', getLeaderboards());
-    socket.emit('crossword-leaderboard', getLeaderboards().crossword);
-  });
-
-  socket.on('get-crossword-leaderboard', () => {
-    socket.emit('crossword-leaderboard', getLeaderboards().crossword);
   });
 
   socket.on('get-leaderboards', () => {

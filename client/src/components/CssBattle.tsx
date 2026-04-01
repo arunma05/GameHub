@@ -221,9 +221,9 @@ export const CssBattle: React.FC<CssBattleProps> = ({ me, leaderboard, onBack })
         setIsPlaying(false);
         confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
         if (me) {
-          socket.emit('cssbattle-score', { name: me.name, match: 100, time: elapsed });
+          socket.emit('cssbattle-score', { name: me.name, level: activeLevel.id, time: elapsed });
         } else if (playerName) {
-          socket.emit('cssbattle-score', { name: playerName, match: 100, time: elapsed });
+          socket.emit('cssbattle-score', { name: playerName, level: activeLevel.id, time: elapsed });
         }
       }
     } catch (e) {

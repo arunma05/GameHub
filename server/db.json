@@ -31,22 +31,6 @@
     "eertw": 1
   },
   "chess": {},
-  "quiz": {
-    "fdghderfghdef": 1,
-    "fddfg": 1,
-    "retewrt": 1,
-    "tyr": 1,
-    "trurtu": 1,
-    "tyerty": 1,
-    "sdersadry": 1,
-    "ETEWR": 1,
-    "ftghfr": 1
-  },
-  "sudoku": {},
-  "sixteencoins": {
-    "rtewt": 1,
-    "rty": 1
-  },
   "flappy": [
     {
       "name": "rr",
@@ -321,6 +305,17 @@
       "score": 291.1999999999995
     }
   ],
+  "quiz": {
+    "fdghderfghdef": 1,
+    "fddfg": 1,
+    "retewrt": 1,
+    "tyr": 1,
+    "trurtu": 1,
+    "tyerty": 1,
+    "sdersadry": 1,
+    "ETEWR": 1,
+    "ftghfr": 1
+  },
   "cssbattle": [
     {
       "name": "erte",
@@ -343,6 +338,67 @@
       "time": 13
     }
   ],
+  "sudoku": {},
+  "kakuro": {},
+  "gridorder": {
+    "3": {
+      "bestTimes": [
+        {
+          "name": "te45",
+          "time": 25
+        }
+      ],
+      "bestMoves": [
+        {
+          "name": "te45",
+          "moves": 40
+        }
+      ]
+    },
+    "ytrty": 1
+  },
+  "memory": {
+    "6": [
+      {
+        "name": "fgfgrt",
+        "time": 10
+      },
+      {
+        "name": "Player",
+        "time": 11
+      },
+      {
+        "name": "Player",
+        "time": 11
+      },
+      {
+        "name": "werw",
+        "time": 12
+      },
+      {
+        "name": "Player",
+        "time": 17
+      },
+      {
+        "name": "Player",
+        "time": 17
+      },
+      {
+        "name": "erte",
+        "time": 139
+      }
+    ],
+    "8": [
+      {
+        "name": "Player",
+        "time": 30
+      },
+      {
+        "name": "Player",
+        "time": 30
+      }
+    ]
+  },
   "sudokuSaves": {
     "saEWWQR": {
       "puzzle": "8--9-4--531---6-----2-------5-2--9------7------4----7-2-3-5---1------7-89---8--2-",
@@ -373,6 +429,16 @@
       "current": "785--1--41643-92583---5----5-------9--29-75-34--5--8172-38--791-----3-----17-438-",
       "solution": "785621934164379258329458176537186429812947563496532817243865791978213645651794382",
       "timeElapsed": 2
+    },
+    "fsrdg": {
+      "puzzle": "-351---261-954-8-3-----31--4536--9-7-9---5-34------6--94---17-8376-245---81--7---",
+      "current": "-351---261-954-8-3-----31--4536--9-7-9---5-34------6--94---17-8376-245---81--7---",
+      "solution": "735198426129546873864273159453682917698715234217439685942351768376824591581967342",
+      "timeElapsed": 6
     }
+  },
+  "sixteencoins": {
+    "rtewt": 1,
+    "rty": 1
   }
 }
