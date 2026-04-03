@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { socket } from '../socket';
 import type { Player, Room } from '../types';
-import { Trophy, Timer, Car, RefreshCw, Skull, ArrowLeft } from 'lucide-react';
+import { Trophy, Car, RefreshCw, Skull } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface RacerProps {
