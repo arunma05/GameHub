@@ -8,10 +8,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['arun_logo.png'],
+      includeAssets: ['funarcade_logo.png'],
       manifest: {
-        name: 'Fun Arcade',
-        short_name: 'Arcade',
+        name: 'FunArcade',
+        short_name: 'FunArcade',
         description: 'Premium Multiplayer Arcade Suite',
         theme_color: '#0f172a',
         background_color: '#0f172a',
@@ -19,12 +19,12 @@ export default defineConfig({
         orientation: 'portrait',
         icons: [
           {
-            src: 'arun_logo.png',
+            src: 'funarcade_logo.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'arun_logo.png',
+            src: 'funarcade_logo.png',
             sizes: '512x512',
             type: 'image/png'
           }

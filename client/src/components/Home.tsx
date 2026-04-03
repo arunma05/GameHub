@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { socket } from '../socket';
 import type { Player, PublicRoom } from '../types';
-import { Sparkles, Users, Trophy, Timer, Globe, Lock, Unlock, Zap, Brain, Paintbrush, Grid3X3, Sword, LayoutGrid } from 'lucide-react';
+import { Sparkles, Users, Trophy, Timer, Globe, Lock, Unlock, Zap, Brain, Paintbrush, Grid3X3, Sword, LayoutGrid, HelpCircle } from 'lucide-react';
+import { TRIVIA_TOPICS } from '../constants/TriviaTopics';
 
 interface HomeProps {
   onRoomJoined: (me: Player) => void;
@@ -25,6 +26,9 @@ interface HomeProps {
   publicRooms: PublicRoom[];
   memoryLevel: number;
   onMemoryLevelChange: (level: number) => void;
+  kakuroLevel: number | 'All';
+  onKakuroLevelChange: (level: number | 'All') => void;
+  playerName?: string;
 }
 
 export const Home: React.FC<HomeProps> = ({ 
@@ -33,21 +37,36 @@ export const Home: React.FC<HomeProps> = ({
   selectedGame, 
   publicRooms, 
   memoryLevel, 
-  onMemoryLevelChange
+  onMemoryLevelChange,
+  kakuroLevel,
+  onKakuroLevelChange,
+  playerName
 }) => {
-  const [name, setName] = useState('');
+  const [name] = useState(playerName || '');
   const [roomCode, setRoomCode] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [quizAmount, setQuizAmount] = useState(10);
+  const [selectedTopicIdx, setSelectedTopicIdx] = useState(0);
   const [gridSize, setGridSize] = useState(3);
 
 
   const handleCreateRoom = (isPublic: boolean) => {
     if (!name.trim()) return setError('Please enter your name');
     setIsLoading(true);
-    socket.emit('create-room', { playerName: name, type: selectedGame || 'bingo', isPublic, quizAmount, gridSize, memoryLevel }, (response: { success: boolean; player?: Player; message?: string }) => {
+    const selectedTopic = TRIVIA_TOPICS[selectedTopicIdx];
+    socket.emit('create-room', { 
+      playerName: name, 
+      type: selectedGame || 'bingo', 
+      isPublic, 
+      quizAmount, 
+      quizCategory: selectedTopic.category,
+      quizDifficulty: selectedTopic.difficulty,
+      gridSize, 
+      memoryLevel,
+      kakuroLevel 
+    }, (response: { success: boolean; player?: Player; message?: string }) => {
       if (response.success && response.player) {
         onRoomJoined(response.player);
       } else {
@@ -210,12 +229,6 @@ export const Home: React.FC<HomeProps> = ({
       {/* Left Column: Create / Join Action */}
       <div className="card animate-fade-in responsive-card-width" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '3rem' }}>
 
-        <button
-          onClick={() => window.location.reload()}
-          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', width: 'fit-content', padding: 0 }}
-        >
-          ← Back to Dashboard
-        </button>
 
 
 
@@ -224,7 +237,7 @@ export const Home: React.FC<HomeProps> = ({
             {selectedGame === 'typeracer' ? <Timer size={48} color="#60a5fa" /> : 
              selectedGame === 'chess' ? <span style={{ fontSize: '3rem', color: '#8b5cf6' }}>♘</span> : 
              selectedGame === 'flappy' ? <Zap size={48} color="#fbbf24" /> :
-             selectedGame === 'quiz' ? <Brain size={48} color="#ec4899" /> :
+             selectedGame === 'quiz' ? <HelpCircle size={48} color="#ec4899" /> :
              selectedGame === 'cssbattle' ? <Paintbrush size={48} color="#f43f5e" /> :
              selectedGame === 'sudoku' ? <Grid3X3 size={48} color="#22d3ee" /> :
              selectedGame === 'sixteencoins' ? <Sword size={48} color="#6366f1" /> :
@@ -235,7 +248,7 @@ export const Home: React.FC<HomeProps> = ({
             {selectedGame === 'typeracer' ? 'Type Racer' : 
              selectedGame === 'chess' ? 'Chess' : 
              selectedGame === 'flappy' ? 'Flappy Bird' :
-             selectedGame === 'quiz' ? 'Tech Quiz' :
+             selectedGame === 'quiz' ? 'Trivia' :
              selectedGame === 'cssbattle' ? 'CSS Battle' :
              selectedGame === 'sudoku' ? 'Sudoku' :
              selectedGame === 'sixteencoins' ? '16 Coins' :
@@ -248,7 +261,7 @@ export const Home: React.FC<HomeProps> = ({
             {selectedGame === 'typeracer' ? 'Speed typing arena' : 
              selectedGame === 'chess' ? 'Classic 3D Strategy' : 
              selectedGame === 'flappy' ? 'High-flying arcade challenge' :
-             selectedGame === 'quiz' ? 'Test your tech knowledge' :
+             selectedGame === 'quiz' ? 'Test your knowledge across 50+ topics' :
              selectedGame === 'cssbattle' ? 'Replicate shapes using HTML & CSS' :
              selectedGame === 'sudoku' ? 'Classic 9x9 puzzle' :
              selectedGame === 'sixteencoins' ? 'Capture pieces in this strategy classic' :
@@ -266,19 +279,19 @@ export const Home: React.FC<HomeProps> = ({
         )}
 
         <div className="input-group">
-          <label className="input-label" style={{ fontSize: '0.9rem' }}>YOUR PLAYER NAME</label>
-          <input
-            className="input-field"
-            type="text"
-            placeholder="e.g. Player One"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              setError('');
-            }}
-            maxLength={15}
-            style={{ fontSize: '1.2rem', padding: '1.25rem' }}
-          />
+          <label className="input-label" style={{ fontSize: '0.9rem' }}>PLAYING AS</label>
+          <div style={{ 
+            fontSize: '1.2rem', 
+            padding: '1.25rem', 
+            background: 'var(--item-bg)', 
+            borderRadius: '16px', 
+            border: '1px solid var(--accent)', 
+            color: 'var(--accent)',
+            fontWeight: 800,
+            textAlign: 'center'
+          }}>
+            {name}
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -318,19 +331,60 @@ export const Home: React.FC<HomeProps> = ({
               </div>
             </div>
           )}
-          {selectedGame === 'quiz' && (
-            <div style={{ marginBottom: '0.5rem' }}>
-              <label className="input-label" style={{ fontSize: '0.8rem' }}>NUMBER OF QUESTIONS</label>
-              <select 
-                 className="input-field"
-                 value={quizAmount} 
-                 onChange={e => setQuizAmount(parseInt(e.target.value))}
-                 style={{ width: '100%', fontSize: '1rem', padding: '0.8rem', background: 'var(--item-bg)', color: 'var(--text-primary)', border: '1px solid var(--item-border)' }}
+          {selectedGame === 'kakuro' && (
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="input-label" style={{ fontSize: '0.8rem' }}>SELECT DIFFICULTY</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem' }}>
+                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(level => (
+                  <button
+                    key={level}
+                    onClick={() => onKakuroLevelChange(level)}
+                    className={`btn ${kakuroLevel === level ? 'btn-primary' : 'btn-outline'}`}
+                    style={{ padding: '0.5rem', fontSize: '0.9rem', height: '40px' }}
+                  >
+                    L{level}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => onKakuroLevelChange('All')}
+                className={`btn ${kakuroLevel === 'All' ? 'btn-primary' : 'btn-outline'}`}
+                style={{ width: '100%', marginTop: '0.5rem', padding: '0.5rem', fontSize: '0.9rem', height: '40px' }}
               >
-                 <option value={10} style={{ background: 'var(--card-bg)' }}>10 Questions</option>
-                 <option value={25} style={{ background: 'var(--card-bg)' }}>25 Questions</option>
-                 <option value={50} style={{ background: 'var(--card-bg)' }}>50 Questions</option>
-              </select>
+                Random Challenges (All Levels)
+              </button>
+            </div>
+          )}
+          {selectedGame === 'quiz' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '0.5rem' }}>
+              <div>
+                <label className="input-label" style={{ fontSize: '0.8rem' }}>SELECT TOPIC</label>
+                <select 
+                  className="input-field"
+                  value={selectedTopicIdx} 
+                  onChange={e => setSelectedTopicIdx(parseInt(e.target.value))}
+                  style={{ width: '100%', fontSize: '0.95rem', padding: '1rem', background: 'var(--item-bg)', color: 'var(--text-primary)', border: '1px solid var(--item-border)', borderRadius: '14px' }}
+                >
+                  {TRIVIA_TOPICS.map((t, idx) => (
+                    <option key={idx} value={idx} style={{ background: 'var(--card-bg)' }}>
+                      {t.tech ? '🚀 ' : '📚 '}{t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="input-label" style={{ fontSize: '0.8rem' }}>QUESTIONS</label>
+                <select 
+                  className="input-field"
+                  value={quizAmount} 
+                  onChange={e => setQuizAmount(parseInt(e.target.value))}
+                  style={{ width: '100%', fontSize: '1rem', padding: '0.8rem', background: 'var(--item-bg)', color: 'var(--text-primary)', border: '1px solid var(--item-border)', borderRadius: '14px' }}
+                >
+                  <option value={10} style={{ background: 'var(--card-bg)' }}>10 Questions</option>
+                  <option value={25} style={{ background: 'var(--card-bg)' }}>25 Questions</option>
+                  <option value={50} style={{ background: 'var(--card-bg)' }}>50 Questions</option>
+                </select>
+              </div>
             </div>
           )}
 
@@ -414,17 +468,6 @@ export const Home: React.FC<HomeProps> = ({
             </div>
           </div>
 
-          <div style={{ marginBottom: '0.5rem' }}>
-            <input
-              className="input-field"
-              type="text"
-              placeholder="Enter your name to join a room..."
-              value={name}
-              onChange={e => { setName(e.target.value); setError(''); }}
-              maxLength={15}
-              style={{ fontSize: '1rem', padding: '0.9rem 1.1rem', width: '100%', boxSizing: 'border-box' }}
-            />
-          </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '350px', overflowY: 'auto', paddingRight: '0.5rem' }}>
             {filteredRooms.length === 0 ? (

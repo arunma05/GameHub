@@ -49,11 +49,12 @@ export const Lobby: React.FC<LobbyProps> = ({ room, me }) => {
              {room.type === 'typeracer' ? '🏎️ TYPERACER LOBBY' : 
               room.type === 'chess' ? '♘ CHESS LOBBY' : 
               room.type === 'flappy' ? '🐦 FLAPPY LOBBY' :
-              room.type === 'quiz' ? '🧠 TECH QUIZ LOBBY' :
+              room.type === 'quiz' ? '🧠 TRIVIA LOBBY' :
               room.type === 'cssbattle' ? '🎨 CSS BATTLE LOBBY' :
               room.type === 'sudoku' ? '🧩 SUDOKU LOBBY' :
-              room.type === 'kakuro' ? '🧩 KAKURO LOBBY' :
-              room.type === 'sixteencoins' ? '⚔️ 16 COINS LOBBY' :
+              room.type === 'kakuro' ? '🧩 KAKURO LOBBY' : 
+              room.type === 'sixteencoins' ? '⚔️ 16 COINS LOBBY' : 
+              room.type === 'gridorder' ? '🔢 GRID ORDER LOBBY' :
               room.type === 'memory' ? '🧠 REMEMBER ME LOBBY' :
               '🎱 BINGO LOBBY'}
           </div>

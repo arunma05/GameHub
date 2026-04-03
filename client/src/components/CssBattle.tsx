@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { socket } from '../socket';
 import type { Room, Player } from '../types';
-import { Paintbrush, Trophy, CheckCircle, ArrowLeft, Target, Eye, Code } from 'lucide-react';
+import { Paintbrush, Trophy, CheckCircle, Target, Eye, Code } from 'lucide-react';
 import pixelmatch from 'pixelmatch';
 import confetti from 'canvas-confetti';
 import { toCanvas } from 'html-to-image';
@@ -10,7 +10,7 @@ interface CssBattleProps {
   room: Room | null;
   me: Player | null;
   leaderboard: { name: string; score: number; time: number }[];
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 const LEVELS = [
@@ -159,8 +159,12 @@ export const CssBattle: React.FC<CssBattleProps> = ({ me, leaderboard, onBack })
   const [startTime, setStartTime] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [matchPercent, setMatchPercent] = useState(0);
-  const [playerName, setPlayerName] = useState('');
+  const [playerName] = useState(() => {
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved).name : '';
+  });
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+  const [copiedColor, setCopiedColor] = useState<string | null>(null);
 
   const targetIframeRef = useRef<HTMLIFrameElement>(null);
   const outputIframeRef = useRef<HTMLIFrameElement>(null);
@@ -268,8 +272,9 @@ export const CssBattle: React.FC<CssBattleProps> = ({ me, leaderboard, onBack })
 
   if (!isPlaying && matchPercent !== 100) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '2rem', background: 'var(--bg-primary)' }}>
-        <div className="card" style={{ maxWidth: '600px', width: '100%', padding: '3rem', textAlign: 'center', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-primary)' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+          <div className="card" style={{ maxWidth: '600px', width: '100%', padding: '3rem', textAlign: 'center', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
           <Paintbrush size={60} color="var(--accent)" style={{ marginBottom: '1rem' }} />
           <h1 style={{ color: 'var(--text-primary)', marginBottom: '0.5rem', fontWeight: 950, fontSize: '2.5rem' }}>CSS BATTLE</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2rem', fontWeight: 700 }}>
@@ -301,18 +306,13 @@ export const CssBattle: React.FC<CssBattleProps> = ({ me, leaderboard, onBack })
             </div>
           </div>
 
-          {!me && (
-            <input
-              className="input-field"
-              placeholder="YOUR NAME"
-              value={playerName}
-              onChange={e => setPlayerName(e.target.value)}
-              style={{ width: '100%', marginBottom: '1.5rem', textAlign: 'center', fontWeight: 800 }}
-            />
-          )}
+          <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>PLAYER</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 950, color: 'var(--text-primary)', textTransform: 'uppercase' }}>{playerName || 'ANONYMOUS'}</div>
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
-            <button className="btn btn-primary" onClick={handleStart} style={{ height: '60px', fontSize: '1.2rem', fontWeight: 950 }} disabled={!me && !playerName.trim()}>
+            <button className="btn btn-primary" onClick={handleStart} style={{ height: '60px', fontSize: '1.2rem', fontWeight: 950 }} disabled={!playerName.trim()}>
               ENTER BATTLE
             </button>
             <button className="btn btn-outline" onClick={onBack} style={{ height: '50px', fontWeight: 800 }}>
@@ -321,42 +321,44 @@ export const CssBattle: React.FC<CssBattleProps> = ({ me, leaderboard, onBack })
           </div>
         </div>
       </div>
+    </div>
     );
   }
 
   return (
-    <div className="no-mobile-padding" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)', width: '100%', padding: 0, margin: 0 }}>
-      {/* Header */}
-      <div style={{ padding: isMobile ? '0.65rem 0.75rem' : '0.65rem clamp(1rem, 4vw, 1.5rem)', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10, flexWrap: 'wrap', gap: '0.5rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button onClick={() => { setIsPlaying(false); onBack(); }} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '10px', padding: 0 }}>
-            <ArrowLeft size={18} />
-          </button>
-          <h2 style={{ margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 950, fontSize: '1rem', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
-            <Paintbrush size={18} color="var(--accent)" /> CSS BATTLE
-          </h2>
-        </div>
-        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>MATCH</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 950, color: matchPercent === 100 ? 'var(--success)' : (matchPercent > 90 ? '#fbbf24' : 'var(--text-primary)') }}>
-              {matchPercent}%
+    <div className="no-mobile-padding" style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-primary)', width: '100%', padding: 0, margin: 0 }}>
+      <div style={{ padding: '0.65rem 1rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 5 }}>
+          <div style={{ display: 'flex', gap: isMobile ? '1.5rem' : '3rem', alignItems: 'center' }}>
+            <div style={{ textAlign: 'center', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.1em' }}>MATCH</span>
+              <span style={{ fontSize: isMobile ? '1.1rem' : '1.3rem', fontWeight: 950, color: matchPercent === 100 ? 'var(--success)' : (matchPercent > 90 ? '#fbbf24' : 'var(--text-primary)') }}>
+                {matchPercent}%
+              </span>
+            </div>
+            <div style={{ width: '1px', height: '20px', background: 'var(--item-border)', opacity: 0.4 }} />
+            <div style={{ textAlign: 'center', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.1em' }}>TIME</span>
+              <span style={{ fontSize: isMobile ? '1.1rem' : '1.3rem', fontWeight: 950, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
+                {formatTime(elapsed)}
+              </span>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>TIME</div>
-            <div style={{ fontSize: '1.25rem', fontWeight: 950, color: 'var(--accent)' }}>
-              {formatTime(elapsed)}
-            </div>
-          </div>
-        </div>
       </div>
 
-      <div className="no-mobile-padding" style={{ padding: isMobile ? '0' : 'clamp(0px, 2vw, 1.5rem)', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', width: '100%', margin: 0 }}>
-        <div className="dashboard-layout no-mobile-padding" style={{ maxWidth: isMobile ? '100%' : '1440px', margin: '0 auto', width: '100%', flex: 1, display: 'flex', gap: isMobile ? '0' : 'clamp(1rem, 3vw, 3rem)' }}>
+      <div className="no-mobile-padding" style={{ padding: isMobile ? '0.5rem' : 'clamp(0px, 2vw, 1.5rem)', flex: 1, display: 'flex', flexDirection: 'column', width: '100%', margin: 0 }}>
+        <div className="dashboard-layout no-mobile-padding" style={{ 
+          maxWidth: isMobile ? '100%' : '1440px', 
+          margin: '0 auto', 
+          width: '100%', 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: isMobile ? '1.5rem' : 'clamp(1rem, 3vw, 3rem)',
+          alignItems: isMobile ? 'stretch' : 'flex-start'
+        }}>
 
           {/* Main Area: Editors */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0, width: '100%' }}>
             {matchPercent === 100 && (
               <div className="card" style={{ padding: '2rem', textAlign: 'center', background: 'var(--success-glow)', border: '2px solid var(--success)', borderRadius: '24px' }}>
                 <CheckCircle size={48} color="var(--success)" style={{ margin: '0 auto 1rem auto' }} />
@@ -369,34 +371,69 @@ export const CssBattle: React.FC<CssBattleProps> = ({ me, leaderboard, onBack })
               </div>
             )}
 
-            <div className="card card-mobile-full" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: '#1e1e1e', border: '1px solid #333', borderRadius: '24px', minHeight: '60vh', padding: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1.5rem', background: '#252526', borderBottom: '1px solid #333' }}>
+            <div className="card card-mobile-full shadow-lg" style={{ 
+              flex: 1, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden', 
+              background: '#1e1e1e', 
+              border: '1px solid #333', 
+              borderRadius: '24px', 
+              minHeight: '85vh', 
+              padding: 0,
+              boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.85rem 1.5rem', background: '#252526', borderBottom: '1px solid #333' }}>
                 <Code size={16} color="#4ade80" />
-                <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 800, letterSpacing: '0.1em' }}>HTML EDITOR</span>
+                <span style={{ fontSize: '0.75rem', color: '#999', fontWeight: 900, letterSpacing: '0.15em' }}>HTML EDITOR</span>
               </div>
               <textarea
                 value={userHtml}
                 onChange={e => setUserHtml(e.target.value)}
                 disabled={matchPercent === 100}
                 spellCheck={false}
-                style={{ flex: 2, background: 'transparent', color: '#d4d4d4', padding: '1rem 0.5rem', border: 'none', resize: 'none', fontFamily: 'monospace', fontSize: '0.95rem', outline: 'none', lineHeight: '1.6' }}
+                style={{ 
+                  flex: 1, 
+                  background: 'transparent', 
+                  color: '#d4d4d4', 
+                  padding: '1.25rem', 
+                  border: 'none', 
+                  resize: 'none', 
+                  fontFamily: '"Fira Code", monospace', 
+                  fontSize: '0.9rem', 
+                  outline: 'none', 
+                  lineHeight: '1.6',
+                  width: '100%'
+                }}
               />
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem 1.5rem', background: '#252526', borderBottom: '1px solid #333', borderTop: '1px solid #333' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.85rem 1.5rem', background: '#252526', borderBottom: '1px solid #333', borderTop: '1px solid #333' }}>
                 <Code size={16} color="#60a5fa" />
-                <span style={{ fontSize: '0.8rem', color: '#999', fontWeight: 800, letterSpacing: '0.1em' }}>CSS EDITOR</span>
+                <span style={{ fontSize: '0.75rem', color: '#999', fontWeight: 900, letterSpacing: '0.15em' }}>CSS EDITOR</span>
               </div>
               <textarea
                 value={userCss}
                 onChange={e => setUserCss(e.target.value)}
                 disabled={matchPercent === 100}
                 spellCheck={false}
-                style={{ flex: 3, background: 'transparent', color: '#d4d4d4', padding: '1rem 0.5rem', border: 'none', resize: 'none', fontFamily: 'monospace', fontSize: '0.95rem', outline: 'none', lineHeight: '1.6' }}
+                style={{ 
+                  flex: 2, 
+                  background: 'transparent', 
+                  color: '#d4d4d4', 
+                  padding: '1.25rem', 
+                  border: 'none', 
+                  resize: 'none', 
+                  fontFamily: '"Fira Code", monospace', 
+                  fontSize: '0.9rem', 
+                  outline: 'none', 
+                  lineHeight: '1.6',
+                  width: '100%'
+                }}
               />
             </div>
           </div>
 
           {/* Sidebar: Preview and Leaderboard */}
-          <div className="dashboard-sidebar" style={{ flexShrink: 0 }}>
+          <div className="dashboard-sidebar" style={{ flexShrink: 0, width: isMobile ? '100%' : '320px' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
               <div className="card" style={{ padding: '1.25rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)', borderRadius: '24px' }}>
@@ -419,16 +456,63 @@ export const CssBattle: React.FC<CssBattleProps> = ({ me, leaderboard, onBack })
                 </div>
 
                 {/* Color Palette in Sidebar */}
-                <div style={{ marginTop: '1.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', justifyContent: 'center' }}>
-                  {activeLevel.colors.map(c => (
-                    <div
-                      key={c}
-                      onClick={() => navigator.clipboard.writeText(c)}
-                      style={{ width: '30px', height: '30px', borderRadius: '8px', background: c, cursor: 'pointer', border: '1px solid rgba(0,0,0,0.1)', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-                      title="Copy Hex"
-                    />
-                  ))}
+                <div style={{ marginTop: '1.5rem', position: 'relative' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', justifyContent: 'center' }}>
+                    {activeLevel.colors.map(c => (
+                      <div
+                        key={c}
+                        onClick={() => {
+                          navigator.clipboard.writeText(c);
+                          setCopiedColor(c);
+                          setTimeout(() => setCopiedColor(null), 1500);
+                        }}
+                        className="hover-scale"
+                        style={{ 
+                          width: '32px', 
+                          height: '32px', 
+                          borderRadius: '10px', 
+                          background: c, 
+                          cursor: 'pointer', 
+                          border: '2px solid var(--item-border)',
+                          boxShadow: copiedColor === c ? '0 0 15px ' + c : 'var(--glass-shadow)',
+                          position: 'relative',
+                          transition: 'all 0.2s ease'
+                        }}
+                        title={`Copy ${c}`}
+                      >
+                        {copiedColor === c && (
+                          <div style={{
+                            position: 'absolute',
+                            bottom: '120%',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            background: 'var(--accent)',
+                            color: 'white',
+                            fontSize: '10px',
+                            fontWeight: 900,
+                            padding: '4px 8px',
+                            borderRadius: '6px',
+                            whiteSpace: 'nowrap',
+                            pointerEvents: 'none',
+                            animation: 'fadeInUp 0.2s ease-out'
+                          }}>
+                            COPIED!
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: '0.75rem', fontSize: '0.65rem', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.05em' }}>
+                    CLICK COLOR TO COPY HEX
+                  </div>
                 </div>
+
+                <style>{`
+                  @keyframes fadeInUp {
+                    from { transform: translateX(-50%) translateY(10px); opacity: 0; }
+                    to { transform: translateX(-50%) translateY(0); opacity: 1; }
+                  }
+                `}</style>
               </div>
 
               <div className="card" style={{ padding: '1.5rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)', borderRadius: '24px' }}>

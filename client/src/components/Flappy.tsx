@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { socket } from '../socket';
 import type { Player, Room } from '../types';
-import { Trophy, RefreshCw, Zap, TrendingUp, Play, Activity, ArrowLeft } from 'lucide-react';
+import { Trophy, RefreshCw, TrendingUp, Play, Activity, ArrowLeft } from 'lucide-react';
 
 interface FlappyProps {
   room: Room | null;
@@ -26,7 +26,11 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
   const [highScore, setHighScore] = useState(() => Number(localStorage.getItem('flappy_highscore') || 0));
   const [isGameOver, setIsGameOver] = useState(false);
   const [isStarted, setIsStarted] = useState(false);
-  const [nameInput, setNameInput] = useState(_me?.name || '');
+  const [playerName] = useState(() => {
+    if (_me?.name) return _me.name;
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved).name : 'PILOT';
+  });
   const [isJoining, setIsJoining] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
@@ -35,6 +39,7 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
   useEffect(() => {
     if (room?.gameState === 'playing' || room?.gameState === 'starting') {
       setIsStarted(true);
@@ -90,13 +95,13 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
   };
 
   const handleStartRequest = () => {
-    if (!nameInput.trim() || isJoining) return;
+    if (isJoining) return;
     if (room && _me) {
       setIsStarted(true);
       return;
     }
     setIsJoining(true);
-    socket.emit('create-room', { playerName: nameInput.trim(), type: 'flappy', isPublic: false }, (res: any) => {
+    socket.emit('create-room', { playerName: playerName, type: 'flappy', isPublic: false }, (res: any) => {
       if (res.success && res.player) {
         onRoomJoined(res.player);
         socket.emit('start-game', { roomId: res.roomId });
@@ -147,7 +152,7 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
       if (!gameState.current.active) return;
       if (!gameState.current.isFlying) return;
       const gs = gameState.current;
-      const currentLevel = Math.floor(gs.score / 10000) + 1;
+      const currentLevel = Math.floor(gs.score / 5000) + 1;
       const currentSpeed = BASE_SPEED + (currentLevel - 1) * KM_SPEED_INC;
       const currentGap = Math.max(MIN_GAP, BASE_GAP - (currentLevel - 1) * KM_GAP_DEC);
       gs.level = currentLevel;
@@ -190,12 +195,12 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
         localStorage.setItem('flappy_highscore', String(gameState.current.score));
       }
       const currentRoomId = roomRef.current?.id;
-      const playerName = _me?.name || nameInput;
-      (socket as any).playerName = playerName;
+      const playerNameCurrent = _me?.name || playerName;
+      (socket as any).playerName = playerNameCurrent;
       if (currentRoomId) {
-        socket.emit('flappy-score', { roomId: currentRoomId, score: gameState.current.score, name: playerName });
+        socket.emit('flappy-score', { roomId: currentRoomId, score: gameState.current.score, name: playerNameCurrent });
       } else {
-        socket.emit('flappy-score', { score: gameState.current.score, name: playerName });
+        socket.emit('flappy-score', { score: gameState.current.score, name: playerNameCurrent });
       }
     };
 
@@ -233,25 +238,48 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
       ctx.translate(100, gs.birdY);
       const rotation = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, gs.birdV * 0.1));
       ctx.rotate(rotation);
+
+      // Tail (Oval)
+      ctx.fillStyle = '#d97706';
+      ctx.beginPath();
+      ctx.ellipse(-BIRD_SIZE / 2 - 2, 0, 12, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body (The 'Round' Shape)
       const birdGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, BIRD_SIZE / 2);
       birdGrad.addColorStop(0, '#fbbf24');
       birdGrad.addColorStop(1, '#d97706');
       ctx.fillStyle = birdGrad;
       ctx.beginPath();
-      ctx.arc(0, 0, BIRD_SIZE / 2, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, BIRD_SIZE / 2 + 2, BIRD_SIZE / 2, 0, 0, Math.PI * 2);
       ctx.fill();
+
+      // Wing (Animated)
+      const wingMotion = Math.sin(gs.frameCount * 0.25) * 12;
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.ellipse(-8, 3, 15, Math.max(2, 11 + wingMotion), 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Beak (Red)
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(BIRD_SIZE / 2 - 2, -2);
+      ctx.lineTo(BIRD_SIZE / 2 + 10, 2);
+      ctx.lineTo(BIRD_SIZE / 2 - 2, 6);
+      ctx.closePath();
+      ctx.fill();
+
+      // Eye
       ctx.fillStyle = 'white';
       ctx.beginPath();
-      ctx.arc(8, -5, 6, 0, Math.PI * 2);
+      ctx.arc(8, -6, 6, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = 'black';
       ctx.beginPath();
-      ctx.arc(10, -5, 3, 0, Math.PI * 2);
+      ctx.arc(10, -6, 3, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.ellipse(-10, 2, 12, 8, -Math.PI / 6, 0, Math.PI * 2);
-      ctx.fill();
+
       ctx.restore();
     };
 
@@ -273,25 +301,47 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
       }
       ctx.save();
       ctx.translate(100, 300);
+
+      // Tail (Oval)
+      ctx.fillStyle = '#d97706';
+      ctx.beginPath();
+      ctx.ellipse(-BIRD_SIZE / 2 - 2, 0, 12, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body
       const birdGrad = ctx.createRadialGradient(-5, -5, 2, 0, 0, BIRD_SIZE / 2);
       birdGrad.addColorStop(0, '#fbbf24');
       birdGrad.addColorStop(1, '#d97706');
       ctx.fillStyle = birdGrad;
       ctx.beginPath();
-      ctx.arc(0, 0, BIRD_SIZE / 2, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, BIRD_SIZE / 2 + 2, BIRD_SIZE / 2, 0, 0, Math.PI * 2);
       ctx.fill();
+
+      // Wing
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.ellipse(-8, 3, 15, 11, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Beak
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(BIRD_SIZE / 2 - 2, -2);
+      ctx.lineTo(BIRD_SIZE / 2 + 10, 2);
+      ctx.lineTo(BIRD_SIZE / 2 - 2, 6);
+      ctx.closePath();
+      ctx.fill();
+
+      // Eye
       ctx.fillStyle = 'white';
       ctx.beginPath();
-      ctx.arc(8, -5, 6, 0, Math.PI * 2);
+      ctx.arc(8, -6, 6, 0, Math.PI * 2);
       ctx.fill();
       ctx.fillStyle = 'black';
       ctx.beginPath();
-      ctx.arc(10, -5, 3, 0, Math.PI * 2);
+      ctx.arc(10, -6, 3, 0, Math.PI * 2);
       ctx.fill();
-      ctx.fillStyle = '#f59e0b';
-      ctx.beginPath();
-      ctx.ellipse(-10, 2, 12, 8, -Math.PI / 6, 0, Math.PI * 2);
-      ctx.fill();
+
       ctx.restore();
     };
 
@@ -302,23 +352,14 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
   }, [isStarted, highScore]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}>
-      {/* Top Header */}
-      <div style={{ padding: '0.75rem 1rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: isMobile ? 'flex-start' : 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: '0.4rem', zIndex: 10 }}>
-        {/* Row 1: Back + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <button onClick={() => window.location.reload()} className="btn btn-outline" style={{ width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px', flexShrink: 0 }}><ArrowLeft size={18} /></button>
-          <h2 style={{ margin: 0, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 950, fontSize: '1.2rem', whiteSpace: 'nowrap' }}>
-            <Zap size={20} fill="var(--accent)" /> FLAPPY BIRD
-          </h2>
-        </div>
-        {/* Stats: right on desktop, below title on mobile */}
-        <div style={{ display: 'flex', gap: '1.25rem', alignItems: 'center', paddingLeft: isMobile ? '50px' : '0' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', padding: '0.5rem 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem', marginBottom: '0.86rem', zIndex: 10 }}>
+        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', background: 'var(--accent-glow)', padding: '0.5rem 1.5rem', borderRadius: '12px', border: '1px solid var(--accent)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-primary)', fontWeight: 900, fontSize: '0.85rem' }}>
             <Activity size={14} color="var(--accent)" />
             <span>{(score / 1000).toFixed(2)} KM</span>
           </div>
-          <div style={{ width: '1px', height: '16px', background: 'var(--item-border)', opacity: 0.4 }} />
+          <div style={{ width: '1px', height: '16px', background: 'var(--accent)', opacity: 0.3 }} />
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--success)', fontWeight: 900, fontSize: '0.85rem' }}>
             <TrendingUp size={14} />
             <span>LVL {gameState.current.level}</span>
@@ -326,7 +367,7 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
         </div>
       </div>
 
-      <div style={{ padding: 'clamp(1rem, 3vw, 2rem)', overflowY: 'auto', flex: 1 }}>
+      <div style={{ padding: '0 clamp(1rem, 3vw, 2rem) 2rem clamp(1rem, 3vw, 2rem)', overflowY: 'auto', flex: 1 }}>
         <div className="dashboard-layout" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
 
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.5rem', minWidth: 0 }}>
@@ -348,27 +389,14 @@ export const Flappy: React.FC<FlappyProps> = ({ room, me: _me, onRoomJoined, lea
                 }}>
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 800, letterSpacing: '0.2em', marginBottom: '0.5rem' }}>BIRD PILOT</div>
-                    {_me ? (
-                      <h1 style={{ fontSize: '3rem', fontWeight: 950, margin: 0, color: 'var(--text-primary)', textTransform: 'uppercase' }}>{_me.name}</h1>
-                    ) : (
-                      <div className="input-group">
-                        <input
-                          className="input-field"
-                          placeholder="ENTER NAME..."
-                          value={nameInput}
-                          onChange={(e) => setNameInput(e.target.value)}
-                          style={{ fontSize: '1.4rem', padding: '1.25rem', textAlign: 'center', width: '280px' }}
-                          maxLength={15}
-                        />
-                      </div>
-                    )}
+                    <h1 style={{ fontSize: isMobile ? '2.5rem' : '3.5rem', fontWeight: 950, margin: 0, color: 'var(--text-primary)', textTransform: 'uppercase', textAlign: 'center' }}>{playerName}</h1>
                   </div>
 
                   <button
                     className="btn btn-primary"
                     onClick={handleStartRequest}
-                    disabled={!nameInput.trim() || isJoining}
-                    style={{ width: '240px', height: '70px', fontSize: '1.4rem', fontWeight: 900, borderRadius: '20px', boxShadow: '0 0 40px rgba(59,130,246,0.3)', opacity: !nameInput.trim() || isJoining ? 0.6 : 1 }}
+                    disabled={isJoining}
+                    style={{ width: '240px', height: '70px', fontSize: '1.4rem', fontWeight: 900, borderRadius: '20px', boxShadow: '0 0 40px rgba(59,130,246,0.3)', opacity: isJoining ? 0.6 : 1 }}
                   >
                     {isJoining ? '...' : <><Play size={24} fill="currentColor" /> START GAME</>}
                   </button>

@@ -1,18 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Trophy, Grid, Shuffle } from 'lucide-react';
+import { Trophy, Grid, Shuffle } from 'lucide-react';
 import { socket } from '../socket';
 import type { Room, Player } from '../types';
 
 interface GridOrderProps {
   room?: Room;
   me?: Player;
-  onBack: () => void;
   leaderboard: Record<string, number>;
 }
 
 type TileType = number | null; // null for the empty slot
 
-export const GridOrder: React.FC<GridOrderProps> = ({ room, me, onBack, leaderboard }) => {
+export const GridOrder: React.FC<GridOrderProps> = ({ room, me, leaderboard }) => {
   const [gridSize, setGridSize] = useState(3);
   const [board, setBoard] = useState<TileType[]>([]);
   const [moves, setMoves] = useState(0);
@@ -137,29 +136,17 @@ export const GridOrder: React.FC<GridOrderProps> = ({ room, me, onBack, leaderbo
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}>
-      {/* Standardization Header */}
-      <div style={{ padding: '0.85rem 1.5rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={onBack} className="btn btn-outline" style={{ width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}>
-            <ArrowLeft size={18} />
-          </button>
-          <h2 style={{ margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 950, fontSize: '1.2rem', letterSpacing: '0.05em' }}>
-            <Grid size={20} color="var(--accent)" /> GRID ORDER
-          </h2>
-        </div>
-        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 800 }}>TIMER</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 950, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
-              {formatTime(time)}
-            </div>
+    <div style={{ display: 'flex', flexDirection: 'column', padding: '1rem 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', zIndex: 10 }}>
+        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center', background: 'var(--accent-glow)', padding: '0.4rem 1.5rem', borderRadius: '12px', border: '1px solid var(--accent)' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 950, letterSpacing: '0.1em' }}>TIMER</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 950, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>{formatTime(time)}</div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 800 }}>MOVES</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 950, color: '#10b981', fontVariantNumeric: 'tabular-nums' }}>
-              {moves}
-            </div>
+          <div style={{ width: '1px', height: '24px', background: 'var(--accent)', opacity: 0.3 }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 950, letterSpacing: '0.1em' }}>MOVES</div>
+            <div style={{ fontSize: '1.3rem', fontWeight: 950, color: 'var(--success)', fontVariantNumeric: 'tabular-nums' }}>{moves}</div>
           </div>
         </div>
       </div>
@@ -333,11 +320,11 @@ export const GridOrder: React.FC<GridOrderProps> = ({ room, me, onBack, leaderbo
                Efficiency: <strong style={{color: 'var(--accent)'}}>{moves} moves</strong>
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <button className="btn btn-primary" onClick={() => room ? onBack() : initializeGame(gridSize)} style={{ width: '100%', height: '60px', fontWeight: 950, borderRadius: '18px', fontSize: '1.1rem' }}>
+                <button className="btn btn-primary" onClick={() => room ? window.location.reload() : initializeGame(gridSize)} style={{ width: '100%', height: '60px', fontWeight: 950, borderRadius: '18px', fontSize: '1.1rem' }}>
                    {room ? 'Back to Lobby' : 'Play Again'}
                 </button>
                 {!room && (
-                    <button className="btn btn-link" onClick={onBack} style={{ color: 'var(--text-secondary)', fontWeight: 800 }}>Back to Dashboard</button>
+                    <button className="btn btn-link" onClick={() => window.location.reload()} style={{ color: 'var(--text-secondary)', fontWeight: 800 }}>Back to Dashboard</button>
                 )}
             </div>
           </div>

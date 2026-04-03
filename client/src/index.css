@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@300..700&display=swap');
 
 :root {
   --bg-primary: #0f172a;
@@ -20,6 +20,10 @@
   --input-border: rgba(255, 255, 255, 0.1);
   --item-bg: rgba(255, 255, 255, 0.03);
   --item-border: rgba(255, 255, 255, 0.05);
+  --header-bg: rgba(15, 23, 42, 0.4);
+  --footer-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
   --error: #ef4444;
   --error-glow: rgba(239, 68, 68, 0.2);
 }
@@ -41,6 +45,10 @@
   --input-border: rgba(0, 0, 0, 0.1);
   --item-bg: #eff6ff;
   --item-border: rgba(37, 99, 235, 0.08);
+  --header-bg: rgba(255, 255, 255, 0.5);
+  --footer-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(30, 41, 59, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
   --error: #dc2626;
   --error-glow: rgba(220, 38, 38, 0.08);
 }
@@ -171,6 +179,8 @@ p {
   padding: 1rem 1.25rem;
   font-size: 1.1rem;
   border-radius: calc(var(--border-radius) / 1.5);
+  width: 100%;
+  box-sizing: border-box;
   font-family: inherit;
   transition: all var(--transition-fast);
   outline: none;
@@ -347,11 +357,12 @@ p {
     max-width: 100%;
   }
   .dashboard-layout {
-    flex-direction: column;
-    gap: 4rem;
+    flex-direction: column !important;
+    gap: 2rem !important;
+    align-items: stretch !important;
   }
   .dashboard-sidebar {
-    width: 100%;
+    width: 100% !important;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 2rem;
@@ -392,12 +403,11 @@ p {
   }
   .card-mobile-full {
     padding: 0 !important;
-    border-radius: 0 !important;
-    border-left: none !important;
-    border-right: none !important;
+    border-radius: 20px !important;
+    border: 1px solid var(--item-border) !important;
   }
   .no-mobile-padding {
-    padding: 0 !important;
+    padding: 0.5rem !important;
   }
 }
 

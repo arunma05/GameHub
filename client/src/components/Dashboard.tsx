@@ -1,13 +1,8 @@
-import React, { useState } from 'react';
-import { Gamepad2, Timer, Trophy, Globe, Users, Zap, Brain, Paintbrush, Grid3X3, Sword, LayoutGrid, Lightbulb, HelpCircle } from 'lucide-react';
-import { socket } from '../socket';
-import { Logo } from './Logo';
-import type { Player, PublicRoom } from '../types';
+import React from 'react';
+import { Gamepad2, Timer, Trophy, Globe, Zap, Brain, Paintbrush, Grid3X3, Sword, LayoutGrid, Lightbulb, HelpCircle } from 'lucide-react';
 
 interface DashboardProps {
   onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory') => void;
-  onRoomJoined: (me: Player, gameType: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory') => void;
-  publicRooms: PublicRoom[];
   leaderboards: Record<string, any>;
   onSelectNews?: (query: string, title: string, subtitle: string) => void;
 }
@@ -17,7 +12,7 @@ const GAME_META: Record<string, { color: string; label: string; icon: React.Reac
   typeracer: { color: '#3b82f6', label: 'Type Racer', icon: <Timer size={13} /> },
   chess: { color: '#8b5cf6', label: 'Chess', icon: <span style={{ fontSize: '0.85rem' }}>♘</span> },
   flappy: { color: '#fbbf24', label: 'Flappy Bird', icon: <Zap size={13} /> },
-  quiz: { color: '#ec4899', label: 'Tech Quiz', icon: <HelpCircle size={13} /> },
+  quiz: { color: '#ec4899', label: 'Trivia', icon: <HelpCircle size={13} /> },
   cssbattle: { color: '#f43f5e', label: 'CSS Battle', icon: <Paintbrush size={13} /> },
   sudoku: { color: '#22d3ee', label: 'Sudoku', icon: <Grid3X3 size={13} /> },
   kakuro: { color: '#a78bfa', label: 'Kakuro', icon: <Brain size={13} /> },
@@ -155,34 +150,14 @@ const GlobalLeadersTile: React.FC<{ leaderboards: Record<string, any> }> = ({ le
 
 
 
-export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame, onRoomJoined, publicRooms, leaderboards, onSelectNews }) => {
-  const [playerName, setPlayerName] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [joiningRoom, setJoiningRoom] = useState<string | null>(null);
-
-  const handleJoinPublic = (room: PublicRoom) => {
-    if (!playerName.trim()) return;
-    setJoiningRoom(room.id);
-    setIsLoading(true);
-    socket.emit('join-room', { roomId: room.id, playerName: playerName.trim() }, (res: { success: boolean; player?: Player; message?: string }) => {
-      setIsLoading(false);
-      setJoiningRoom(null);
-      if (res.success && res.player) {
-        onRoomJoined(res.player, room.type);
-      }
-    });
-  };
-
+export const Dashboard: React.FC<DashboardProps> = ({ 
+    onSelectGame, 
+    leaderboards, 
+    onSelectNews
+}) => {
   return (
     <div className="container" style={{ alignItems: 'center', justifyContent: 'center', minHeight: '100vh', gap: '1.5rem', margin: '0 auto', position: 'relative', paddingBottom: '4rem' }}>
 
-      {/* Title */}
-      <div style={{ textAlign: 'center', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <Logo size={40} />
-        <h1 className="responsive-title" style={{ fontWeight: 950, margin: 0, color: 'var(--text-primary)', textAlign: 'center', wordBreak: 'break-word', fontSize: 'clamp(2rem, 8vw, 4rem)' }}>
-          Fun Arcade
-        </h1>
-      </div>
 
       {/* Main Two-Column Layout */}
       <div className="dashboard-layout">
@@ -202,81 +177,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onSelectGame, onRoomJoined
               </div>
             </div>
 
-            {/* Public Lobbies Section (MOVED HERE) */}
-            {publicRooms.length > 0 && (
-              <div className="card animate-fade-in">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <Globe size={22} color="var(--text-secondary)" />
-                    <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 950, color: 'var(--text-primary)' }}>Active Lobbies</h3>
-                  </div>
-                  <div style={{ padding: '0.35rem 0.8rem', background: 'var(--accent)', color: 'white', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 900, boxShadow: 'var(--card-shadow)' }}>
-                    {publicRooms.length} LIVE
-                  </div>
-                </div>
-
-                {/* Name input to quick-join */}
-                <div style={{ marginBottom: '1rem' }}>
-                  <input
-                    className="input-field"
-                    type="text"
-                    placeholder="Enter your name to join..."
-                    value={playerName}
-                    onChange={e => setPlayerName(e.target.value)}
-                    maxLength={15}
-                    style={{ fontSize: '1rem', padding: '0.9rem 1.1rem', width: '100%', boxSizing: 'border-box', background: 'var(--card-bg)' }}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-                  {publicRooms.map(room => {
-                    const meta = GAME_META[room.type] ?? GAME_META['bingo'];
-                    return (
-                      <div key={room.id} className="lobby-item" style={{
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem',
-                        background: 'var(--card-bg)',
-                        borderRadius: '16px', border: '1px solid var(--item-border)',
-                        transition: 'all 0.2s ease',
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <div style={{
-                            width: '40px', height: '40px', borderRadius: '12px',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: `${meta.color}18`, color: meta.color,
-                            border: `1px solid ${meta.color}30`,
-                          }}>
-                            {meta.icon}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 950, color: 'var(--text-primary)', fontSize: '1.1rem' }}>{room.hostName}'s Room</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '2px', fontWeight: 700 }}>
-                              <span style={{ color: meta.color, fontWeight: 900 }}>{meta.label}</span>
-                              <div style={{ width: '3px', height: '3px', background: 'var(--text-secondary)', opacity: 0.3, borderRadius: '50%' }} />
-                              <Users size={12} /> {room.playerCount} waiting · <span style={{ color: 'var(--accent)', fontWeight: 900 }}>{room.id}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          className="btn btn-primary"
-                          onClick={() => handleJoinPublic(room)}
-                          disabled={isLoading || !playerName.trim()}
-                          style={{ padding: '0.6rem 1.5rem', fontSize: '0.9rem', height: 'auto', borderRadius: '12px', whiteSpace: 'nowrap', opacity: !playerName.trim() ? 0.4 : 1 }}
-                        >
-                          {joiningRoom === room.id ? '...' : 'Join'}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             <div className="game-cards-grid">
               {[
                 { type: 'bingo' as const, players: 'Multiplayer', color: '#10b981', icon: <Gamepad2 size={32} color="#10b981" />, title: 'BINGO', desc: 'Classic Bingo with a competitive twist. Complete 5 lines to win!' },
                 { type: 'typeracer' as const, players: 'Single/Multiplayer', color: '#3b82f6', icon: <Timer size={32} color="#3b82f6" />, title: 'TYPE RACER', desc: 'Speed typing test. Complete the paragraph first without errors.' },
                 { type: 'chess' as const, players: '2 Player', color: '#8b5cf6', icon: <span style={{ fontSize: '2rem', color: '#8b5cf6' }}>♘</span>, title: 'CHESS', desc: 'Classic game of strategy in full 3D. Checkmate your opponent!' },
-                { type: 'quiz' as const, players: 'Single/Multiplayer', color: '#ec4899', icon: <HelpCircle size={32} color="#ec4899" />, title: 'TECH QUIZ', desc: 'Test your tech knowledge in this fast-paced trivia game!' },
+                { type: 'quiz' as const, players: 'Single/Multiplayer', color: '#ec4899', icon: <HelpCircle size={32} color="#ec4899" />, title: 'TRIVIA', desc: 'Test your knowledge across 50+ diverse topics, including 10+ tech categories!' },
                 { type: 'cssbattle' as const, players: 'Single Player', color: '#f43f5e', icon: <Paintbrush size={32} color="#f43f5e" />, title: 'CSS BATTLE', desc: 'Code HTML & CSS to match target shapes. Beat the clock and get 100% match!' },
                 { type: 'flappy' as const, players: 'Single Player', color: '#fbbf24', icon: <Zap size={32} color="#fbbf24" />, title: 'FLAPPY BIRD', desc: 'Navigate the bird through pipes. Beat your high score in this fly-high challenge!' },
                 { type: 'sudoku' as const, players: 'Single Player', color: '#22d3ee', icon: <Grid3X3 size={32} color="#22d3ee" />, title: 'SUDOKU', desc: 'Classic 9x9 puzzle. Saves your progress so you can resume anytime!' },

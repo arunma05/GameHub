@@ -4,7 +4,9 @@ import { OrbitControls } from '@react-three/drei';
 import { Chess as ChessJS } from 'chess.js';
 import { socket } from '../socket';
 import type { Room, Player } from '../types';
-import { Trophy, ArrowLeft } from 'lucide-react';
+import { Trophy } from 'lucide-react';
+
+const clampSize = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
 
 interface ChessProps {
   room: Room;
@@ -569,53 +571,65 @@ const Chess: React.FC<ChessProps> = ({ room, me }) => {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--bg-primary)' }}>
 
-      {/* ── Header ── */}
-      <div style={{
-        padding: '0.65rem 1.5rem',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem',
-        background: 'rgba(0,0,0,0.1)',
-        borderBottom: '1px solid var(--item-border)',
-        flexShrink: 0,
-      }}>
-        <button
-          className="btn btn-outline"
-          onClick={() => window.location.reload()}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}
-        >
-          <ArrowLeft size={15} /> Exit
-        </button>
-
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 950, letterSpacing: '0.1em', color: 'var(--text-primary)' }}>♟ CHESS</h2>
-          <span style={{ color: 'var(--accent)', fontWeight: 900, fontSize: '0.75rem' }}>{room.id}</span>
-        </div>
-      </div>
-
-      <div style={{ padding: '0 3vw 1rem 3vw', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      <div style={{ padding: 'clamp(1rem, 3vw, 2.5rem) 1rem', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1100px', margin: '0 auto', width: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           
           {/* Unified Dash - ABOVE Board */}
-          <div className="card" style={{ marginTop: '1.5rem', padding: '0.85rem 1rem', display: 'flex', gap: '1rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)', borderRadius: '24px', alignItems: 'stretch', flexWrap: 'wrap', boxShadow: 'var(--card-shadow)', zIndex: 10 }}>
-              <CapturedSidebar
-                pieces={myCaptured}
-                isWhitePieces={!amIWhite}
-                advantage={myAdv}
-                label="You took"
-              />
-              <CapturedSidebar
-                pieces={theirCaptured}
-                isWhitePieces={amIWhite}
-                advantage={theirAdv}
-                label={`${(opponent?.name ?? 'Opponent')}`}
-              />
-              <div style={{ padding: '0.65rem 1rem', background: 'var(--item-bg)', borderRadius: '16px', border: '1px solid var(--item-border)', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '0.45rem', justifyContent: 'center', minWidth: '160px', flex: 1 }}>
-                <span style={{ fontSize: '0.55rem', color: 'var(--text-secondary)', fontWeight: 950, textTransform: 'uppercase', letterSpacing: '0.1em' }}>View Mode</span>
-                <div style={{ display: 'flex', background: 'var(--card-bg)', borderRadius: '10px', padding: '3px', gap: '4px', border: '1px solid var(--item-border)', alignItems: 'stretch' }}>
-                  {(['2d', '3d'] as const).map(v => (
-                    <button key={v} onClick={() => setBoardView(v)} style={{ padding: '0.35rem 1rem', borderRadius: '7px', border: 'none', cursor: 'pointer', fontWeight: 900, fontSize: '0.78rem', background: boardView === v ? 'var(--accent)' : 'transparent', color: boardView === v ? 'white' : 'var(--text-secondary)', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)', flex: 1 }}>
-                      {v.toUpperCase()}
+          <div className="card animate-fade-in" style={{ 
+            padding: 'clamp(0.5rem, 2vw, 1rem) clamp(0.75rem, 3vw, 1.5rem)', 
+            display: 'flex', 
+            gap: 'clamp(0.5rem, 1.5vw, 1.5rem)', 
+            background: 'var(--card-bg)', 
+            border: '1px solid var(--item-border)', 
+            borderRadius: '24px', 
+            alignItems: 'center', 
+            flexWrap: 'wrap', 
+            boxShadow: 'var(--card-shadow)', 
+            zIndex: 10,
+            justifyContent: 'space-between'
+          }}>
+              
+              <div style={{ flex: '1 1 auto', display: 'flex', alignItems: 'center', gap: '0.85rem', minWidth: '180px' }}>
+                <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: isMyTurn ? 'var(--success)' : 'var(--text-secondary)', animation: isMyTurn ? 'pulse 1.5s infinite' : 'none', boxShadow: isMyTurn ? '0 0 15px var(--success-glow)' : 'none' }} />
+                <span style={{ fontWeight: 950, fontSize: '1.05rem', letterSpacing: '0.02em', color: isMyTurn ? 'var(--success)' : 'var(--text-primary)', textTransform: 'uppercase' }}>
+                   {isMyTurn ? 'YOUR TURN' : `${(opponent?.name || 'OPPONENT').toUpperCase()}'S TURN`}
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', flex: '2 1 300px', justifyContent: 'center' }}>
+                <CapturedSidebar
+                  pieces={myCaptured}
+                  isWhitePieces={!amIWhite}
+                  advantage={myAdv}
+                  label="CAPTURED"
+                />
+                <CapturedSidebar
+                  pieces={theirCaptured}
+                  isWhitePieces={amIWhite}
+                  advantage={theirAdv}
+                  label={`${(opponent?.name ?? 'OPP').toUpperCase()}`}
+                />
+              </div>
+
+              <div style={{ 
+                padding: '0.5rem 0.75rem', 
+                background: 'var(--item-bg)', 
+                borderRadius: '16px', 
+                border: '1px solid var(--item-border)', 
+                textAlign: 'center', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '0.35rem', 
+                justifyContent: 'center', 
+                minWidth: '120px',
+                flex: '1 1 auto'
+              }}>
+                <div style={{ display: 'flex', background: 'var(--card-bg)', borderRadius: '10px', padding: '3px', gap: '4px', border: '1px solid var(--item-border)' }}>
+                  {(['2D', '3D'] as const).map(v => (
+                    <button key={v} onClick={() => setBoardView(v.toLowerCase() as '2d' | '3d')} style={{ padding: '0.4rem 0.8rem', borderRadius: '7px', border: 'none', cursor: 'pointer', fontWeight: 900, fontSize: '0.7rem', background: boardView === v.toLowerCase() ? 'var(--accent)' : 'transparent', color: boardView === v.toLowerCase() ? 'white' : 'var(--text-secondary)', transition: 'all 0.2s', flex: 1 }}>
+                      {v}
                     </button>
                   ))}
                 </div>
@@ -623,23 +637,7 @@ const Chess: React.FC<ChessProps> = ({ room, me }) => {
           </div>
 
           {/* Main Game Area */}
-          <div style={{ position: 'relative', width: '100%', height: 'min(70vh, 100vw)', overflow: 'hidden', borderRadius: '24px', padding: '25px', marginTop: '0.25rem' }}>
-
-            {/* In-Box Turn Indicator */}
-            {room.gameState === 'playing' && (
-              <div style={{
-                position: 'absolute', top: 10, left: 10, zIndex: 100,
-                padding: '0.4rem 1rem', background: 'var(--card-bg)', backdropFilter: 'blur(15px)',
-                borderRadius: '12px', border: `2px solid ${isMyTurn ? 'var(--success)' : 'var(--item-border)'}`,
-                boxShadow: 'var(--card-shadow)', pointerEvents: 'none',
-              }}>
-                <span style={{ color: isMyTurn ? 'var(--success)' : 'var(--text-secondary)', fontWeight: 950, fontSize: '0.7rem', letterSpacing: '0.08em' }}>
-                  {isMyTurn ? '✓ YOUR TURN' : `⏳ ${(opponent?.name || 'OPPONENT').toUpperCase()}'S TURN`}
-                </span>
-              </div>
-            )}
-            
-            {/* Player Legends In-Box - Centered bottom edge */}
+          <div style={{ position: 'relative', width: '100%', height: 'min(85vh, 100vw)', overflow: 'hidden', borderRadius: '24px', padding: 'clamp(10px, 2vw, 25px)', marginTop: '0.25rem' }}>
             <div style={{ position: 'absolute', bottom: 10, left: '50%', transform: 'translateX(-50%)', zIndex: 100, display: 'flex', gap: '1rem', background: 'rgba(0,0,0,0.6)', padding: '5px 15px', borderRadius: '12px', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.08)' }}>
                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: amIWhite ? '#f5efe0' : '#8B6F5E' }} />
@@ -660,17 +658,37 @@ const Chess: React.FC<ChessProps> = ({ room, me }) => {
               return (
                 <div style={{
                   position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                  zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem',
+                  zIndex: 200, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(0.75rem, 3vw, 1.5rem)',
                   background: 'var(--card-bg)', backdropFilter: 'blur(20px)',
-                  border: `3px solid ${color}`, borderRadius: '32px', padding: '2rem 3rem', boxShadow: '0 0 60px rgba(0,0,0,0.5)',
+                  border: `3px solid ${color}`, borderRadius: '32px', 
+                  padding: 'clamp(1.5rem, 5vw, 2.5rem) clamp(1rem, 6vw, 3.5rem)', 
+                  boxShadow: '0 0 60px rgba(0,0,0,0.5)',
                   animation: 'zoomIn 0.4s cubic-bezier(0.34,1.56,0.64,1)',
+                  width: 'min(90%, 480px)',
+                  textAlign: 'center'
                 }}>
-                  <Trophy size={60} color={color} />
-                  <h2 style={{ color, fontWeight: 950, fontSize: '1.8rem', letterSpacing: '0.06em', margin: 0 }}>{bannerLabel}</h2>
+                  <Trophy size={clampSize(window.innerWidth / 12, 50, 70)} color={color} />
+                  <h2 style={{ 
+                    color, 
+                    fontWeight: 950, 
+                    fontSize: 'clamp(1.4rem, 6vw, 2rem)', 
+                    letterSpacing: '0.04em', 
+                    margin: 0,
+                    lineHeight: 1.1
+                  }}>{bannerLabel}</h2>
                   <button
                       className="btn btn-primary"
                       onClick={() => room.hostId === me.id ? socket.emit('reset-room', { roomId: room.id }) : socket.emit('play-again', { roomId: room.id })}
-                      style={{ padding: '0.75rem 2rem', fontSize: '1.2rem', borderRadius: '15px', background: 'var(--accent)', border: 'none', fontWeight: 950, width: '100%' }}
+                      style={{ 
+                        padding: 'clamp(0.6rem, 2vw, 0.9rem) 2rem', 
+                        fontSize: 'clamp(1rem, 3vw, 1.25rem)', 
+                        borderRadius: '15px', 
+                        background: 'var(--accent)', 
+                        border: 'none', 
+                        fontWeight: 950, 
+                        width: '100%',
+                        marginTop: '0.5rem' 
+                      }}
                   >
                     REMATCH
                   </button>

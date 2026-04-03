@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { socket } from '../socket';
 import type { Room, Player } from '../types';
-import { Brain, Trophy, CheckCircle2, XCircle, Skull, RefreshCw, ArrowLeft } from 'lucide-react';
+import { Trophy, CheckCircle2, XCircle, Skull, RefreshCw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface QuizProps {
   room: Room;
   me: Player;
 }
+
+const clampSize = (val: number, min: number, max: number) => Math.min(Math.max(val, min), max);
 
 const decodeHTML = (html: string) => {
   const txt = document.createElement('textarea');
@@ -85,70 +87,90 @@ export const Quiz: React.FC<QuizProps> = ({ room, me }) => {
 
     return (
       <div className="immersive-screen" style={{ 
-        position: 'fixed', inset: 0, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'var(--bg-primary)',
-        zIndex: 1000, overflowY: 'auto', padding: '5rem 0'
+        zIndex: 1000, overflowY: 'auto', padding: '1rem'
       }}>
         {!iWon && (
           <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 999 }}>
             <div className="screen-flash" style={{ background: 'var(--error)', opacity: 0.1 }} />
           </div>
         )}
-        <div className="card animate-fade-in" style={{ 
-          width: '100%', maxWidth: '650px', textAlign: 'center', padding: '3.5rem 2rem',
-          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem',
+        <div className="card animate-zoom-in" style={{ 
+          width: '100%', maxWidth: '580px', textAlign: 'center', 
+          padding: 'clamp(1.5rem, 5vw, 3.5rem) clamp(1rem, 4vw, 2.5rem)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'clamp(1rem, 3vw, 2rem)',
           border: `3px solid ${iWon ? 'var(--accent)' : 'var(--error)'}`,
           boxShadow: iWon ? '0 0 60px var(--accent-glow)' : '0 0 60px var(--error-glow)',
-          background: 'var(--card-bg)', backdropFilter: 'blur(30px)', zIndex: 10
+          background: 'var(--card-bg)', backdropFilter: 'blur(30px)', zIndex: 10,
+          margin: 'auto'
         }}>
-          {iWon ? <Trophy size={100} color="#fbbf24" /> : <Skull size={90} color="var(--error)" />}
-          <div>
-            <h1 style={{ margin: 0, fontWeight: 950, color: iWon ? 'var(--accent)' : 'var(--error)' }}>
+          <div style={{ animation: 'bounce 2s infinite ease-in-out' }}>
+            {iWon ? <Trophy size={clampSize(window.innerWidth / 12, 60, 100)} color="#fbbf24" /> : <Skull size={clampSize(window.innerWidth / 12, 60, 90)} color="var(--error)" />}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <h1 style={{ 
+              margin: 0, fontWeight: 950, 
+              fontSize: 'clamp(1.8rem, 8vw, 3rem)',
+              color: iWon ? 'var(--accent)' : 'var(--error)',
+              lineHeight: 1
+            }}>
                {iWon ? 'VICTORY' : 'DEFEAT'}
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '1.2rem', fontWeight: 700, marginTop: '0.5rem' }}>
-              {iWon ? 'TECH MASTER!' : 'OBLITERATED!'}
+            <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.9rem, 3vw, 1.15rem)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+              {iWon ? 'Trivia Master!' : 'Better luck next time!'}
             </p>
           </div>
-          <div style={{ width: '100%', padding: '0 1rem' }}>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+             <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-secondary)', textAlign: 'left', marginLeft: '0.5rem', marginBottom: '0.25rem' }}>LEADERBOARD</div>
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {sortedPlayers.map((p, idx) => {
                   const isCurrentMe = p.id === me.id;
                   const isWinner = idx === 0;
                   return (
                     <div key={p.id} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '1.25rem 1.5rem', borderRadius: '16px',
+                      padding: 'clamp(0.75rem, 2vw, 1.1rem) clamp(1rem, 3vw, 1.5rem)', borderRadius: '16px',
                       background: isCurrentMe ? 'var(--accent-glow)' : 'var(--item-bg)',
                       border: `1px solid ${isCurrentMe ? 'var(--accent)' : (isWinner ? '#fbbf24' : 'var(--item-border)')}`,
+                      animation: `slideLeft 0.4s ease-out ${idx * 0.1}s backwards`
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(0.5rem, 2vw, 1rem)', minWidth: 0 }}>
                          <span style={{ 
-                            width: '32px', height: '32px', borderRadius: '50%', background: isWinner ? '#fbbf24' : 'var(--bg-secondary)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 900, color: isWinner ? '#000' : 'var(--text-primary)'
+                            width: 'clamp(24px, 6vw, 32px)', height: 'clamp(24px, 6vw, 32px)', 
+                            borderRadius: '50%', background: isWinner ? '#fbbf24' : 'var(--bg-secondary)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                            fontSize: 'clamp(0.7rem, 2vw, 1rem)', fontWeight: 900, color: isWinner ? '#000' : 'var(--text-primary)',
+                            flexShrink: 0
                          }}>
                             {idx + 1}
                          </span>
-                         <span style={{ fontSize: '1.2rem', fontWeight: isCurrentMe ? 900 : 800, color: isCurrentMe ? 'var(--accent)' : 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            {p.name} {isCurrentMe && '(You)'}
+                         <span style={{ 
+                           fontSize: 'clamp(0.9rem, 3vw, 1.1rem)', 
+                           fontWeight: isCurrentMe ? 950 : 800, 
+                           color: isCurrentMe ? 'var(--accent)' : 'var(--text-primary)', 
+                           display: 'flex', alignItems: 'center', gap: '0.4rem',
+                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+                          }}>
+                            {p.name}
                             {(room.readyPlayers || []).includes(p.id) && (
-                              <span style={{ background: 'var(--success)', color: 'white', fontSize: '0.65rem', fontWeight: 900, padding: '2px 8px', borderRadius: '10px', letterSpacing: '0.05em' }}>READY</span>
+                              <span style={{ background: 'var(--success)', color: 'white', fontSize: '0.6rem', fontWeight: 950, padding: '1px 6px', borderRadius: '8px', flexShrink: 0 }}>READY</span>
                             )}
                          </span>
                       </div>
-                      <div style={{ fontSize: '1.4rem', fontWeight: 950, color: isWinner ? '#fbbf24' : 'var(--text-primary)' }}>
-                        {((room.gameData?.scores as Record<string, number>)?.[p.id] || 0)} pts
+                      <div style={{ fontSize: 'clamp(1rem, 3.5vw, 1.3rem)', fontWeight: 950, color: isWinner ? '#fbbf24' : 'var(--text-primary)', flexShrink: 0 }}>
+                        {((room.gameData?.scores as Record<string, number>)?.[p.id] || 0)} <span style={{ fontSize: '0.7rem', opacity: 0.6 }}>PTS</span>
                       </div>
                     </div>
                   );
                 })}
              </div>
           </div>
-          <div style={{ display: 'flex', gap: '1rem', width: '100%', marginTop: '1rem' }}>
-            <button className="btn btn-primary" onClick={() => socket.emit('play-again', { roomId: room.id })} style={{ flex: 2, height: '70px', fontSize: '1.5rem', fontWeight: 950 }}>
-              <RefreshCw size={24} /> PLAY AGAIN
+          <div style={{ display: 'flex', gap: '0.75rem', width: '100%', marginTop: '0.5rem', flexDirection: window.innerWidth < 480 ? 'column' : 'row' }}>
+            <button className="btn btn-primary" onClick={() => socket.emit('play-again', { roomId: room.id })} style={{ flex: 2, height: 'clamp(55px, 12vw, 65px)', fontSize: 'clamp(1rem, 3vw, 1.25rem)', fontWeight: 950 }}>
+              <RefreshCw size={18} /> PLAY AGAIN
             </button>
-            <button className="btn btn-outline" onClick={() => window.location.reload()} style={{ flex: 1, height: '70px', fontWeight: 800 }}>EXIT</button>
+            <button className="btn btn-outline" onClick={() => window.location.reload()} style={{ flex: 1, height: 'clamp(55px, 12vw, 65px)', fontWeight: 800, fontSize: 'clamp(0.9rem, 2.5vw, 1rem)' }}>EXIT</button>
           </div>
         </div>
       </div>
@@ -166,25 +188,21 @@ export const Quiz: React.FC<QuizProps> = ({ room, me }) => {
   const timeLeft = Math.max(timeLimit - elapsed, 0);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-primary)' }}>
-      {/* Header */}
-      <div style={{ padding: '1rem 2rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => window.location.reload()} className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '12px', padding: 0 }}>
-            <ArrowLeft size={20} />
-          </button>
-          <h2 style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 950, fontSize: '1.2rem' }}>
-            <Brain size={24} color="#ec4899" /> TECH QUIZ
-          </h2>
-        </div>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          <div style={{ padding: '0.5rem 1rem', background: 'var(--accent-glow)', color: 'var(--accent)', borderRadius: '12px', fontWeight: 800, border: '1px solid var(--accent)' }}>
-            {gd.currentQ + 1} / {gd.questions.length}
+      <div style={{ padding: 'clamp(0.5rem, 2vw, 1.5rem) clamp(1rem, 3vw, 2rem)', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ maxWidth: '1200px', width: '100%', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Progress</span>
+            <div style={{ fontSize: '1.5rem', fontWeight: 950, color: 'var(--accent)', display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
+               <span style={{ fontSize: '2.2rem', lineHeight: 1 }}>{gd.currentQ + 1}</span>
+               <span style={{ opacity: 0.5, fontSize: '1.2rem' }}>/</span>
+               <span style={{ opacity: 0.5, fontSize: '1.2rem' }}>{gd.questions.length}</span>
+            </div>
+          </div>
+          <div style={{ background: 'var(--accent-glow)', padding: '0.5rem 1.25rem', borderRadius: '14px', border: '1px solid var(--accent)', color: 'var(--accent)', fontWeight: 950, fontSize: '0.85rem' }}>
+             ROUND {gd.currentQ + 1}
           </div>
         </div>
-      </div>
 
-      <div style={{ padding: 'clamp(1rem, 3vw, 2rem)', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div className="dashboard-layout" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%', justifyContent: 'center' }}>
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             <div className="card" style={{ padding: '3.5rem 4rem', background: 'var(--card-bg)', border: '1px solid var(--item-border)', borderRadius: '24px' }}>
@@ -239,7 +257,6 @@ export const Quiz: React.FC<QuizProps> = ({ room, me }) => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 

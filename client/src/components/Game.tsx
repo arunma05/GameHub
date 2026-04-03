@@ -98,42 +98,92 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg-primary)', overflow: 'hidden' }}>
-      {/* Header */}
-      <div style={{ padding: '1rem 2rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-          <button onClick={() => window.location.reload()} className="btn btn-outline" style={{ width: '45px', height: '45px', padding: 0, borderRadius: '12px' }}>
-            <ArrowLeft size={20} />
-          </button>
-          <h2 style={{ margin: 0, fontWeight: 950, fontSize: '1.4rem', letterSpacing: '0.05em', color: 'var(--text-primary)' }}>BINGO <span style={{ color: 'var(--accent)' }}>LABS</span></h2>
-        </div>
-        <div style={{ padding: '0.6rem 1.5rem', background: isMyTurn ? 'var(--success-glow)' : 'var(--item-bg)', border: `1px solid ${isMyTurn ? 'var(--success)' : 'var(--item-border)'}`, borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: isMyTurn ? 'var(--success)' : 'var(--text-secondary)', animation: isMyTurn ? 'pulse 1.5s infinite' : 'none' }} />
-          <span style={{ fontWeight: 900, color: isMyTurn ? 'var(--success)' : 'var(--text-secondary)', fontSize: '0.85rem' }}>{isMyTurn ? 'YOUR TURN' : `${currentPlayer?.name}'s MOVE`}</span>
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, background: 'var(--bg-primary)', overflow: 'visible' }}>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: 'clamp(1rem, 3vw, 2.5rem)' }}>
-        <div className="dashboard-layout" style={{ maxWidth: '1300px', margin: '0 auto', width: '100%', justifyContent: 'center' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: 'clamp(1rem, 3vw, 2.5rem)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        
+        {/* Turn Indicator (Full Width) */}
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          marginBottom: '2.5rem', 
+          width: '100%',
+          maxWidth: '1300px'
+        }}>
+          <div style={{ 
+              padding: '1rem 2.5rem', 
+              background: isMyTurn ? 'var(--success-glow)' : 'var(--item-bg)', 
+              border: `1px solid ${isMyTurn ? 'var(--success)' : 'var(--item-border)'}`, 
+              borderRadius: '24px', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '1rem',
+              boxShadow: isMyTurn ? '0 10px 40px var(--success-glow)' : 'none',
+              transition: 'all 0.4s ease'
+          }}>
+            <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: isMyTurn ? 'var(--success)' : 'var(--text-secondary)', animation: isMyTurn ? 'pulse 1.5s infinite' : 'none' }} />
+            <span style={{ fontWeight: 950, color: isMyTurn ? 'var(--success)' : 'var(--text-primary)', fontSize: '1.1rem', letterSpacing: '0.05em' }}>
+              {isMyTurn ? 'YOUR SIGNAL' : `${currentPlayer?.name}'S SIGNAL`}
+            </span>
+          </div>
+        </div>
+
+        <div className="bingo-gameplay-container" style={{ 
+            maxWidth: '1400px', 
+            width: '100%', 
+            display: 'grid',
+            gridTemplateColumns: 'minmax(250px, 1fr) auto minmax(250px, 1fr)',
+            gap: '3rem',
+            alignItems: 'start',
+            justifyContent: 'center'
+        }}>
           
-          {/* Main Area */}
-          <div className="bingo-main-area" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', alignItems: 'center' }}>
+          {/* Left Sidebar - Radar */}
+          <div className="bingo-sidebar-left" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div className="card" style={{ padding: '1.5rem', borderRadius: '32px' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
+                   <Target size={18} /> <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>RADAR STATUS</span>
+                 </div>
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {room.players.map(p => {
+                      const active = p.id === currentPlayer?.id;
+                      return (
+                        <div key={p.id} style={{ 
+                          display: 'flex', justifyContent: 'space-between', padding: '1rem', 
+                          background: active ? 'var(--accent-glow)' : 'var(--item-bg)', 
+                          borderRadius: '16px', border: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
+                          transition: 'all 0.3s ease'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: active ? 'var(--accent)' : 'var(--item-border)' }} />
+                            <span style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.9rem' }}>{p.name}</span>
+                          </div>
+                          {active && <span style={{ background: 'var(--accent)', color: 'white', fontSize: '0.6rem', fontWeight: 950, padding: '3px 8px', borderRadius: '20px' }}>ACTIVE</span>}
+                        </div>
+                      );
+                    })}
+                 </div>
+              </div>
+          </div>
+
+          {/* Center Area - Grid */}
+          <div className="bingo-main-area" style={{ display: 'flex', flexDirection: 'column', gap: '2rem', alignItems: 'center' }}>
             
             {/* Letters Header */}
-            <div style={{ display: 'flex', gap: 'clamp(4px, 1.2vw, 8px)', width: '100%', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', gap: 'clamp(8px, 1.5vw, 12px)', width: '100%', justifyContent: 'center' }}>
               {bingoLetters.map((l, i) => {
                 const active = linesCompleted > i;
                 return (
                   <div key={l} style={{ 
-                    width: 'clamp(48px, 10vw, 80px)', height: 'clamp(48px, 10vw, 80px)', 
-                    borderRadius: 'clamp(10px, 1.8vw, 20px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 'clamp(1rem, 3vw, 1.8rem)', fontWeight: 950,
+                    width: 'clamp(55px, 9vw, 85px)', height: 'clamp(55px, 9vw, 85px)', 
+                    borderRadius: 'clamp(12px, 2vw, 24px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 'clamp(1.2rem, 3.5vw, 2rem)', fontWeight: 950,
                     background: active ? 'var(--success)' : 'var(--card-bg)',
                     color: active ? 'white' : 'var(--text-secondary)',
-                    border: `2px solid ${active ? 'var(--success)' : 'var(--item-border)'}`,
-                    boxShadow: active ? '0 0 25px var(--success-glow)' : 'none',
-                    transform: active ? 'translateY(-4px)' : 'none',
-                    transition: 'all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+                    border: `3px solid ${active ? 'var(--success)' : 'var(--item-border)'}`,
+                    boxShadow: active ? '0 0 35px var(--success-glow)' : 'none',
+                    transform: active ? 'translateY(-6px)' : 'none',
+                    transition: 'all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
                   }}>
                     {l}
                   </div>
@@ -142,8 +192,21 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
             </div>
 
             {/* Grid */}
-            <div style={{ position: 'relative', padding: '0.75rem', background: 'var(--item-bg)', borderRadius: '32px', border: '1px solid var(--item-border)' }}>
-               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 'clamp(6px, 1.2vw, 10px)' }}>
+            <div style={{ 
+              position: 'relative', 
+              padding: '1rem', 
+              background: 'var(--item-bg)', 
+              borderRadius: '40px', 
+              border: '1px solid var(--item-border)', 
+              boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+            }}>
+               <div style={{ 
+                 display: 'grid', 
+                 gridTemplateColumns: 'repeat(5, 1fr)', 
+                 gap: 'clamp(8px, 1.5vw, 12px)',
+                 opacity: isMyTurn ? 1 : 0.6,
+                 transition: 'all 0.4s ease'
+               }}>
                  {myCard.map((num, idx) => {
                    const called = calledSet.has(num);
                    const canClick = isMyTurn && !called && room.gameState === 'playing';
@@ -154,19 +217,20 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
                         disabled={!canClick}
                         className={`bingo-cell-modern ${called ? 'called' : ''}`}
                         style={{
-                          width: 'clamp(48px, 10vw, 80px)',
+                          width: 'clamp(55px, 9vw, 85px)',
                           aspectRatio: '1',
-                          borderRadius: 'clamp(10px, 1.8vw, 20px)',
+                          borderRadius: 'clamp(12px, 2vw, 24px)',
                           background: called ? 'var(--accent)' : 'var(--card-bg)',
                           border: `2px solid ${called ? 'transparent' : 'var(--item-border)'}`,
-                          color: called ? 'white' : 'var(--text-primary)',
-                          fontSize: 'clamp(1rem, 3vw, 1.8rem)',
+                          color: called ? 'white' : (isMyTurn ? 'var(--text-primary)' : 'var(--text-secondary)'),
+                          fontSize: 'clamp(1.2rem, 3.5vw, 2rem)',
                           fontWeight: 950,
                           cursor: canClick ? 'pointer' : 'default',
                           transition: 'all 0.3s cubic-bezier(0.23, 1, 0.32, 1)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          boxShadow: called ? '0 8px 16px var(--accent-glow)' : 'none',
-                          outline: 'none'
+                          boxShadow: called ? '0 12px 24px var(--accent-glow)' : 'none',
+                          outline: 'none',
+                          opacity: called ? 1 : (isMyTurn ? 1 : 0.5)
                         }}
                      >
                        {num}
@@ -177,47 +241,23 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
             </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="dashboard-sidebar">
-            <div className="card" style={{ padding: '2.5rem', textAlign: 'center', borderRadius: '32px' }}>
-               <p style={{ fontSize: '0.8rem', fontWeight: 900, opacity: 0.6, letterSpacing: '0.15em', marginBottom: '1.5rem' }}>LAST SIGNAL</p>
-               <div style={{ 
-                 width: '140px', height: '140px', borderRadius: '50%', margin: '0 auto',
-                 background: lastCalled ? 'var(--accent-glow)' : 'var(--item-bg)',
-                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                 fontSize: '4.5rem', fontWeight: 950, color: lastCalled ? 'var(--accent)' : 'var(--text-secondary)',
-                 border: lastCalled ? '2px solid var(--accent)' : '2px dashed var(--item-border)',
-                 animation: lastCalled ? 'pulse-accent 2s infinite' : 'none'
-               }}>
-                 {lastCalled || '-'}
-               </div>
-            </div>
-
-            <div className="card" style={{ padding: '1.5rem', borderRadius: '32px' }}>
-               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>
-                 <Target size={18} /> <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>RADAR STATUS</span>
-               </div>
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  {room.players.map(p => {
-                    const active = p.id === currentPlayer?.id;
-                    return (
-                      <div key={p.id} style={{ 
-                        display: 'flex', justifyContent: 'space-between', padding: '1.2rem', 
-                        background: active ? 'var(--accent-glow)' : 'var(--item-bg)', 
-                        borderRadius: '20px', border: `1px solid ${active ? 'var(--accent)' : 'transparent'}`,
-                        transition: 'all 0.3s ease'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: active ? 'var(--accent)' : 'var(--item-border)' }} />
-                          <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{p.name}</span>
-                        </div>
-                        {active && <span style={{ background: 'var(--accent)', color: 'white', fontSize: '0.65rem', fontWeight: 950, padding: '4px 10px', borderRadius: '20px' }}>ACTIVE</span>}
-                      </div>
-                    );
-                  })}
-               </div>
-            </div>
+          {/* Right Sidebar - Last Signal */}
+          <div className="bingo-sidebar-right" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div className="card" style={{ padding: '2.5rem', textAlign: 'center', borderRadius: '32px' }}>
+                 <p style={{ fontSize: '0.8rem', fontWeight: 900, opacity: 0.6, letterSpacing: '0.15em', marginBottom: '1.5rem' }}>LAST SIGNAL</p>
+                 <div style={{ 
+                   width: '150px', height: '150px', borderRadius: '50%', margin: '0 auto',
+                   background: lastCalled ? 'var(--accent-glow)' : 'var(--item-bg)',
+                   display: 'flex', alignItems: 'center', justifyContent: 'center',
+                   fontSize: '5rem', fontWeight: 950, color: lastCalled ? 'var(--accent)' : 'var(--text-secondary)',
+                   border: lastCalled ? '3px solid var(--accent)' : '3px dashed var(--item-border)',
+                   animation: lastCalled ? 'pulse-accent 2s infinite' : 'none'
+                 }}>
+                   {lastCalled || '-'}
+                 </div>
+              </div>
           </div>
+
         </div>
       </div>
 

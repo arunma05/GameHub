@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { socket } from '../socket';
 import { getSudoku } from 'sudoku-gen';
-import { Grid3X3, Trophy, CheckCircle, RotateCcw, ArrowLeft } from 'lucide-react';
+import { Grid3X3, Trophy, CheckCircle, RotateCcw } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface SudokuProps {
   leaderboard: Record<string, number>;
-  onBack: () => void;
 }
 
 interface SaveState {
@@ -16,8 +15,11 @@ interface SaveState {
   timeElapsed: number;
 }
 
-export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
-  const [playerName, setPlayerName] = useState('');
+export const Sudoku: React.FC<SudokuProps> = ({ leaderboard }) => {
+  const [playerName, setPlayerName] = useState(() => {
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved).name : '';
+  });
   const [gameState, setGameState] = useState<'login' | 'resume-prompt' | 'playing' | 'won'>('login');
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard' | 'expert'>('easy');
 
@@ -114,20 +116,67 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
 
   if (gameState === 'login') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '2rem', background: 'var(--bg-primary)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <div className="card" style={{ maxWidth: '400px', width: '100%', padding: '3rem', textAlign: 'center', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
           <Grid3X3 size={60} color="var(--accent)" style={{ marginBottom: '1rem' }} />
           <h1 style={{ color: 'var(--text-primary)', marginBottom: '1rem', fontWeight: 950 }}>SUDOKU</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2rem' }}>Classic 9x9 physical puzzle challenge.</p>
-          <input className="input-field" placeholder="YOUR NAME" value={playerName} onChange={e => setPlayerName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ width: '100%', marginBottom: '1rem', textAlign: 'center' }} />
-          <select className="input-field" value={difficulty} onChange={e => setDifficulty(e.target.value as any)} style={{ width: '100%', marginBottom: '1.5rem', textAlign: 'center' }}>
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-            <option value="expert">Expert</option>
-          </select>
-          <button className="btn btn-primary" onClick={handleLogin} style={{ width: '100%', height: '56px', fontWeight: 900 }} disabled={!playerName.trim()}>START GAME</button>
-          <button className="btn btn-outline" onClick={onBack} style={{ width: '100%', marginTop: '1rem' }}>EXIT</button>
+          {!playerName && (
+            <input className="input-field" placeholder="YOUR NAME" value={playerName} onChange={e => setPlayerName(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleLogin()} style={{ width: '100%', marginBottom: '1rem', textAlign: 'center' }} />
+          )}
+          <div style={{ marginBottom: '2rem' }}>
+            <label className="input-label" style={{ fontSize: '0.8rem', textAlign: 'center', display: 'block', marginBottom: '1rem' }}>SELECT DIFFICULTY</label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.75rem' }}>
+              {(['easy', 'medium', 'hard', 'expert'] as const).map(d => (
+                <button
+                  key={d}
+                  onClick={() => setDifficulty(d)}
+                  style={{
+                    padding: '1.15rem 1rem',
+                    borderRadius: '16px',
+                    border: '2px solid',
+                    borderColor: difficulty === d ? 'var(--accent)' : 'var(--item-border)',
+                    background: difficulty === d ? 'var(--accent-glow)' : 'var(--item-bg)',
+                    color: difficulty === d ? 'var(--accent)' : 'var(--text-secondary)',
+                    fontWeight: 800,
+                    fontSize: '0.9rem',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: difficulty === d ? '0 10px 20px rgba(0,0,0,0.1)' : 'none',
+                    transform: difficulty === d ? 'scale(1.02)' : 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.75rem'
+                  }}
+                >
+                  <div style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    border: `2px solid ${difficulty === d ? 'var(--accent)' : 'var(--text-secondary)'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    {difficulty === d && (
+                      <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent)' }} />
+                    )}
+                  </div>
+                  {d}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button 
+            className="btn btn-primary" 
+            onClick={handleLogin} 
+            style={{ width: '100%', height: '64px', fontWeight: 950, fontSize: '1.1rem', borderRadius: '18px' }} 
+            disabled={!playerName.trim()}
+          >
+            START GAME
+          </button>
         </div>
       </div>
     );
@@ -135,7 +184,7 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
 
   if (gameState === 'resume-prompt') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', padding: '2rem', background: 'var(--bg-primary)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <div className="card" style={{ maxWidth: '450px', width: '100%', padding: '3rem', textAlign: 'center', background: 'var(--card-bg)', border: '1px solid var(--item-border)' }}>
           <h1 style={{ color: 'var(--text-primary)', marginBottom: '1rem' }}>Welcome Back!</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', marginBottom: '2rem' }}>We found a saved game. Resume or start fresh?</p>
@@ -149,23 +198,11 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard, onBack }) => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}>
-      {/* Header */}
-      <div style={{ padding: '0.85rem 1.5rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => {
-            if (gameState === 'playing') saveDraft(initialBoard.join(''), board.join(''), solution, timeElapsed + activeSessionElapsed);
-            onBack();
-          }} className="btn btn-outline" style={{ width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}>
-            <ArrowLeft size={18} />
-          </button>
-          <h2 style={{ margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 950, fontSize: '1.2rem' }}>
-            <Grid3X3 size={20} color="var(--accent)" /> SUDOKU
-          </h2>
-        </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 800 }}>TIMER</div>
-          <div style={{ fontSize: '1.3rem', fontWeight: 950, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>{formatTime(displayTime)}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', padding: '1rem 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', zIndex: 10 }}>
+        <div style={{ textAlign: 'center', background: 'var(--accent-glow)', padding: '0.4rem 1.5rem', borderRadius: '12px', border: '1px solid var(--accent)' }}>
+          <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 950, letterSpacing: '0.1em' }}>TIMER</div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 950, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>{formatTime(displayTime)}</div>
         </div>
       </div>
 

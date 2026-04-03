@@ -16,15 +16,15 @@ export const Logo: React.FC<LogoProps> = ({ size = 48, showText = false }) => {
           borderRadius: size * 0.2
        }}>
           <img 
-            src="/arun_logo.png" 
-            alt="Arun's Logo" 
-            style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+            src="/funarcade_logo.png" 
+            alt="FunArcade Logo" 
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
           />
        </div>
 
        {showText && (
           <span style={{ fontSize: size * 0.5, fontWeight: 900, color: 'var(--text-primary)' }}>
-            Fun Arcade
+            FunArcade
           </span>
        )}
     </div>

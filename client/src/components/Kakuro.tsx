@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { socket } from '../socket';
-import { Trophy, CheckCircle, RotateCcw, ArrowLeft, Brain, HelpCircle, Activity } from 'lucide-react';
+import { Trophy, CheckCircle, RotateCcw, HelpCircle, Activity } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import type { Player, Room } from '../types';
 
@@ -8,7 +8,6 @@ interface KakuroProps {
   room: Room | null;
   me: Player | null;
   leaderboard: Record<string, number>;
-  onBack: () => void;
 }
 
 type Cell =
@@ -194,31 +193,29 @@ function generateKakuro(seed: number, forcedDifficulty: 'All' | number): Level {
   return { grid, difficulty, id: seed };
 }
 
-export const Kakuro: React.FC<KakuroProps> = ({ room, me, leaderboard, onBack }) => {
+export const Kakuro: React.FC<KakuroProps> = ({ room, me, leaderboard }) => {
   const [board, setBoard] = useState<(Cell | null)[][]>(() => {
-    return generateKakuro(Math.floor(Math.random() * 2147483647), 'All').grid;
+    if (room && room.gameData) {
+      const seed = (room.gameData as any).seed || Math.floor(Math.random() * 2147483647);
+      const level = (room.gameData as any).level || 1;
+      return generateKakuro(seed, level).grid;
+    }
+    return generateKakuro(Math.floor(Math.random() * 2147483647), 1).grid;
   });
   const [isWon, setIsWon] = useState(false);
   const [startTime, setStartTime] = useState(Date.now());
   const [timeElapsed, setTimeElapsed] = useState(0);
-  const [difficulty, setDifficulty] = useState<'All' | number>('All');
 
   useEffect(() => {
-    if (room && room.gameState === 'playing') {
-      if (room.players.length === 1) {
-        setDifficulty(prevDiff => {
-          setBoard(generateKakuro(Math.floor(Math.random() * 2147483647), prevDiff).grid);
-          return prevDiff;
-        });
-      } else {
-        const seed = (room as any).gameData?.level ?? Math.floor(Math.random() * 2147483647);
-        setBoard(generateKakuro(seed, 'All').grid);
-      }
+    if (room && room.gameState === 'playing' && room.gameData) {
+      const seed = (room.gameData as any).seed || Math.floor(Math.random() * 2147483647);
+      const level = (room.gameData as any).level || 1;
+      setBoard(generateKakuro(seed, level).grid);
       setStartTime(Date.now());
       setTimeElapsed(0);
       setIsWon(false);
     }
-  }, [room?.gameState]);
+  }, [room?.gameState, (room?.gameData as any)?.seed]);
 
   useEffect(() => {
     if (room?.gameState === 'playing' || !room) {
@@ -230,10 +227,14 @@ export const Kakuro: React.FC<KakuroProps> = ({ room, me, leaderboard, onBack })
   }, [room?.gameState, startTime]);
 
   const startNewGame = () => {
-    setBoard(generateKakuro(Math.floor(Math.random() * 2147483647), difficulty).grid);
-    setStartTime(Date.now());
-    setTimeElapsed(0);
-    setIsWon(false);
+    if (room) {
+      socket.emit('start-game', { roomId: room.id });
+    } else {
+      setBoard(generateKakuro(Math.floor(Math.random() * 2147483647), 1).grid);
+      setStartTime(Date.now());
+      setTimeElapsed(0);
+      setIsWon(false);
+    }
   };
 
   const handleCellChange = (r: number, c: number, val: string) => {
@@ -266,24 +267,11 @@ export const Kakuro: React.FC<KakuroProps> = ({ room, me, leaderboard, onBack })
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}>
-      {/* Standardization Header */}
-      <div style={{ padding: '0.85rem 1.5rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={onBack} className="btn btn-outline" style={{ width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}>
-            <ArrowLeft size={18} />
-          </button>
-          <h2 style={{ margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 950, fontSize: '1.2rem', letterSpacing: '0.05em' }}>
-            <Brain size={20} color="var(--accent)" /> KAKURO MASTER
-          </h2>
-        </div>
-        <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 800 }}>TIMER</div>
-            <div style={{ fontSize: '1.3rem', fontWeight: 950, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
-              {formatTime(timeElapsed)}
-            </div>
-          </div>
+    <div style={{ display: 'flex', flexDirection: 'column', padding: '1rem 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', zIndex: 10 }}>
+        <div style={{ background: 'var(--accent-glow)', padding: '0.4rem 1.5rem', borderRadius: '12px', border: '1px solid var(--accent)', textAlign: 'center' }}>
+          <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontWeight: 950, letterSpacing: '0.1em' }}>TIMER</div>
+          <div style={{ fontSize: '1.4rem', fontWeight: 950, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>{formatTime(timeElapsed)}</div>
         </div>
       </div>
 
@@ -419,37 +407,19 @@ export const Kakuro: React.FC<KakuroProps> = ({ room, me, leaderboard, onBack })
             )}
           </div>
 
-          {/* Sidebar: Config and Stats */}
+          {/* Sidebar: Stats and Leaderboard */}
           <div className="dashboard-sidebar">
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              {(!room || room.players.length === 1) && (
-                <div className="card" style={{ padding: '1.5rem', borderRadius: '24px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                    <Activity size={18} color="var(--accent)" />
-                    <span style={{ fontSize: '0.8rem', fontWeight: 950, color: 'var(--text-primary)', textTransform: 'uppercase' }}>Difficulty</span>
-                  </div>
-                  <select 
-                    className="input-field" 
-                    value={difficulty} 
-                    onChange={e => {
-                      const val = e.target.value;
-                      const newDiff = val === 'All' ? 'All' : parseInt(val);
-                      setDifficulty(newDiff);
-                      setBoard(generateKakuro(Math.floor(Math.random() * 2147483647), newDiff).grid);
-                      setStartTime(Date.now());
-                      setTimeElapsed(0);
-                      setIsWon(false);
-                    }}
-                    style={{ width: '100%', padding: '0.8rem' }}
-                  >
-                    <option value="All">All Challenges</option>
-                    {[1,2,3,4,5,6,7,8,9,10].map(d => (
-                      <option key={d} value={d}>Level {d} {d < 3 ? '(Easy)' : d < 6 ? '(Normal)' : d < 9 ? '(Hard)' : '(Grandmaster)'}</option>
-                    ))}
-                  </select>
+              <div className="card" style={{ padding: '1.5rem', borderRadius: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                  <Activity size={18} color="var(--accent)" />
+                  <span style={{ fontSize: '0.8rem', fontWeight: 950, color: 'var(--text-primary)', textTransform: 'uppercase' }}>CHALLENGE</span>
                 </div>
-              )}
+                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--accent)' }}>
+                  {room?.gameData && (room.gameData as any).level === 'All' ? 'Random Difficulty' : `Level ${(room?.gameData as any)?.level || 1}`}
+                </div>
+              </div>
 
               <div className="card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', borderRadius: '24px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--error)' }}>

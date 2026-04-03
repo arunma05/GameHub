@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "./generated/prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  name      String
+  password  String // Hashed
+  theme     String   @default("dark")
+  isGuest   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Result {
+  id        Int      @id @default(autoincrement())
+  gameType  String // e.g., 'typeracer', 'flappy', 'cssbattle-1', 'memory-6'
+  name      String
+  score     Float? // for wpm, score, etc.
+  time      Float? // for elapsed time
+  createdAt DateTime @default(now())
+}
+
+model WinCount {
+  id       Int    @id @default(autoincrement())
+  gameType String // e.g., 'bingo', 'chess', 'quiz', 'sixteencoins'
+  name     String
+  count    Int    @default(0)
+
+  @@unique([gameType, name])
+}
+
+model SudokuSave {
+  id          Int      @id @default(autoincrement())
+  playerName  String   @unique
+  puzzle      String
+  current     String
+  solution    String
+  timeElapsed Int
+  updatedAt   DateTime @updatedAt
+}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
-  Trophy, ArrowLeft, RefreshCw, Timer, Brain, 
+  Trophy, Timer, Brain, 
   Zap, Heart, Star, Cloud, Moon, Sun, 
   Camera, Coffee, Gift, 
   Anchor, Ghost, Grape, IceCream, Pizza, 
@@ -42,10 +42,9 @@ interface MemoryGameProps {
   room?: Room;
   me?: PlayerType;
   level: number;
-  onBack: () => void;
 }
 
-export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initialLevel, onBack }) => {
+export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initialLevel }) => {
   const [cards, setCards] = useState<Card[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -138,7 +137,7 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initial
     let interval: any = null;
     if (isActive && !isWon) {
       interval = setInterval(() => {
-        setTime((prev) => prev + 1);
+        setTime((prev: number) => prev + 1);
       }, 1000);
     }
     return () => clearInterval(interval);
@@ -155,12 +154,12 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initial
     setFlippedCards(newFlipped);
 
     if (newFlipped.length === 2) {
-      setMoves((prev) => prev + 1);
+      setMoves((prev: number) => prev + 1);
       const [firstId, secondId] = newFlipped;
 
       if (cards[firstId].iconIndex === cards[secondId].iconIndex) {
         setTimeout(() => {
-          setCards(prev => {
+          setCards((prev: Card[]) => {
             const updated = [...prev];
             updated[firstId].isMatched = true;
             updated[secondId].isMatched = true;
@@ -188,7 +187,7 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initial
         }, 500);
       } else {
         setTimeout(() => {
-          setCards(prev => {
+          setCards((prev: Card[]) => {
             const flipped = [...prev];
             flipped[firstId].isFlipped = false;
             flipped[secondId].isFlipped = false;
@@ -207,49 +206,22 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initial
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-main)', position: 'relative' }}>
-      
-      {/* Full-width Header */}
-      <header style={{ 
-        width: '100%', padding: '1rem 2rem', 
-        background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        zIndex: 50, position: 'sticky', top: 0,
-        boxShadow: 'var(--card-shadow)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
-          <button onClick={onBack} className="btn-link" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontWeight: 800, padding: 0 }}>
-             <ArrowLeft size={18} /> BACK
-          </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-             <Brain size={32} color="#ec4899" />
-             <div>
-               <h1 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 950, letterSpacing: '0.05em' }}>REMEMBER ME</h1>
-               <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>LEVEL: {level} CARDS</span>
-             </div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '3rem', alignItems: 'center' }}>
-          <div style={{ display: 'flex', gap: '2rem' }}>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-secondary)' }}>TIME</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Timer size={18} /> {formatTime(time)}
-              </div>
-            </div>
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 900, color: 'var(--text-secondary)' }}>MOVES</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#10b981' }}>{moves}</div>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '1.5rem 0 1rem 0', zIndex: 10 }}>
+        <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center', background: 'var(--accent-glow)', padding: '0.5rem 2rem', borderRadius: '16px', border: '1px solid var(--accent)' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '0.6rem', fontWeight: 950, color: 'var(--text-secondary)', letterSpacing: '0.1em' }}>TIME</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 950, color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {formatTime(time)}
             </div>
           </div>
-          {!room && (
-            <button onClick={initializeSinglePlayer} className="btn btn-outline" style={{ height: '40px', padding: '0 1rem', fontSize: '0.85rem' }}>
-               <RefreshCw size={16} /> RESET
-            </button>
-          )}
+          <div style={{ width: '1px', height: '28px', background: 'var(--accent)', opacity: 0.3 }} />
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '0.6rem', fontWeight: 950, color: 'var(--text-secondary)', letterSpacing: '0.1em' }}>MOVES</div>
+            <div style={{ fontSize: '1.4rem', fontWeight: 950, color: '#10b981' }}>{moves}</div>
+          </div>
         </div>
-      </header>
+      </div>
 
       {/* Countdown Overlay */}
       {countdown !== null && (
@@ -270,18 +242,31 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initial
         
         {/* Game Board */}
         <main style={{ flex: 1 }}>
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: `repeat(auto-fit, minmax(${level > 16 ? '150px' : '180px'}, 1fr))`, 
-            gap: '1.25rem', 
-            perspective: '1000px'
-          }}>
-            {cards.map((card) => {
+          <div 
+            className="memory-grid"
+            style={{ 
+              display: 'grid', 
+              gridTemplateColumns: `repeat(auto-fit, minmax(var(--card-min-size, ${level > 16 ? '120px' : '150px'}), 1fr))`, 
+              gap: '0.75rem', 
+              perspective: '1000px'
+            }}
+          >
+            <style>{`
+              :root { --card-min-size: ${level > 16 ? '120px' : '150px'}; }
+              @media (max-width: 600px) {
+                :root { --card-min-size: ${level > 16 ? '70px' : '90px'}; }
+                .memory-grid { gap: 0.5rem !important; }
+                .memory-card-icon-container { width: 40px !important; height: 40px !important; }
+                .memory-card-icon { width: 24px !important; height: 24px !important; }
+              }
+            `}</style>
+            {cards.map((card: Card) => {
               const IconData = ICONS[card.iconIndex] || ICONS[0];
               const Icon = IconData.icon;
               return (
                 <div
                   key={card.id}
+                  className="memory-card"
                   onClick={() => handleCardClick(card.id)}
                   style={{
                     aspectRatio: '1.6', 
@@ -313,12 +298,15 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initial
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     opacity: card.isMatched ? 0.3 : 1
                   }}>
-                    <div style={{
-                      width: '60px', height: '60px', borderRadius: '50%', 
-                      background: `${IconData.color}15`, display: 'flex', 
-                      alignItems: 'center', justifyContent: 'center'
-                    }}>
-                      <Icon size={38} color={IconData.color} strokeWidth={2.5} />
+                    <div 
+                      className="memory-card-icon-container"
+                      style={{
+                        width: '60px', height: '60px', borderRadius: '50%', 
+                        background: `${IconData.color}15`, display: 'flex', 
+                        alignItems: 'center', justifyContent: 'center'
+                      }}
+                    >
+                      <Icon className="memory-card-icon" size={38} color={IconData.color} strokeWidth={2.5} />
                     </div>
                   </div>
                 </div>
@@ -441,7 +429,7 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initial
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
-               <button onClick={onBack} className="btn btn-primary" style={{ height: '60px', borderRadius: '14px', fontSize: '1.1rem' }}>
+               <button onClick={() => window.location.reload()} className="btn btn-primary" style={{ height: '60px', borderRadius: '14px', fontSize: '1.1rem' }}>
                 EXIT TO DASHBOARD
               </button>
               {!room && (

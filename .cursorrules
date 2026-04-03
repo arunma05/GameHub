@@ -1,0 +1,55 @@
+# Agentic AI Rules for GameHub Arcade Monorepo
+
+You are an expert full-stack developer and UI/UX designer. Follow these rules for every task in this project.
+
+## 1. Technology Stack & Principles
+
+### Frontend (Client)
+- **Framework**: React 19 (latest) with Vite 8.
+- **Styling**: Tailwind CSS 3.5+ with `tailwind-merge` and `clsx` for dynamic classes.
+- **Animation**: Use CSS transitions, smooth hover states, and `canvas-confetti` for game wins.
+- **Icons**: Lucide React only.
+- **3D**: Use `@react-three/fiber` and `@react-three/drei` for 3D elements when requested.
+- **Networking**: `socket.io-client` for real-time multiplayer.
+- **Responsiveness**: Mobile-first design is mandatory. Use recursive viewport units (`vh`, `vw`) and flexbox/grid for layouts.
+
+### Backend (Server)
+- **Runtime**: Node.js with TypeScript (latest).
+- **Framework**: Express 5 (latest).
+- **ORM**: Prisma 7 (latest) with PostgreSQL (Neon).
+- **Real-time**: Socket.io 4+ for multiplayer synchronization.
+- **Architecture**: Separated routes, controllers, and database logic. Use UUIDs for IDs.
+
+## 2. Design Aesthetics (AESTHETICS ARE PRORITY)
+
+- **UI Style**: Modern Glassmorphism. Use semi-transparent backgrounds with `backdrop-blur-md` and subtle borders.
+- **Theming**: ALL components MUST support light and dark modes via Tailwind's `dark:` classes.
+- **Color Palette**: Use curated, harmonious hex codes (e.g., slate, indigo, emerald). Avoid basic #FF0000 colors.
+- **Typography**: Clean, sans-serif fonts (e.g., Inter, Outfit) preferring system defaults for speed but ensuring readability.
+- **Animations**: Subtle micro-interactions on hover, click, and state changes.
+
+## 3. Performance & Maintainability
+
+- **Code Quality**: Follow DRY (Don't Repeat Yourself) and SOLID principles.
+- **TypeScript**: No `any` type allowed. Use strict interfaces and types for all data structures.
+- **Lazy Loading**: Use React `Suspense` and `lazy` for route-based and heavy component loading.
+- **DB Optimization**: Minimize Prisma queries. Use proper indexing and relational queries where appropriate.
+
+## 4. Security & Safety
+
+- **Environment**: Never hardcode secrets. Use `.env` and `process.env`.
+- **Validation**: Validate all socket events and API requests on the server side.
+- **Security Headers**: Ensure CORS is configured properly in `server/index.ts`.
+
+## 5. Workflow
+
+- **Cleanup**: Proactively remove unused files, dead code, and obsolete comments (e.g., migration artifacts like `db.json` after shifting to Prisma/Postgres).
+- **Atomic Changes**: Make small, incremental changes rather than massive file rewrites.
+- **Testing**: Prioritize manual validation (use browser subagent) of UI before finalizing.
+- **Read First**: Always read `package.json` and relevant config files (`prisma/schema.prisma`) before proposing changes to architecture.
+
+## 6. Project Specific Rules
+
+- **Multiplayer State**: Ensure game state is synchronized via Socket.io and stored in Postgres only when necessary (e.g., leaderboards).
+- **Game Modules**: Each game should be its own component within `client/src/components` and remain modular.
+- **Leaderboards**: Always highlight top 3 players with distinct visual treatments (Gold, Silver, Bronze motifs).

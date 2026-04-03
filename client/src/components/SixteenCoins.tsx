@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { socket } from '../socket';
 import type { Room, Player } from '../types';
-import { Users, ArrowLeft } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { Vector3 } from 'three';
@@ -9,7 +9,6 @@ import { Vector3 } from 'three';
 interface SixteenCoinsProps {
   room: Room;
   me: Player;
-  onBack: () => void;
 }
 
 const SCALE = 60;
@@ -204,7 +203,7 @@ const BoardLines3D: React.FC = () => {
   );
 };
 
-export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) => {
+export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me }) => {
   const [selected, setSelected] = useState<string | null>(null);
   const [possibleMoves, setPossibleMoves] = useState<string[]>([]);
   const [hasJumpedInTurn, setHasJumpedInTurn] = useState(false);
@@ -223,16 +222,35 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
 
   const coinIdsRef = useRef<Record<string, string>>({});
   const nextCoinId = useRef(0);
-  const prevCoinsDataRef = useRef<Record<string, string>>({});
+  const prevCoinsRef = useRef<Record<string, string>>({});
+  const hasInitializedRef = useRef(false);
 
   useEffect(() => {
-    const prev = prevCoinsDataRef.current;
-    const fromList = Object.keys(prev).filter(k => !coins[k]);
-    const toList = Object.keys(coins).filter(k => !prev[k]);
-
-    if (Object.keys(prev).length === 0) {
+    const prev = prevCoinsRef.current;
+    if (!hasInitializedRef.current || Object.keys(prev).length === 0) {
       Object.keys(coins).forEach(k => { coinIdsRef.current[k] = `coin_${nextCoinId.current++}`; });
+      hasInitializedRef.current = true;
     } else {
+      const fromList = Object.keys(prev).filter(k => !coins[k]);
+      const toList = Object.keys(coins).filter(k => !prev[k]);
+
+      if (toList.length === 1) {
+        const target = toList[0];
+        const owner = coins[target];
+        const from = fromList.find(f => prev[f] === owner);
+        if (from) {
+          setLastMovePositions({ from, to: target });
+        }
+        const capturedCoins = fromList.filter(f => f !== from);
+        if (capturedCoins.length > 0) {
+          setRemovedCoins((prevRem) => [...prevRem, ...capturedCoins]);
+          setTimeout(() => {
+            setRemovedCoins((prevRem) => prevRem.filter(c => !capturedCoins.includes(c)));
+          }, 2000);
+        }
+      }
+
+      // Maintain IDs for animation
       if (toList.length === 1) {
         const target = toList[0];
         const owner = coins[target];
@@ -249,8 +267,17 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
         if (!coins[k]) delete coinIdsRef.current[k];
       });
     }
-    prevCoinsDataRef.current = coins;
+    prevCoinsRef.current = coins;
   }, [coins]);
+
+  // Reset highlight when game status changes to waiting or finished
+  useEffect(() => {
+    if (room.gameState !== 'playing') {
+      setLastMovePositions(null);
+      setRemovedCoins([]);
+      hasInitializedRef.current = false;
+    }
+  }, [room.gameState, room.id]);
 
   const handleNodeClick = (key: string) => {
     if (!isMyTurn) return;
@@ -322,28 +349,7 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
     if (selected && hasJumpedInTurn) calculateMoves(selected, coins, hasJumpedInTurn);
   }, [coins, selected, hasJumpedInTurn, calculateMoves]);
 
-  const [prevCoins, setPrevCoins] = useState<Record<string, string>>(coins);
-  useEffect(() => {
-    const fromList = Object.keys(prevCoins).filter(k => !coins[k]);
-    const toList = Object.keys(coins).filter(k => !prevCoins[k]);
-    if (toList.length === 1) {
-      const target = toList[0];
-      const owner = coins[target];
-      const from = fromList.find(f => prevCoins[f] === owner);
-      if (from) {
-        setLastMovePositions({ from, to: target });
-      }
-      const capturedCoins = fromList.filter(f => f !== from);
-      if (capturedCoins.length > 0) {
-        setRemovedCoins((prev: string[]) => [...prev, ...capturedCoins]);
-        const timeout = setTimeout(() => {
-          setRemovedCoins((prev: string[]) => prev.filter((c: string) => !capturedCoins.includes(c)));
-        }, 2000);
-        return () => clearTimeout(timeout);
-      }
-    }
-    setPrevCoins(coins);
-  }, [coins, prevCoins]);
+
 
   const endTurn = () => {
     socket.emit('sixteencoins-endturn', { roomId: room.id });
@@ -353,19 +359,7 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--bg-primary)' }}>
-      {/* Top Header */}
-      <div style={{ padding: '0.85rem 1.5rem', background: 'var(--card-bg)', borderBottom: '1px solid var(--item-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={onBack} className="btn btn-outline" style={{ width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}>
-            <ArrowLeft size={18} />
-          </button>
-          <h2 style={{ margin: 0, color: 'var(--text-primary)', fontWeight: 950, fontSize: '1.2rem', letterSpacing: '0.05em' }}>♟ 16 COINS</h2>
-        </div>
-        <div style={{ padding: '0.4rem 1rem', background: 'var(--accent-glow)', color: 'var(--accent)', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 900, border: '1px solid var(--accent)' }}>
-          ID: {room.id}
-        </div>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', padding: '1rem 0' }}>
 
       <div style={{ padding: 'clamp(1rem, 3vw, 2rem)', overflowY: 'auto', flex: 1 }}>
         <div className="dashboard-layout" style={{ maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
@@ -608,7 +602,6 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, onBack }) 
                 </div>
               </div>
 
-              <button onClick={onBack} className="btn btn-outline" style={{ marginTop: 'auto', width: '38px', height: '38px', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '10px' }}><ArrowLeft size={18} /></button>
             </div>
           </div>
         </div>

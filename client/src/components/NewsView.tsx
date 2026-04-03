@@ -1,17 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, Rss, ExternalLink, Search } from 'lucide-react';
+import { ExternalLink, Search } from 'lucide-react';
 
 interface NewsViewProps {
-  onBack: () => void;
   query?: string;
-  title?: string;
   subtitle?: string;
 }
 
 export const NewsView: React.FC<NewsViewProps> = ({ 
-  onBack, 
   query = 'Latest tech news', 
-  title = 'Tech Industry Updates',
   subtitle = 'Curated global updates. Use the search below to track new technology related news.'
 }) => {
   const [articles, setArticles] = useState<any[]>([]);
@@ -43,15 +39,7 @@ export const NewsView: React.FC<NewsViewProps> = ({
   };
 
   return (
-    <div className="container" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-        <button onClick={onBack} className="btn btn-outline" style={{ padding: '0.8rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <ArrowLeft size={18} /> Back
-        </button>
-        <h1 className="responsive-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: 0, fontSize: '2.5rem' }}>
-          <Rss color="var(--success)" /> {title}
-        </h1>
-      </div>
+    <div className="container" style={{ padding: 'clamp(1rem, 5vw, 3rem) 1rem', maxWidth: '1200px', margin: '0 auto', minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
 
       <div style={{ marginBottom: '2.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         <div style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', fontWeight: 600 }}>
