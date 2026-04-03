@@ -28,8 +28,12 @@ const io = new Server(server, {
 
 io.on('connection', async (socket: AugmentedSocket) => {
   console.log('Connected:', socket.id);
-  const initialLeaderboards = await getLeaderboards();
-  socket.emit('leaderboard-updated', initialLeaderboards);
+  try {
+    const initialLeaderboards = await getLeaderboards();
+    socket.emit('leaderboard-updated', initialLeaderboards);
+  } catch (err) {
+    console.error('Initial leaderboard fetch failed:', err);
+  }
   socket.emit('active-rooms', getActiveRooms());
 
   socket.on('sudoku-load', (data, callback) => handleSudokuLoad(socket, data, callback));
