@@ -61,6 +61,11 @@ const LoadingFallback = () => (
       @keyframes delayedShow {
         to { opacity: 1; visibility: visible; }
       }
+      @keyframes pulse-api {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.2); opacity: 0.7; }
+        100% { transform: scale(1); opacity: 1; }
+      }
     `}</style>
   </div>
 );
@@ -113,6 +118,18 @@ export const App: React.FC = () => {
     },
     error: null,
   });
+  const [isConnected, setIsConnected] = useState(socket.connected);
+
+  useEffect(() => {
+    function onConnect() { setIsConnected(true); }
+    function onDisconnect() { setIsConnected(false); }
+    socket.on('connect', onConnect);
+    socket.on('disconnect', onDisconnect);
+    return () => {
+      socket.off('connect', onConnect);
+      socket.off('disconnect', onDisconnect);
+    };
+  }, []);
 
   const handleAuthenticated = (user: any) => {
     setUser(user);
@@ -368,19 +385,31 @@ export const App: React.FC = () => {
                 </button>
                 <div style={{ width: '1px', height: '24px', background: 'var(--item-border)', margin: '0 0.25rem' }} />
                 <span style={{ 
-                  fontSize: 'clamp(0.85rem, 3.5vw, 1.1rem)', 
+                  fontSize: '1.2rem', 
                   fontWeight: 950, 
-                  color: 'var(--accent)', 
-                  textTransform: 'uppercase', 
-                  letterSpacing: '0.05em',
-                  flex: 1,
-                  minWidth: 0,
+                  color: 'var(--text-primary)', 
+                  letterSpacing: '-0.02em',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis'
                 }}>
                     {getPageTitle()}
                 </span>
+                
+                {/* Server Status Indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.15rem 0.4rem', background: 'var(--item-bg)', borderRadius: '8px', border: '1px solid var(--item-border)', marginLeft: '0.25rem' }}>
+                  <div style={{ 
+                    width: '6px', 
+                    height: '6px', 
+                    borderRadius: '50%', 
+                    background: isConnected ? '#10b981' : '#f43f5e',
+                    boxShadow: `0 0 8px ${isConnected ? '#10b981' : '#f43f5e'}`,
+                    animation: 'pulse-api 2s infinite'
+                  }} />
+                  <span style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {isConnected ? 'SERVER Active' : 'SERVER Offline'}
+                  </span>
+                </div>
               </div>
               <div className="game-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                 <div className="desktop-header-info" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>

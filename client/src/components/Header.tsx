@@ -72,14 +72,14 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, isDark, toggleTh
         {/* API Status Indicator */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: '0.5rem', padding: '0.2rem 0.5rem', background: 'var(--item-bg)', borderRadius: '10px', border: '1px solid var(--item-border)' }}>
           <div style={{ 
-            width: '8px', 
-            height: '8px', 
+            width: '6px', 
+            height: '6px', 
             borderRadius: '50%', 
             background: isConnected ? '#10b981' : '#f43f5e',
-            boxShadow: `0 0 10px ${isConnected ? '#10b981' : '#f43f5e'}`,
+            boxShadow: `0 0 8px ${isConnected ? '#10b981' : '#f43f5e'}`,
             animation: 'pulse-api 2s infinite'
           }} />
-          <span style={{ fontSize: '0.55rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <span style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {isConnected ? 'SERVER Active' : 'SERVER Offline'}
           </span>
         </div>
