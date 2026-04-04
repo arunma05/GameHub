@@ -145,6 +145,27 @@ export async function handleStartGame(socket: Socket, io: Server, { roomId }: { 
     room.gameData = { coins: initialCoins, readyCount: 2 };
     io.to(roomId).emit('game-started', room);
     broadcastActiveRooms(io);
+  } else if (room.type === 'jumprace') {
+    room.gameState = 'playing';
+    const p1Id = room.players[0].id;
+    const p2Id = room.players[1].id;
+    const board: Record<string, string> = {};
+    // Player 1 (Bottom corner triangle)
+    for (let i=0; i<4; i++) {
+        for (let j=0; j<4-i; j++) {
+            board[`${i},${j}`] = p1Id;
+        }
+    }
+    // Player 2 (Top corner triangle)
+    for (let i=0; i<4; i++) {
+        for (let j=0; j<4-i; j++) {
+            board[`${7-i},${7-j}`] = p2Id;
+        }
+    }
+    room.gameData = { board, turnIndex: 0 };
+    room.currentTurnIndex = 0;
+    io.to(roomId).emit('game-started', room);
+    broadcastActiveRooms(io);
   } else if (room.type === 'memory') {
     room.gameState = 'starting';
     const level = (room.gameData as any)?.level || 6;

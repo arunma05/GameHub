@@ -4,7 +4,7 @@ import {
   Zap, Heart, Star, Cloud, Moon, Sun, 
   Camera, Coffee, Gift, 
   Anchor, Ghost, Grape, IceCream, Pizza, 
-  Rocket, Smile, Umbrella, Watch, Users
+  Rocket, Smile, Umbrella, Watch, Users, Info
 } from 'lucide-react';
 import { socket } from '../socket';
 import type { Room, Player as PlayerType } from '../types';
@@ -341,6 +341,36 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initial
                     );
                   })}
                </div>
+             </div>
+          </aside>
+        )}
+
+        {!room && (
+          <aside className="responsive-card-width" style={{ width: '300px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+             <div className="card" style={{ padding: '1.5rem', background: 'var(--card-bg)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                   <Info size={18} color="var(--accent)" />
+                   <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 900 }}>HOW TO PLAY</h3>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                   {[
+                     'Find matching pairs of identical icons.',
+                     'Flip two cards back-to-back.',
+                     'Matched cards stay open; others flip back.',
+                     'Clear the entire board to win!'
+                   ].map((rule, i) => (
+                     <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                        <div style={{ 
+                          width: '18px', height: '18px', borderRadius: '50%', background: 'var(--accent-glow)', 
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '0.65rem', fontWeight: 950, color: 'var(--accent)', flexShrink: 0, marginTop: '2px'
+                        }}>
+                          {i + 1}
+                        </div>
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4, fontWeight: 600 }}>{rule}</p>
+                     </div>
+                   ))}
+                </div>
              </div>
           </aside>
         )}

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { socket } from '../socket';
 import type { Room, Player } from '../types';
 import confetti from 'canvas-confetti';
-import { Trophy, Skull, ArrowLeft, Target } from 'lucide-react';
+import { Trophy, Skull, ArrowLeft, Target, Info } from 'lucide-react';
 
 interface GameProps {
   room: Room;
@@ -130,12 +130,7 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
 
         <div className="bingo-gameplay-container" style={{ 
             maxWidth: '1400px', 
-            width: '100%', 
-            display: 'grid',
-            gridTemplateColumns: 'minmax(250px, 1fr) auto minmax(250px, 1fr)',
-            gap: '3rem',
-            alignItems: 'start',
-            justifyContent: 'center'
+            width: '100%'
         }}>
           
           {/* Left Sidebar - Radar */}
@@ -245,7 +240,7 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
           <div className="bingo-sidebar-right" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div className="card" style={{ padding: '2.5rem', textAlign: 'center', borderRadius: '32px' }}>
                  <p style={{ fontSize: '0.8rem', fontWeight: 900, opacity: 0.6, letterSpacing: '0.15em', marginBottom: '1.5rem' }}>LAST SIGNAL</p>
-                 <div style={{ 
+                 <div className="last-signal-circle" style={{ 
                    width: '150px', height: '150px', borderRadius: '50%', margin: '0 auto',
                    background: lastCalled ? 'var(--accent-glow)' : 'var(--item-bg)',
                    display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -256,12 +251,45 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
                    {lastCalled || '-'}
                  </div>
               </div>
+
+              <div className="card" style={{ padding: '1.5rem', borderRadius: '32px' }}>
+                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem', color: 'var(--text-secondary)' }}>
+                    <Info size={16} /> <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>HOW TO WIN</span>
+                 </div>
+                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {[
+                      'Complete 5 lines to spell B-I-N-G-O',
+                      "Pick a number when it's your signal",
+                      'Numbers highlighted are called',
+                      'Vertical, horizontal or diagonal lines'
+                    ].map((step, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                         <div style={{ 
+                           width: '18px', height: '18px', borderRadius: '50%', background: 'var(--accent-glow)', 
+                           display: 'flex', alignItems: 'center', justifyContent: 'center',
+                           fontSize: '0.65rem', fontWeight: 950, color: 'var(--accent)', flexShrink: 0, marginTop: '2px'
+                         }}>
+                           {idx + 1}
+                         </div>
+                         <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4, fontWeight: 600 }}>{step}</p>
+                      </div>
+                    ))}
+                 </div>
+              </div>
           </div>
 
         </div>
       </div>
 
       <style>{`
+        .bingo-gameplay-container {
+          display: grid;
+          grid-template-columns: minmax(250px, 1fr) auto minmax(250px, 1fr);
+          gap: 3rem;
+          align-items: start;
+          justify-content: center;
+        }
+
         .bingo-cell-modern:hover:not(:disabled) {
           transform: scale(1.08) translateY(-5px);
           border-color: var(--accent);
@@ -280,19 +308,38 @@ export const Game: React.FC<GameProps> = ({ room, me }) => {
           70% { box-shadow: 0 0 0 20px rgba(59, 130, 246, 0); transform: scale(1.05); }
           100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); transform: scale(1); }
         }
+        .last-signal-circle {
+          transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
         @media (min-width: 1025px) {
           .bingo-main-area {
             flex: 0 1 auto !important;
           }
-          .dashboard-layout {
-            justify-content: center !important;
-            gap: 5rem !important;
-          }
         }
         @media (max-width: 1024px) {
-          .dashboard-layout {
-            align-items: center !important;
-            text-align: center;
+          .bingo-gameplay-container {
+            grid-template-columns: 1fr !important;
+            gap: 2rem !important;
+          }
+          .bingo-main-area {
+            order: 1;
+            width: 100%;
+          }
+          .bingo-sidebar-right {
+            order: 2;
+            width: 100%;
+          }
+          .bingo-sidebar-left {
+            order: 3;
+            width: 100%;
+          }
+          .last-signal-circle {
+            width: 100px !important;
+            height: 100px !important;
+            font-size: 3rem !important;
+          }
+          .bingo-sidebar-right .card {
+            padding: 1.5rem !important;
           }
         }
       `}</style>

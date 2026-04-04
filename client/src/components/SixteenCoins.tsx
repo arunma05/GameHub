@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { socket } from '../socket';
 import type { Room, Player } from '../types';
-import { Users } from 'lucide-react';
+import { Users, Info } from 'lucide-react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
 import { Vector3 } from 'three';
@@ -9,6 +9,7 @@ import { Vector3 } from 'three';
 interface SixteenCoinsProps {
   room: Room;
   me: Player;
+  isDark?: boolean;
 }
 
 const SCALE = 60;
@@ -174,7 +175,7 @@ const LastMoveLine3D: React.FC<{ from: string; to: string }> = ({ from, to }) =>
   );
 };
 
-const BoardLines3D: React.FC = () => {
+const BoardLines3D: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   const lines: [number, number, number, number, number, number][] = [];
   const addLine = (x1: number, y1: number, x2: number, y2: number) => {
     lines.push([x1 - 4, 0.005, y1 - 4, x2 - 4, 0.005, y2 - 4]);
@@ -195,15 +196,19 @@ const BoardLines3D: React.FC = () => {
       {lines.map((l, i) => (
         <mesh key={i} position={[(l[0] + l[3]) / 2, 0, (l[2] + l[5]) / 2]}
           rotation={[0, -Math.atan2(l[5] - l[2], l[3] - l[0]), 0]}>
-          <boxGeometry args={[Math.sqrt(Math.pow(l[3] - l[0], 2) + Math.pow(l[5] - l[2], 2)), 0.005, 0.04]} />
-          <meshStandardMaterial color="#ffffff" />
+          <boxGeometry args={[Math.sqrt(Math.pow(l[3] - l[0], 2) + Math.pow(l[5] - l[2], 2)), 0.005, 0.07]} />
+          <meshStandardMaterial 
+            color={isDark ? "#ffffff" : "#475569"} 
+            emissive={isDark ? "#ffffff" : "#475569"} 
+            emissiveIntensity={isDark ? 0.5 : 0.2} 
+          />
         </mesh>
       ))}
     </group>
   );
 };
 
-export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me }) => {
+export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me, isDark = true }) => {
   const [selected, setSelected] = useState<string | null>(null);
   const [possibleMoves, setPossibleMoves] = useState<string[]>([]);
   const [hasJumpedInTurn, setHasJumpedInTurn] = useState(false);
@@ -427,7 +432,7 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me }) => {
                     transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
                   }}>
                     <svg width="100%" height="100%" viewBox="0 0 600 600">
-                      <g stroke="var(--item-border)" strokeWidth="3" opacity="0.6">
+                      <g stroke="var(--board-line)" strokeWidth="3.5">
                         <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 0 * SCALE} x2={OFFSET + 0 * SCALE} y2={OFFSET + 2 * SCALE} />
                         <line x1={OFFSET + 0 * SCALE} y1={OFFSET + 2 * SCALE} x2={OFFSET + 2 * SCALE} y2={OFFSET + 4 * SCALE} />
                         <line x1={OFFSET + 2 * SCALE} y1={OFFSET + 4 * SCALE} x2={OFFSET + 4 * SCALE} y2={OFFSET + 2 * SCALE} />
@@ -513,7 +518,7 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me }) => {
 
                       <group rotation={[0, boardRotation * (Math.PI / 180), 0]}>
                         <BoardBase3D />
-                        <BoardLines3D />
+                        <BoardLines3D isDark={isDark} />
                         {uniqueNodes.map(node => {
                           const key = `${node.x},${node.y}`;
                           const isPossible = possibleMoves.includes(key);
@@ -600,6 +605,26 @@ export const SixteenCoins: React.FC<SixteenCoinsProps> = ({ room, me }) => {
                   <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 700 }}>Rotation</span>
                   <input type="range" min="0" max="360" value={boardRotation} onChange={(e) => setBoardRotation(Number(e.target.value))} style={{ width: '100%', height: '6px', accentColor: 'var(--accent)' }} />
                 </div>
+              </div>
+
+              <div style={{ height: '1px', background: 'var(--item-border)', opacity: 0.3 }} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                   <Info size={14} color="var(--accent)" />
+                   <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', fontWeight: 800, textTransform: 'uppercase' }}>How to Play</span>
+                </div>
+                {[
+                  'Capture opponent pieces by jumping over them.',
+                  'Capture all opponent pieces to win.',
+                  'Multiple jumps are allowed in one turn.',
+                  'Move one step to adjacent empty nodes.'
+                ].map((rule, i) => (
+                  <div key={i} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', gap: '0.5rem', lineHeight: 1.3 }}>
+                    <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'var(--accent)', marginTop: '0.4rem', flexShrink: 0 }} />
+                    {rule}
+                  </div>
+                ))}
               </div>
 
             </div>

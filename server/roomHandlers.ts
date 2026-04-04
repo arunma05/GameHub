@@ -7,6 +7,8 @@ import { CreateRoomSchema, JoinRoomSchema } from './validation';
 
 export interface AugmentedSocket extends Socket {
   playerName?: string;
+  userId?: number;
+  isGuest?: boolean;
 }
 
 export const rooms: Record<string, Room> = {};

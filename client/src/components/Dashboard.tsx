@@ -2,7 +2,7 @@ import React from 'react';
 import { Gamepad2, Timer, Trophy, Globe, Zap, Brain, Paintbrush, Grid3X3, Sword, LayoutGrid, Lightbulb, HelpCircle } from 'lucide-react';
 
 interface DashboardProps {
-  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory') => void;
+  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace') => void;
   leaderboards: Record<string, any>;
   onSelectNews?: (query: string, title: string, subtitle: string) => void;
 }
@@ -18,7 +18,8 @@ const GAME_META: Record<string, { color: string; label: string; icon: React.Reac
   kakuro: { color: '#a78bfa', label: 'Kakuro', icon: <Brain size={13} /> },
   sixteencoins: { color: '#6366f1', label: '16 Coins', icon: <Sword size={13} /> },
   gridorder: { color: '#f59e0b', label: 'Grid Order', icon: <LayoutGrid size={13} /> },
-  memory: { color: '#ec4899', label: 'Remember Me', icon: <Lightbulb size={13} /> }
+  memory: { color: '#ec4899', label: 'Remember Me', icon: <Lightbulb size={13} /> },
+  jumprace: { color: '#10b981', label: 'Jump Race', icon: <Sword size={13} /> }
 };
 
 const NewsTile: React.FC<{ 
@@ -191,6 +192,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 { type: 'sixteencoins' as const, players: '2 Player', color: '#6366f1', icon: <Sword size={32} color="#6366f1" />, title: '16 COINS', desc: 'Classic strategy board game in stunning 3D. Capture all opponent coins to win!' },
                 { type: 'gridorder' as const, players: 'Single/Multiplayer', color: '#f59e0b', icon: <LayoutGrid size={32} color="#f59e0b" />, title: 'GRID ORDER', desc: 'Shuffle the numbers into the right order. Race against others or beat your own best time!' },
                 { type: 'memory' as const, players: 'Single/Multiplayer', color: '#ec4899', icon: <Lightbulb size={32} color="#ec4899" />, title: 'REMEMBER ME', desc: 'Test your memory! Match all pairs of cards as fast as you can. Solve single player or race in multiplayer!' },
+                { type: 'jumprace' as const, players: '2 Player', color: '#10b981', icon: <Sword size={32} color="#10b981" />, title: 'JUMP RACE', desc: 'Race your pieces to the opposite corner. Jump over any piece to speed ahead!' },
               ].map(({ type, players, color, icon, title, desc }) => (
                 <div
                   key={type}

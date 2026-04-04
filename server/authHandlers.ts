@@ -13,7 +13,7 @@ export const handleGetCaptcha = (socket: Socket) => {
   return { n1, n2 };
 };
 
-export const handleRegister = async (socket: Socket, data: any, callback: (res: any) => void) => {
+export const handleRegister = async (socket: AugmentedSocket, data: any, callback: (res: any) => void) => {
   console.log('Registration request:', data.username);
   try {
     const validated = RegisterSchema.parse(data);
@@ -39,6 +39,10 @@ export const handleRegister = async (socket: Socket, data: any, callback: (res: 
       }
     });
 
+    socket.userId = user.id;
+    socket.isGuest = false;
+    socket.playerName = user.name;
+
     callback({ 
       success: true, 
       user: { 
@@ -53,7 +57,7 @@ export const handleRegister = async (socket: Socket, data: any, callback: (res: 
   }
 };
 
-export const handleLogin = async (socket: Socket, data: any, callback: (res: any) => void) => {
+export const handleLogin = async (socket: AugmentedSocket, data: any, callback: (res: any) => void) => {
   console.log('Login request:', data.username);
   try {
     const validated = LoginSchema.parse(data);
@@ -67,6 +71,10 @@ export const handleLogin = async (socket: Socket, data: any, callback: (res: any
     if (!valid) {
       return callback({ success: false, message: 'Invalid password' });
     }
+
+    socket.userId = user.id;
+    socket.isGuest = false;
+    socket.playerName = user.name;
 
     callback({ 
       success: true, 
@@ -82,10 +90,15 @@ export const handleLogin = async (socket: Socket, data: any, callback: (res: any
   }
 };
 
-export const handleGuestLogin = async (socket: Socket, callback: (res: any) => void) => {
+export const handleGuestLogin = async (socket: AugmentedSocket, callback: (res: any) => void) => {
   console.log('Guest login request from:', socket.id);
   const guestId = Math.random().toString(36).substring(7).toUpperCase();
   const guestName = `Guest_${guestId}`;
+  
+  socket.userId = -1;
+  socket.isGuest = true;
+  socket.playerName = guestName;
+  
   callback({ 
     success: true, 
     user: { 
@@ -98,11 +111,10 @@ export const handleGuestLogin = async (socket: Socket, callback: (res: any) => v
   });
 };
 
-export const handleUpdateTheme = async (socket: Socket, theme: string) => {
-    const s = socket as any;
-    if (s.userId && s.userId !== -1) {
+export const handleUpdateTheme = async (socket: AugmentedSocket, theme: string) => {
+    if (socket.userId && socket.userId !== -1) {
         await prisma.user.update({
-            where: { id: s.userId },
+            where: { id: socket.userId },
             data: { theme }
         });
     }

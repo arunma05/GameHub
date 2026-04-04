@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const CreateRoomSchema = z.object({
   playerName: z.string().min(1).max(20),
-  type: z.enum(['bingo', 'typeracer', 'chess', 'flappy', 'quiz', 'cssbattle', 'sudoku', 'sixteencoins', 'kakuro', 'gridorder', 'memory']),
+  type: z.enum(['bingo', 'typeracer', 'chess', 'flappy', 'quiz', 'cssbattle', 'sudoku', 'sixteencoins', 'kakuro', 'gridorder', 'memory', 'jumprace']),
   isPublic: z.boolean().optional(),
   quizAmount: z.number().min(5).max(50).optional(),
   quizCategory: z.number().optional(),
@@ -25,6 +25,12 @@ export const TypeProgressSchema = z.object({
 export const SixteenCoinsMoveSchema = z.object({
   roomId: z.string().length(5),
   coins: z.record(z.string(), z.string()), // coordinate -> playerId
+});
+
+export const JumpRaceMoveSchema = z.object({
+  roomId: z.string().length(5),
+  board: z.record(z.string(), z.string()), // 'x,y' -> playerId
+  lastJump: z.string().optional(),
 });
 
 export const FlappyScoreSchema = z.object({

@@ -1,8 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import { rooms, broadcastActiveRooms } from './roomHandlers';
 import { getLeaderboards, updatePlayerWin } from './leaderboard';
-import { SixteenCoinsMoveSchema } from './validation';
-import { ChessData, SixteenCoinsData } from './types';
+import { SixteenCoinsMoveSchema, JumpRaceMoveSchema } from './validation';
+import { ChessData, SixteenCoinsData, JumpRaceData } from './types';
 
 export interface ChessMove {
   fen: string;
@@ -155,4 +155,58 @@ export async function handleSixteenCoinsReady(socket: Socket, io: Server, { room
   } else {
     io.to(roomId).emit('room-updated', room);
   }
+}
+
+export async function handleJumpRaceMove(socket: Socket, io: Server, data: unknown) {
+  const res = JumpRaceMoveSchema.safeParse(data);
+  if (!res.success) return;
+
+  const { roomId, board, lastJump } = res.data;
+  const room = rooms[roomId];
+  if (!room || room.gameState !== 'playing' || room.type !== 'jumprace') return;
+
+  const gameData = room.gameData as JumpRaceData;
+  if (gameData) {
+    gameData.board = board;
+    gameData.lastJump = lastJump;
+  }
+
+  // Check win condition
+  const p1Id = room.players[0].id;
+  const p2Id = room.players[1].id;
+  
+  const p1Starts: string[] = [];
+  for (let i=0; i<4; i++) for (let j=0; j<4-i; j++) p1Starts.push(`${i},${j}`);
+  const p2Starts: string[] = [];
+  for (let i=0; i<4; i++) for (let j=0; j<4-i; j++) p2Starts.push(`${7-i},${7-j}`);
+
+  const p1InP2Base = p2Starts.filter(pos => board[pos] === p1Id).length;
+  const p2InP1Base = p1Starts.filter(pos => board[pos] === p2Id).length;
+
+  if (p1InP2Base === 10 || p2InP1Base === 10) {
+    room.gameState = 'finished';
+    const winner = p1InP2Base === 10 ? room.players[0] : room.players[1];
+    room.winner = winner;
+    room.winners = [winner];
+    await updatePlayerWin(winner.name, 'jumprace');
+    const lb = await getLeaderboards();
+    io.to(roomId).emit('game-over', { winner, room });
+    io.emit('leaderboard-updated', lb);
+    broadcastActiveRooms(io);
+  } else {
+    io.to(roomId).emit('room-updated', room);
+  }
+}
+
+export async function handleJumpRaceEndTurn(socket: Socket, io: Server, { roomId }: { roomId: string }) {
+  const room = rooms[roomId];
+  if (!room || room.gameState !== 'playing' || room.type !== 'jumprace') return;
+
+  const gameData = room.gameData as JumpRaceData;
+  if (gameData) {
+     gameData.turnIndex = (gameData.turnIndex + 1) % room.players.length;
+     room.currentTurnIndex = gameData.turnIndex;
+     gameData.lastJump = undefined;
+  }
+  io.to(roomId).emit('room-updated', room);
 }

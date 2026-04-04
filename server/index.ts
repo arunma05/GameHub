@@ -7,7 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import { rooms, handleCreateRoom, handleJoinRoom, broadcastActiveRooms, getActiveRooms, AugmentedSocket } from './roomHandlers';
 import { handleStartGame, handleCallNumber, handleTypeProgress } from './gameHandlers';
-import { handleChessMove, handleSixteenCoinsMove, handleSudokuWin, handleKakuroWin, handleSudokuLoad, handleSudokuSave, handleGridOrderWin, handleGridOrderScore, handleSixteenCoinsEndTurn, handleSixteenCoinsReady } from './puzzleHandlers';
+import { handleChessMove, handleSixteenCoinsMove, handleSudokuWin, handleKakuroWin, handleSudokuLoad, handleSudokuSave, handleGridOrderWin, handleGridOrderScore, handleSixteenCoinsEndTurn, handleSixteenCoinsReady, handleJumpRaceMove, handleJumpRaceEndTurn } from './puzzleHandlers';
 import { handleQuizAnswer, handleFlappyScore, handleMemoryWin } from './contestHandlers';
 import { handleRegister, handleLogin, handleGuestLogin, handleGetCaptcha, handleUpdateTheme } from './authHandlers';
 import { getLeaderboards } from './leaderboard';
@@ -56,6 +56,8 @@ io.on('connection', async (socket: AugmentedSocket) => {
   socket.on('kakuro-win', (data) => handleKakuroWin(socket, io, data));
   socket.on('gridorder-win', (data) => handleGridOrderWin(socket, io, data));
   socket.on('gridorder-score', (data) => handleGridOrderScore(socket, io, data));
+  socket.on('jumprace-move', (data) => handleJumpRaceMove(socket, io, data));
+  socket.on('jumprace-endturn', (data) => handleJumpRaceEndTurn(socket, io, data));
 
   // Auth Handlers
   socket.on('get-captcha', (callback) => callback(handleGetCaptcha(socket)));

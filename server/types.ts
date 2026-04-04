@@ -17,7 +17,8 @@ export type GameType =
   | 'sixteencoins' 
   | 'kakuro' 
   | 'gridorder' 
-  | 'memory';
+  | 'memory'
+  | 'jumprace';
 
 export type GameState = 'waiting' | 'starting' | 'playing' | 'finished';
 
@@ -43,7 +44,13 @@ export interface SixteenCoinsData {
   readyCount: number;
 }
 
-export type GameData = string | ChessData | QuizData | SixteenCoinsData | { gridSize: number } | { level: number | 'All' } | null;
+export interface JumpRaceData {
+    board: Record<string, string>;
+    turnIndex: number;
+    lastJump?: string;
+}
+
+export type GameData = string | ChessData | QuizData | SixteenCoinsData | JumpRaceData | { gridSize: number } | { level: number | 'All' } | null;
 
 export interface Room {
   id: string;
@@ -81,4 +88,5 @@ export interface Leaderboards {
   memory: Record<string, LeaderboardEntry[]>;
   flappy: LeaderboardEntry[];
   cssbattle: Record<string, LeaderboardEntry[]>;
+  jumprace: Record<string, number>;
 }

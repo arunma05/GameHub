@@ -1,6 +1,6 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { socket } from './socket';
-import type { GameState, Room, PublicRoom } from './types';
+import type { GameState, Room, PublicRoom, Player } from './types';
 import { ArrowLeft, Sun, Moon, Settings, X } from 'lucide-react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
@@ -23,6 +23,7 @@ const Kakuro = lazy(() => import('./components/Kakuro').then(m => ({ default: m.
 const GridOrder = lazy(() => import('./components/GridOrder').then(m => ({ default: m.GridOrder })));
 const MemoryGame = lazy(() => import('./components/MemoryGame').then(m => ({ default: m.MemoryGame })));
 const NewsView = lazy(() => import('./components/NewsView').then(m => ({ default: m.NewsView })));
+const JumpRaceComponent = lazy(() => import('./components/JumpRaceComponent').then(m => ({ default: m.JumpRaceComponent }))) as React.LazyExoticComponent<React.FC<{ room: Room; me: Player; isDark?: boolean }>>;
 
 const LoadingFallback = () => (
   <div style={{ 
@@ -69,8 +70,8 @@ export const App: React.FC = () => {
     const saved = localStorage.getItem('user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'news'>('dashboard');
-  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | null>(null);
+  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'news' | 'jumprace'>('dashboard');
+  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | null>(null);
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [isDark, setIsDark] = useState<boolean>(() => {
     if (user?.theme) return user.theme === 'dark';
@@ -108,7 +109,7 @@ export const App: React.FC = () => {
     me: null,
     leaderboards: { 
       bingo: {}, typeracer: [], chess: {}, quiz: {}, sudoku: {}, kakuro: {}, sixteencoins: {}, gridorder: {},
-      flappy: [], cssbattle: {}, memory: {}
+      flappy: [], cssbattle: {}, memory: {}, jumprace: {}
     },
     error: null,
   });
@@ -171,13 +172,14 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleSelectGame = (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory') => {
+  const handleSelectGame = (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace') => {
     setSelectedGame(type);
     setGameState(prev => ({ ...prev, room: null, me: null })); 
     if (type === 'flappy') setView('flappy');
     else if (type === 'cssbattle') setView('cssbattle');
     else if (type === 'sudoku') setView('sudoku');
     else if (type === 'sixteencoins') setView('sixteencoins');
+    else if (type === 'jumprace') setView('jumprace');
     else setView('home');
   };
 
@@ -221,7 +223,11 @@ export const App: React.FC = () => {
     }
 
     if (view === 'sixteencoins' && gameState.room && gameState.me) {
-      return <SixteenCoins room={gameState.room} me={gameState.me} />;
+      return <SixteenCoins room={gameState.room} me={gameState.me} isDark={isDark} />;
+    }
+
+    if (view === 'jumprace' && gameState.room && gameState.me) {
+        return <JumpRaceComponent room={gameState.room} me={gameState.me} isDark={isDark} />;
     }
 
     if (view === 'memory') {
@@ -264,7 +270,9 @@ export const App: React.FC = () => {
       } else if (gameState.room.type === 'sudoku') {
         return <Sudoku leaderboard={gameState.leaderboards.sudoku} />;
       } else if (gameState.room.type === 'sixteencoins') {
-        return <SixteenCoins room={gameState.room} me={gameState.me} />;
+        return <SixteenCoins room={gameState.room} me={gameState.me} isDark={isDark} />;
+      } else if (gameState.room.type === 'jumprace') {
+        return <JumpRaceComponent room={gameState.room} me={gameState.me} isDark={isDark} />;
       } else if (gameState.room.type === 'quiz') {
         return <Quiz room={gameState.room} me={gameState.me} />;
       } else if (gameState.room.type === 'kakuro') {
@@ -286,12 +294,14 @@ export const App: React.FC = () => {
     if (view === 'sudoku') return 'Sudoku';
     if (view === 'sixteencoins') return '16 Coins';
     if (view === 'memory') return 'Remember Me';
+    if (view === 'jumprace') return 'Jump Race';
     if (view === 'home') return selectedGame?.toUpperCase() || 'New Game';
     if (view === 'lobby') return 'Lobby';
     if (view === 'game') {
       const type = gameState.room?.type;
       if (type === 'quiz') return 'TRIVIA';
       if (type === 'sixteencoins') return '16 COINS';
+      if (type === 'jumprace') return 'JUMP RACE';
       if (type === 'gridorder') return 'GRID ORDER';
       if (type === 'typeracer') return 'TYPE RACER';
       if (type === 'memory') return 'MEMORY GAME';

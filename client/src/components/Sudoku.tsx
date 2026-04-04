@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { socket } from '../socket';
 import { getSudoku } from 'sudoku-gen';
-import { Grid3X3, Trophy, CheckCircle, RotateCcw } from 'lucide-react';
+import { Grid3X3, Trophy, CheckCircle, RotateCcw, Info } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface SudokuProps {
@@ -271,6 +271,25 @@ export const Sudoku: React.FC<SudokuProps> = ({ leaderboard }) => {
                        <span style={{ color: 'var(--success)', fontWeight: 950 }}>{wins}🏆</span>
                     </div>
                   ))}
+                </div>
+              </div>
+              <div className="card" style={{ padding: '1.5rem', borderRadius: '24px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                   <Info size={18} color="var(--accent)" />
+                   <span style={{ fontSize: '0.8rem', fontWeight: 950, color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Game Rules</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                   {[
+                     'Fill every 9x9 row, column, and 3x3 box.',
+                     'Use numbers 1-9 without repetition.',
+                     'Use logic; no guessing is required.',
+                     'Pre-filled numbers cannot be changed.'
+                   ].map((rule, i) => (
+                     <div key={i} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', gap: '0.5rem', lineHeight: 1.4 }}>
+                       <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--accent)', marginTop: '0.5rem', flexShrink: 0 }} />
+                       {rule}
+                     </div>
+                   ))}
                 </div>
               </div>
             </div>

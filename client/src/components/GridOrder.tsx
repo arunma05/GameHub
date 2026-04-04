@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Trophy, Grid, Shuffle } from 'lucide-react';
+import { Trophy, Grid, Shuffle, Info } from 'lucide-react';
 import { socket } from '../socket';
 import type { Room, Player } from '../types';
 
@@ -246,6 +246,29 @@ export const GridOrder: React.FC<GridOrderProps> = ({ room, me, leaderboard }) =
              ))}
          </div>
          <p style={{ textAlign: 'center', margin: 0, fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Click tiles to slide them into this exact order!</p>
+      </div>
+
+      <div className="card shadow-soft animate-fade-in" style={{ 
+          display: 'flex', flexDirection: 'column', gap: '1rem', 
+          background: 'var(--card-bg)', padding: '1.5rem', borderRadius: '24px', 
+          border: '1px solid var(--card-border)', width: '100%', maxWidth: '220px' 
+      }}>
+         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)' }}>
+            <Info size={14} color="var(--accent)" /> <span style={{ fontSize: '0.8rem', fontWeight: 900 }}>RULES</span>
+         </div>
+         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            {[
+              'Match the target grid order.',
+              'Slide tiles into empty slots.',
+              'Move only horizontally/vertically.',
+              'Minimize your total moves.'
+            ].map((rule, i) => (
+              <div key={i} style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', gap: '0.5rem', lineHeight: 1.3 }}>
+                <div style={{ width: '3px', height: '3px', borderRadius: '50%', background: 'var(--accent)', marginTop: '0.4rem', flexShrink: 0 }} />
+                {rule}
+              </div>
+            ))}
+         </div>
       </div>
       
       </div> {/* End Flex Row Container */}

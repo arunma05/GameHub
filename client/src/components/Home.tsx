@@ -21,8 +21,9 @@ interface HomeProps {
       bestMoves: { name: string; moves: number }[]; 
     }>;
     memory: Record<number, { name: string; time: number }[]>;
+    jumprace: Record<string, number>;
   };
-  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | null;
+  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | null;
   publicRooms: PublicRoom[];
   memoryLevel: number;
   onMemoryLevelChange: (level: number) => void;
@@ -244,6 +245,7 @@ export const Home: React.FC<HomeProps> = ({
              selectedGame === 'kakuro' ? <Brain size={48} color="#a78bfa" /> :
              selectedGame === 'gridorder' ? <LayoutGrid size={48} color="#f59e0b" /> :
              selectedGame === 'memory' ? <Brain size={48} color="#ec4899" /> :
+             selectedGame === 'jumprace' ? <Sword size={48} color="#10b981" /> :
              <Sparkles size={48} color="#60a5fa" />}
             {selectedGame === 'typeracer' ? 'Type Racer' : 
              selectedGame === 'chess' ? 'Chess' : 
@@ -255,6 +257,7 @@ export const Home: React.FC<HomeProps> = ({
              selectedGame === 'kakuro' ? 'Kakuro' :
              selectedGame === 'gridorder' ? 'Grid Order' :
              selectedGame === 'memory' ? 'Remember Me' :
+             selectedGame === 'jumprace' ? 'Jump Race' :
              'BINGO'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
@@ -268,6 +271,7 @@ export const Home: React.FC<HomeProps> = ({
              selectedGame === 'kakuro' ? 'Challenging number crossword puzzle' :
              selectedGame === 'gridorder' ? 'Shuffle the numbers into the right order' :
              selectedGame === 'memory' ? 'Test your memory and race to match cards' :
+             selectedGame === 'jumprace' ? 'Race your pieces to the opposite corner' :
              'Real-time multiplayer bingo experience'}
           </p>
         </div>
