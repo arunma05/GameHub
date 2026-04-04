@@ -1,5 +1,5 @@
 import React from 'react';
-import { Gamepad2, Timer, Trophy, Globe, Zap, Brain, Paintbrush, Grid3X3, Sword, LayoutGrid, Lightbulb, HelpCircle } from 'lucide-react';
+import { Gamepad2, Timer, Trophy, Globe, Zap, Brain, Paintbrush, Grid3X3, LayoutGrid, Lightbulb, HelpCircle, Rabbit, Coins } from 'lucide-react';
 
 interface DashboardProps {
   onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace') => void;
@@ -16,10 +16,10 @@ const GAME_META: Record<string, { color: string; label: string; icon: React.Reac
   cssbattle: { color: '#f43f5e', label: 'CSS Battle', icon: <Paintbrush size={13} /> },
   sudoku: { color: '#22d3ee', label: 'Sudoku', icon: <Grid3X3 size={13} /> },
   kakuro: { color: '#a78bfa', label: 'Kakuro', icon: <Brain size={13} /> },
-  sixteencoins: { color: '#6366f1', label: '16 Coins', icon: <Sword size={13} /> },
+  sixteencoins: { color: '#6366f1', label: '16 Coins', icon: <Coins size={13} /> },
   gridorder: { color: '#f59e0b', label: 'Grid Order', icon: <LayoutGrid size={13} /> },
   memory: { color: '#ec4899', label: 'Remember Me', icon: <Lightbulb size={13} /> },
-  jumprace: { color: '#10b981', label: 'Jump Race', icon: <Sword size={13} /> }
+  jumprace: { color: '#10b981', label: 'Jump Race', icon: <Rabbit size={13} /> }
 };
 
 const NewsTile: React.FC<{ 
@@ -189,10 +189,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 { type: 'flappy' as const, players: 'Single Player', color: '#fbbf24', icon: <Zap size={32} color="#fbbf24" />, title: 'FLAPPY BIRD', desc: 'Navigate the bird through pipes. Beat your high score in this fly-high challenge!' },
                 { type: 'sudoku' as const, players: 'Single Player', color: '#22d3ee', icon: <Grid3X3 size={32} color="#22d3ee" />, title: 'SUDOKU', desc: 'Classic 9x9 puzzle. Saves your progress so you can resume anytime!' },
                 { type: 'kakuro' as const, players: 'Single/Multiplayer', color: '#a78bfa', icon: <Brain size={32} color="#a78bfa" />, title: 'KAKURO', desc: 'Challenging number crossword puzzle. Solve single player or race in multiplayer!' },
-                { type: 'sixteencoins' as const, players: '2 Player', color: '#6366f1', icon: <Sword size={32} color="#6366f1" />, title: '16 COINS', desc: 'Classic strategy board game in stunning 3D. Capture all opponent coins to win!' },
+                { type: 'sixteencoins' as const, players: '2 Player', color: '#6366f1', icon: <Coins size={32} color="#6366f1" />, title: '16 COINS', desc: 'Classic strategy board game in stunning 3D. Capture all opponent coins to win!' },
                 { type: 'gridorder' as const, players: 'Single/Multiplayer', color: '#f59e0b', icon: <LayoutGrid size={32} color="#f59e0b" />, title: 'GRID ORDER', desc: 'Shuffle the numbers into the right order. Race against others or beat your own best time!' },
                 { type: 'memory' as const, players: 'Single/Multiplayer', color: '#ec4899', icon: <Lightbulb size={32} color="#ec4899" />, title: 'REMEMBER ME', desc: 'Test your memory! Match all pairs of cards as fast as you can. Solve single player or race in multiplayer!' },
-                { type: 'jumprace' as const, players: '2 Player', color: '#10b981', icon: <Sword size={32} color="#10b981" />, title: 'JUMP RACE', desc: 'Race your pieces to the opposite corner. Jump over any piece to speed ahead!' },
+                { type: 'jumprace' as const, players: '2 Player', color: '#10b981', icon: <Rabbit size={32} color="#10b981" />, title: 'JUMP RACE', desc: 'Race your pieces to the opposite corner. Jump over any piece to speed ahead!' },
               ].map(({ type, players, color, icon, title, desc }) => (
                 <div
                   key={type}
