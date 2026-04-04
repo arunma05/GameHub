@@ -18,6 +18,18 @@ export const Auth: React.FC<AuthProps> = ({ onAuthenticated }) => {
     const [captcha, setCaptcha] = useState<{ n1: number; n2: number } | null>(null);
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [isConnected, setIsConnected] = useState(socket.connected);
+
+    useEffect(() => {
+        function onConnect() { setIsConnected(true); }
+        function onDisconnect() { setIsConnected(false); }
+        socket.on('connect', onConnect);
+        socket.on('disconnect', onDisconnect);
+        return () => {
+            socket.off('connect', onConnect);
+            socket.off('disconnect', onDisconnect);
+        };
+    }, []);
 
     useEffect(() => {
         if (mode === 'register') {
@@ -126,6 +138,21 @@ export const Auth: React.FC<AuthProps> = ({ onAuthenticated }) => {
                 }}>
                     FUN ARCADE
                 </h1>
+                
+                {/* API Status Indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: '0.5rem', padding: '0.2rem 0.5rem', background: 'var(--item-bg)', borderRadius: '12px', border: '1px solid var(--item-border)', animation: 'fadeIn 1s ease-out' }}>
+                    <div style={{ 
+                        width: '8px', 
+                        height: '8px', 
+                        borderRadius: '50%', 
+                        background: isConnected ? '#10b981' : '#f43f5e',
+                        boxShadow: `0 0 10px ${isConnected ? '#10b981' : '#f43f5e'}`,
+                        animation: 'pulse-api 2s infinite'
+                    }} />
+                    <span style={{ fontSize: '0.55rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        {isConnected ? 'SERVER Active' : 'SERVER Offline'}
+                    </span>
+                </div>
             </div>
 
             <div className="card animate-fade-in auth-card" style={{
@@ -385,6 +412,11 @@ export const Auth: React.FC<AuthProps> = ({ onAuthenticated }) => {
                 @keyframes fadeIn {
                     from { opacity: 0; transform: translateY(-10px); }
                     to { opacity: 1; transform: translateY(0); }
+                }
+                @keyframes pulse-api {
+                    0% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.2); opacity: 0.7; }
+                    100% { transform: scale(1); opacity: 1; }
                 }
             `}</style>
         </div>
