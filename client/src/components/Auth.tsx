@@ -149,8 +149,8 @@ export const Auth: React.FC<AuthProps> = ({ onAuthenticated }) => {
                         boxShadow: `0 0 8px ${isConnected ? '#10b981' : '#f43f5e'}`,
                         animation: 'pulse-api 2s infinite'
                     }} />
-                    <span style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        {isConnected ? 'SERVER Active' : 'SERVER Offline'}
+                    <span style={{ fontSize: '0.45rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                        SERVER {isConnected ? 'Active' : 'Offline'}
                     </span>
                 </div>
             </div>

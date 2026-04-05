@@ -1,58 +1,60 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Fira+Code:wght@300..700&display=swap');
 
 :root {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --accent: #3b82f6;
-  --accent-glow: rgba(59, 130, 246, 0.4);
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+  --accent: #6366f1;
+  --accent-glow: rgba(99, 102, 241, 0.4);
   --success: #10b981;
   --success-glow: rgba(16, 185, 129, 0.4);
-  --danger: #ef4444;
+  --danger: #f43f5e;
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
-  --border-radius: 16px;
-  --transition-fast: 0.15s ease-out;
-  --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --card-bg: rgba(30, 41, 59, 0.7);
-  --card-border: rgba(255, 255, 255, 0.05);
-  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  --border-radius: 24px;
+  --transition-fast: 0.2s ease-out;
+  --transition-normal: 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  --card-bg: rgba(30, 41, 59, 0.5);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.5);
   --input-bg: rgba(15, 23, 42, 0.6);
   --input-border: rgba(255, 255, 255, 0.1);
   --item-bg: rgba(255, 255, 255, 0.03);
-  --item-border: rgba(255, 255, 255, 0.05);
-  --header-bg: rgba(15, 23, 42, 0.4);
-  --footer-bg: rgba(15, 23, 42, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --item-border: rgba(255, 255, 255, 0.06);
+  --header-bg: rgba(2, 6, 23, 0.5);
+  --footer-bg: rgba(2, 6, 23, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
   --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-  --error: #ef4444;
-  --error-glow: rgba(239, 68, 68, 0.2);
+  --error: #f43f5e;
+  --error-glow: rgba(244, 63, 94, 0.2);
   --board-line: rgba(255, 255, 255, 0.82);
+  --card-gradient-end: rgba(15, 23, 42, 0.4);
 }
 
 [data-theme="light"] {
-  --bg-primary: #f8fafc;
-  --bg-secondary: #f1f5f9;
-  --accent: #2563eb;
-  --accent-glow: rgba(37, 99, 235, 0.12);
+  --bg-primary: #f1f5f9;
+  --bg-secondary: #e2e8f0;
+  --accent: #4f46e5;
+  --accent-glow: rgba(79, 70, 229, 0.1);
   --success: #059669;
-  --success-glow: rgba(5, 150, 105, 0.12);
-  --danger: #dc2626;
+  --success-glow: rgba(5, 150, 105, 0.1);
+  --danger: #e11d48;
   --text-primary: #0f172a;
   --text-secondary: #475569;
-  --card-bg: #ffffff;
-  --card-border: rgba(0, 0, 0, 0.06);
-  --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.04), 0 8px 15px -6px rgba(0, 0, 0, 0.04);
+  --card-bg: rgba(255, 255, 255, 0.8);
+  --card-border: rgba(0, 0, 0, 0.12);
+  --card-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.08);
   --input-bg: #ffffff;
-  --input-border: rgba(0, 0, 0, 0.1);
-  --item-bg: #eff6ff;
-  --item-border: rgba(37, 99, 235, 0.08);
-  --header-bg: rgba(255, 255, 255, 0.5);
-  --footer-bg: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(30, 41, 59, 0.08);
-  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-  --error: #dc2626;
-  --error-glow: rgba(220, 38, 38, 0.08);
-  --board-line: rgba(71, 85, 105, 0.7);
+  --input-border: rgba(0, 0, 0, 0.12);
+  --item-bg: #f1f5f9;
+  --item-border: rgba(0, 0, 0, 0.08);
+  --header-bg: rgba(255, 255, 255, 0.6);
+  --footer-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+  --error: #e11d48;
+  --error-glow: rgba(225, 29, 72, 0.05);
+  --board-line: rgba(15, 23, 42, 0.1);
+  --card-gradient-end: rgba(255, 255, 255, 0.05);
 }
 
 * {
@@ -69,16 +71,18 @@ body {
   display: flex;
   flex-direction: column;
   background-image: 
-    radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.1), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.1), transparent 25%);
+    radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.15), transparent 30%),
+    radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.15), transparent 30%),
+    radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.05), transparent 40%);
+  background-attachment: fixed;
   overflow-x: hidden;
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 [data-theme="light"] body {
   background-image:
-    radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.06), transparent 25%),
-    radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.06), transparent 25%);
+    radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.04), transparent 35%),
+    radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.04), transparent 35%);
 }
 
 [data-theme="light"] h1 {
@@ -133,12 +137,36 @@ p {
 /* Custom UI Components */
 .card {
   background: var(--card-bg);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--card-border);
   border-radius: var(--border-radius);
   padding: 2.5rem;
   box-shadow: var(--card-shadow);
-  transition: transform var(--transition-normal), background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(255, 255, 255, 0.03),
+    transparent
+  );
+  transition: all 0.6s ease;
+  pointer-events: none;
+}
+
+.card-shine:hover::before {
+  left: 100%;
 }
 
 /* Inputs and Buttons */
@@ -270,19 +298,75 @@ p {
   font-size: 1.25rem;
 }
 
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
+@keyframes rotate-bg {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-api {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(30px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-.animate-fade-in {
-  animation: fadeIn var(--transition-normal) forwards;
+.reveal {
+  opacity: 0;
+  animation: reveal 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-@keyframes slideDown {
-  from { opacity: 0; transform: translateX(-50%) translateY(-24px) scale(0.92); }
-  to   { opacity: 1; transform: translateX(-50%) translateY(0)      scale(1);    }
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+
+/* Dashboard Specific Extras */
+.hero-glow {
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 400px;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  filter: blur(80px);
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+[data-theme="light"] .hero-glow {
+  top: -20%;
+  opacity: 0.4;
+}
+
+.game-card-hover {
+  transition: all var(--transition-normal);
+}
+
+.game-card-hover:hover {
+  transform: translateY(-8px) scale(1.015) !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.3);
+  background: var(--bg-secondary) !important;
+}
+
+[data-theme="light"] .game-card-hover:hover {
+   box-shadow: 0 20px 40px -12px rgba(0,0,0,0.1);
+   background: #ffffff !important;
+}
+
+.card-shine {
+  transition: all var(--transition-normal);
 }
 
 /* Component Specific Styles */
@@ -314,17 +398,17 @@ p {
 .dashboard-layout {
   display: flex;
   flex-direction: row;
-  gap: 3rem;
+  gap: 3.5rem;
   align-items: flex-start;
   width: 100%;
 }
 
 .dashboard-sidebar {
-  width: 320px;
+  width: 340px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
 .responsive-flex {
@@ -366,8 +450,8 @@ p {
   .dashboard-sidebar {
     width: 100% !important;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
   }
   .dashboard-sidebar > h2 {
     grid-column: 1 / -1;
@@ -386,10 +470,15 @@ p {
     gap: 1.5rem !important;
   }
   .card {
-    padding: 1.5rem !important;
+    padding: 1.25rem !important;
   }
   .game-cards-grid {
     grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .dashboard-sidebar {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem;
   }
   .responsive-card-width {
     max-width: 100%;
@@ -412,4 +501,3 @@ p {
     padding: 0.5rem !important;
   }
 }
-

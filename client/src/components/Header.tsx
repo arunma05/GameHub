@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { User, LogOut, Sun, Moon, X, Settings } from 'lucide-react';
 import { Logo } from './Logo';
-import { socket } from '../socket';
 
 interface HeaderProps {
   user: { name: string; username: string; isGuest?: boolean } | null;
@@ -12,20 +11,8 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ user, onLogout, isDark, toggleTheme }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isConnected, setIsConnected] = useState(socket.connected);
 
-  useEffect(() => {
-    function onConnect() { setIsConnected(true); }
-    function onDisconnect() { setIsConnected(false); }
 
-    socket.on('connect', onConnect);
-    socket.on('disconnect', onDisconnect);
-
-    return () => {
-      socket.off('connect', onConnect);
-      socket.off('disconnect', onDisconnect);
-    };
-  }, []);
   
   useEffect(() => {
     if (isMenuOpen) {
@@ -50,7 +37,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, isDark, toggleTh
       borderBottom: '1px solid var(--glass-border)',
       display: 'flex',
       alignItems: 'center',
-      padding: '0 2rem',
+      padding: '0 1rem',
       justifyContent: 'space-between',
       zIndex: 1000,
       boxShadow: 'var(--glass-shadow)',
@@ -68,22 +55,8 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, isDark, toggleTh
         }}>
           FUN ARCADE
         </span>
-        
-        {/* API Status Indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: '0.5rem', padding: '0.2rem 0.5rem', background: 'var(--item-bg)', borderRadius: '10px', border: '1px solid var(--item-border)' }}>
-          <div style={{ 
-            width: '6px', 
-            height: '6px', 
-            borderRadius: '50%', 
-            background: isConnected ? '#10b981' : '#f43f5e',
-            boxShadow: `0 0 8px ${isConnected ? '#10b981' : '#f43f5e'}`,
-            animation: 'pulse-api 2s infinite'
-          }} />
-          <span style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            {isConnected ? 'SERVER Active' : 'SERVER Offline'}
-          </span>
-        </div>
       </div>
+
 
       <div className="desktop-nav" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
         {user ? (
@@ -165,6 +138,7 @@ export const Header: React.FC<HeaderProps> = ({ user, onLogout, isDark, toggleTh
           </div>
         )}
       </div>
+
 
       {/* Mobile Menu Trigger */}
       <div className="mobile-nav-toggle" style={{ display: 'none' }}>

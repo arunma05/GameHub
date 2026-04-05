@@ -17,6 +17,11 @@ import { Room } from './types';
 const app = express();
 app.use(cors({ origin: '*', methods: ['GET', 'POST'] }));
 
+// Keep-alive/Health check endpoint
+app.get('/ping', (_req, res) => {
+  res.status(200).send('pong');
+});
+
 const CLIENT_DIST = fs.existsSync(path.join(process.cwd(), 'client/dist'))
   ? path.join(process.cwd(), 'client/dist')
   : path.join(process.cwd(), '../client/dist');

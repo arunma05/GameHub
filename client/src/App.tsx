@@ -1,7 +1,7 @@
 import React, { useEffect, useState, lazy, Suspense } from 'react';
 import { socket } from './socket';
 import type { GameState, Room, PublicRoom, Player } from './types';
-import { ArrowLeft, Sun, Moon, Settings, X } from 'lucide-react';
+import { ArrowLeft, Sun, Moon, Settings, X, Rabbit, Gamepad2, Timer, Globe, Zap, Brain, Paintbrush, Grid3X3, LayoutGrid, Lightbulb, HelpCircle, Coins } from 'lucide-react';
 import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { Auth } from './components/Auth';
@@ -125,9 +125,20 @@ export const App: React.FC = () => {
     function onDisconnect() { setIsConnected(false); }
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
+
+    // Render Free Tier: Keep-alive & Wake-up
+    const wakeUp = async () => {
+      const URL = import.meta.env.PROD ? '/' : (import.meta.env.VITE_SERVER_URL || 'http://localhost:3001');
+      try { await fetch(`${URL.endsWith('/') ? URL : URL + '/' }ping`); } catch (e) { /* ignore */ }
+    };
+    
+    wakeUp();
+    const interval = setInterval(wakeUp, 14 * 60 * 1000); // 14 mins
+
     return () => {
       socket.off('connect', onConnect);
       socket.off('disconnect', onDisconnect);
+      clearInterval(interval);
     };
   }, []);
 
@@ -328,6 +339,45 @@ export const App: React.FC = () => {
     return '';
   };
 
+  const getPageIcon = () => {
+    switch (view) {
+      case 'news': return <Globe size={22} color="var(--success)" />;
+      case 'flappy': return <Zap size={22} color="#fbbf24" />;
+      case 'cssbattle': return <Paintbrush size={22} color="#f43f5e" />;
+      case 'sudoku': return <Grid3X3 size={22} color="#22d3ee" />;
+      case 'sixteencoins': return <Coins size={22} color="#6366f1" />;
+      case 'memory': return <Lightbulb size={22} color="#ec4899" />;
+      case 'jumprace': return <Rabbit size={22} color="#10b981" />;
+      case 'home':
+        switch (selectedGame) {
+          case 'bingo': return <Gamepad2 size={22} color="#10b981" />;
+          case 'typeracer': return <Timer size={22} color="#3b82f6" />;
+          case 'chess': return <span style={{ fontSize: '1.2rem' }}>♘</span>;
+          case 'quiz': return <HelpCircle size={22} color="#ec4899" />;
+          case 'kakuro': return <Brain size={22} color="#a78bfa" />;
+          case 'gridorder': return <LayoutGrid size={22} color="#f59e0b" />;
+          case 'memory': return <Lightbulb size={22} color="#ec4899" />;
+          case 'jumprace': return <Rabbit size={22} color="#10b981" />;
+          default: return <Gamepad2 size={22} color="var(--accent)" />;
+        }
+      case 'game':
+        const type = gameState.room?.type;
+        switch (type) {
+          case 'typeracer': return <Timer size={22} color="#3b82f6" />;
+          case 'chess': return <span style={{ fontSize: '1.2rem' }}>♘</span>;
+          case 'quiz': return <HelpCircle size={22} color="#ec4899" />;
+          case 'sudoku': return <Grid3X3 size={22} color="#22d3ee" />;
+          case 'kakuro': return <Brain size={22} color="#a78bfa" />;
+          case 'sixteencoins': return <Coins size={22} color="#6366f1" />;
+          case 'gridorder': return <LayoutGrid size={22} color="#f59e0b" />;
+          case 'memory': return <Lightbulb size={22} color="#ec4899" />;
+          case 'jumprace': return <Rabbit size={22} color="#10b981" />;
+          default: return <Gamepad2 size={22} color="var(--accent)" />;
+        }
+      default: return null;
+    }
+  };
+
   if (!user) {
     return <Suspense fallback={<LoadingFallback />}><Auth onAuthenticated={handleAuthenticated} /></Suspense>;
   }
@@ -340,33 +390,98 @@ export const App: React.FC = () => {
         flexDirection: 'column', 
         minHeight: '100vh'
     }}>
-      {isDashboard ? (
-          <Header 
-            user={user} 
-            onLogout={handleLogout} 
-            isDark={isDark} 
-            toggleTheme={toggleTheme} 
-          />
-      ) : (
-          <div style={{ 
-              height: '60px', 
-              background: 'var(--header-bg)', 
-              backdropFilter: 'blur(24px)',
-              WebkitBackdropFilter: 'blur(24px)',
-              borderBottom: '1px solid var(--glass-border)',
-              display: 'flex',
-              alignItems: 'center',
-              padding: '0 2rem',
-              justifyContent: 'space-between',
-              position: 'relative',
-              top: 0,
-              zIndex: 1000,
-              boxShadow: 'var(--glass-shadow)'
-          }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <button 
-                    onClick={() => setView('dashboard')}
-                    style={{
+      <div style={{ position: 'relative', zIndex: 1100 }}>
+        {isDashboard ? (
+            <Header 
+              user={user} 
+              onLogout={handleLogout} 
+              isDark={isDark} 
+              toggleTheme={toggleTheme} 
+            />
+        ) : (
+            <div style={{ 
+                height: '60px', 
+                background: 'var(--header-bg)', 
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                borderBottom: '1px solid var(--glass-border)',
+                display: 'flex',
+                alignItems: 'center',
+                padding: '0 1rem',
+                justifyContent: 'space-between',
+                position: 'relative',
+                top: 0,
+                zIndex: 1000,
+                boxShadow: 'var(--glass-shadow)'
+            }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <button 
+                      onClick={() => setView('dashboard')}
+                      style={{
+                          background: 'var(--item-bg)',
+                          border: '1px solid var(--item-border)',
+                          width: '40px',
+                          height: '40px',
+                          borderRadius: '12px',
+                          color: 'var(--text-primary)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                      }}
+                      className="hover-scale"
+                      title="Back to Dashboard"
+                  >
+                      <ArrowLeft size={20} />
+                  </button>
+                  <div style={{ width: '1px', height: '24px', background: 'var(--item-border)', margin: '0 0.25rem' }} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {getPageIcon()}
+                    <span style={{ 
+                      fontSize: '1.2rem', 
+                      fontWeight: 950, 
+                      color: 'var(--text-primary)', 
+                      letterSpacing: '-0.02em',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>
+                        {getPageTitle()}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="game-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div className="desktop-header-info" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                      {user.name}
+                    </div>
+                    <button 
+                      onClick={toggleTheme}
+                      style={{
+                        background: 'var(--item-bg)',
+                        border: '1px solid var(--item-border)',
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '12px',
+                        color: 'var(--text-secondary)',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.3s ease'
+                      }}
+                      className="hover-scale"
+                      title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
+                    >
+                      {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
+                  </div>
+
+                  <div className="mobile-header-settings" style={{ display: 'none', position: 'relative' }}>
+                    <button 
+                      onClick={() => setShowSettings(!showSettings)}
+                      style={{
                         background: 'var(--item-bg)',
                         border: '1px solid var(--item-border)',
                         width: '40px',
@@ -377,135 +492,95 @@ export const App: React.FC = () => {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
-                    }}
-                    className="hover-scale"
-                    title="Back to Dashboard"
-                >
-                    <ArrowLeft size={20} />
-                </button>
-                <div style={{ width: '1px', height: '24px', background: 'var(--item-border)', margin: '0 0.25rem' }} />
-                <span style={{ 
-                  fontSize: '1.2rem', 
-                  fontWeight: 950, 
-                  color: 'var(--text-primary)', 
-                  letterSpacing: '-0.02em',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
-                    {getPageTitle()}
-                </span>
-                
-                {/* Server Status Indicator */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.15rem 0.4rem', background: 'var(--item-bg)', borderRadius: '8px', border: '1px solid var(--item-border)', marginLeft: '0.25rem' }}>
-                  <div style={{ 
-                    width: '6px', 
-                    height: '6px', 
-                    borderRadius: '50%', 
-                    background: isConnected ? '#10b981' : '#f43f5e',
-                    boxShadow: `0 0 8px ${isConnected ? '#10b981' : '#f43f5e'}`,
-                    animation: 'pulse-api 2s infinite'
-                  }} />
-                  <span style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    {isConnected ? 'SERVER Active' : 'SERVER Offline'}
-                  </span>
-                </div>
-              </div>
-              <div className="game-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <div className="desktop-header-info" style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                  <div style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                    {user.name}
+                      }}
+                    >
+                      {showSettings ? <X size={20} /> : <Settings size={20} />}
+                    </button>
+
+                    {showSettings && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '50px',
+                        right: 0,
+                        width: '200px',
+                        background: 'var(--bg-primary)',
+                        border: '1px solid var(--item-border)',
+                        borderRadius: '16px',
+                        padding: '1.25rem',
+                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4)',
+                        zIndex: 1100,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1rem'
+                      }}>
+                        <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Account</div>
+                        <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>{user.name}</div>
+                        <div style={{ height: '1px', background: 'var(--item-border)' }} />
+                        <button 
+                           onClick={() => { toggleTheme(); setShowSettings(false); }}
+                           style={{
+                             display: 'flex',
+                             alignItems: 'center',
+                             justifyContent: 'space-between',
+                             background: 'var(--item-bg)',
+                             border: '1px solid var(--item-border)',
+                             padding: '0.75rem',
+                             borderRadius: '10px',
+                             color: 'var(--text-primary)',
+                             fontWeight: 700,
+                             cursor: 'pointer'
+                           }}
+                        >
+                           <span>{isDark ? 'Light' : 'Dark'} Mode</span>
+                           {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <button 
-                    onClick={toggleTheme}
-                    style={{
-                      background: 'var(--item-bg)',
-                      border: '1px solid var(--item-border)',
-                      width: '38px',
-                      height: '38px',
-                      borderRadius: '12px',
-                      color: 'var(--text-secondary)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'all 0.3s ease'
-                    }}
-                    className="hover-scale"
-                    title={`Switch to ${isDark ? 'light' : 'dark'} mode`}
-                  >
-                    {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                  </button>
                 </div>
+                <style>{`
+                  @media (max-width: 640px) {
+                    .desktop-header-info { display: none !important; }
+                    .mobile-header-settings { display: block !important; }
+                  }
+                `}</style>
+            </div>
+        )}
 
-                <div className="mobile-header-settings" style={{ display: 'none', position: 'relative' }}>
-                  <button 
-                    onClick={() => setShowSettings(!showSettings)}
-                    style={{
-                      background: 'var(--item-bg)',
-                      border: '1px solid var(--item-border)',
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '12px',
-                      color: 'var(--text-primary)',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    {showSettings ? <X size={20} /> : <Settings size={20} />}
-                  </button>
-
-                  {showSettings && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '50px',
-                      right: 0,
-                      width: '200px',
-                      background: 'var(--bg-primary)',
-                      border: '1px solid var(--item-border)',
-                      borderRadius: '16px',
-                      padding: '1.25rem',
-                      boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4)',
-                      zIndex: 1100,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '1rem'
-                    }}>
-                      <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Account</div>
-                      <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>{user.name}</div>
-                      <div style={{ height: '1px', background: 'var(--item-border)' }} />
-                      <button 
-                         onClick={() => { toggleTheme(); setShowSettings(false); }}
-                         style={{
-                           display: 'flex',
-                           alignItems: 'center',
-                           justifyContent: 'space-between',
-                           background: 'var(--item-bg)',
-                           border: '1px solid var(--item-border)',
-                           padding: '0.75rem',
-                           borderRadius: '10px',
-                           color: 'var(--text-primary)',
-                           fontWeight: 700,
-                           cursor: 'pointer'
-                         }}
-                      >
-                         <span>{isDark ? 'Light' : 'Dark'} Mode</span>
-                         {isDark ? <Sun size={16} /> : <Moon size={16} />}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-              <style>{`
-                @media (max-width: 640px) {
-                  .desktop-header-info { display: none !important; }
-                  .mobile-header-settings { display: block !important; }
-                }
-              `}</style>
-          </div>
-      )}
+        {/* Global Server Status Badge */}
+        <div style={{ 
+            position: 'absolute',
+            top: '100%',
+            right: '1rem',
+            marginTop: '8px',
+            zIndex: 1105,
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.4rem', 
+            padding: '5px 12px', 
+            background: 'var(--item-bg)', 
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            borderRadius: '12px', 
+            border: '1px solid var(--item-border)',
+            boxShadow: '0 8px 16px rgba(0,0,0,0.2)',
+            opacity: 0.95,
+            pointerEvents: 'none',
+            whiteSpace: 'nowrap'
+        }}>
+          <div style={{ 
+            width: '6px', 
+            height: '6px', 
+            borderRadius: '50%', 
+            background: isConnected ? '#10b981' : '#f43f5e',
+            boxShadow: `0 0 10px ${isConnected ? '#10b981' : '#f43f5e'}`,
+            animation: 'pulse-api 2s infinite'
+          }} />
+          <span style={{ fontSize: '0.5rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            SERVER {isConnected ? 'Active' : 'Offline'}
+          </span>
+        </div>
+      </div>
 
       <main>
         <Suspense fallback={<LoadingFallback />}>
