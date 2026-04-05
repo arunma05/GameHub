@@ -21,24 +21,10 @@ interface BestScores {
 // GEOMETRY HELPERS
 // ──────────────────────────────────────────────
 
-/** Minimum distance from point (px,py) to line segment (x1,y1)→(x2,y2) */
-const pointToSegmentDist = (px: number, py: number, x1: number, y1: number, x2: number, y2: number) => {
-  const dx = x2 - x1, dy = y2 - y1;
-  const lenSq = dx * dx + dy * dy;
-  if (lenSq === 0) return Math.hypot(px - x1, py - y1);
-  const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / lenSq));
-  return Math.hypot(px - (x1 + t * dx), py - (y1 + t * dy));
-};
 
-/** Minimum distance from point to any edge of a polygon defined by vertices */
-const pointToPolygonDist = (px: number, py: number, verts: {x:number,y:number}[]) => {
-  let min = Infinity;
-  for (let i = 0; i < verts.length; i++) {
-    const j = (i + 1) % verts.length;
-    min = Math.min(min, pointToSegmentDist(px, py, verts[i].x, verts[i].y, verts[j].x, verts[j].y));
-  }
-  return min;
-};
+
+
+
 
 /** Generate N evenly-spaced vertices of a regular polygon centred at (cx,cy) with circumradius R */
 const polygonVerts = (cx: number, cy: number, R: number, sides: number, rotOffset = 0) =>
