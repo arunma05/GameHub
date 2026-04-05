@@ -2,7 +2,7 @@ import React from 'react';
 import { Gamepad2, Timer, Trophy, Globe, Zap, Brain, Paintbrush, Grid3X3, LayoutGrid, Lightbulb, HelpCircle, Rabbit, Coins } from 'lucide-react';
 
 interface DashboardProps {
-  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace') => void;
+  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme') => void;
   leaderboards: Record<string, any>;
   onSelectNews?: (query: string, title: string, subtitle: string) => void;
 }
@@ -19,17 +19,19 @@ const GAME_META: Record<string, { color: string; label: string; icon: React.Reac
   sixteencoins: { color: '#6366f1', label: '16 Coins', icon: <Coins size={13} /> },
   gridorder: { color: '#f59e0b', label: 'Grid Order', icon: <LayoutGrid size={13} /> },
   memory: { color: '#ec4899', label: 'Remember Me', icon: <Lightbulb size={13} /> },
-  jumprace: { color: '#10b981', label: 'Jump Race', icon: <Rabbit size={13} /> }
+  jumprace: { color: '#10b981', label: 'Jump Race', icon: <Rabbit size={13} /> },
+  shapeme: { color: '#84cc16', label: 'Shape Me', icon: <Paintbrush size={13} /> }
 };
 
-const NewsTile: React.FC<{ 
-  onClick?: () => void; 
-  title: string; 
-  desc: string; 
-  icon: React.ReactNode; 
+const NewsTile: React.FC<{
+  onClick?: () => void;
+  title: string;
+  desc: string;
+  icon: React.ReactNode;
   color: string;
   linkText: string;
-}> = ({ onClick, title, desc, icon, color, linkText }) => (
+  staggerClass?: string;
+}> = ({ onClick, title, desc, icon, color, linkText, staggerClass }) => (
   <div
     className="card"
     onClick={onClick}
@@ -41,7 +43,20 @@ const NewsTile: React.FC<{
     onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px) scale(1.01)'; e.currentTarget.style.borderColor = color; }}
     onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; e.currentTarget.style.borderColor = 'var(--item-border)'; }}
   >
-    <div style={{ width: '50px', height: '50px', borderRadius: '14px', background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1.25rem' }}>
+    <div
+      className={`roll-in ${staggerClass || ''}`}
+      style={{
+        width: '50px',
+        height: '50px',
+        borderRadius: '50%',
+        background: `${color}15`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '1.5rem',
+        border: `1px solid ${color}25`
+      }}
+    >
       {icon}
     </div>
     <h2 style={{ fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', marginBottom: '0.5rem', color: 'var(--text-primary)', fontWeight: 950, letterSpacing: '-0.01em' }}>{title}</h2>
@@ -61,42 +76,61 @@ const GlobalLeadersTile: React.FC<{ leaderboards: Record<string, any> }> = ({ le
       const top = data[0];
       return { name: top.name, score: `${top.wpm} WPM` };
     }
+    if (gameType === 'shapeme') {
+      if (typeof data !== 'object' || Array.isArray(data)) return null;
+      const entries = Object.entries(data);
+      if (entries.length === 0) return null;
+      const sorted = entries.sort((a,b) => (b[1] as number) - (a[1] as number));
+      return { name: sorted[0][0], score: `${sorted[0][1]}% Acc` };
+    }
+    if (gameType === 'typeracer') {
+       if (!Array.isArray(data) || data.length === 0) return null;
+       const top = data[0];
+       return { name: top.name, score: `${top.wpm} WPM` };
+    }
     if (gameType === 'flappy') {
       if (!Array.isArray(data) || data.length === 0) return null;
       const top = data[0];
       return { name: top.name, score: `${(top.score / 1000).toFixed(2)} km` };
     }
     if (gameType === 'cssbattle') {
-      // Find level 1 best if exists
-      if (data && data[1] && data[1].length > 0) {
-        const top = data[1][0];
-        const m = Math.floor(top.time / 60);
-        const s = Math.floor(top.time % 60);
-        return { name: top.name, score: `L1 - ${m}:${s < 10 ? '0' : ''}${s}` };
+      // Find any level with a record
+      const levels = Object.keys(data).map(Number).sort((a,b) => a - b);
+      for (const lvl of levels) {
+        if (data[lvl] && data[lvl].length > 0) {
+          const top = data[lvl][0];
+          const m = Math.floor(top.time / 60);
+          const s = Math.floor(top.time % 60);
+          return { name: top.name, score: `L${lvl}: ${m}:${s < 10 ? '0' : ''}${s}` };
+        }
       }
       return null;
     }
     if (gameType === 'gridorder') {
-      // Find 3x3 best time if exists
-      if (data && data[3] && data[3].bestTimes && data[3].bestTimes.length > 0) {
-        const top = data[3].bestTimes[0];
-        const m = Math.floor(top.time / 60);
-        const s = Math.floor(top.time % 60);
-        return { name: top.name, score: `3x3 - ${m}:${s < 10 ? '0' : ''}${s}` };
-      }
-      return null;
+       const sizes = Object.keys(data).map(Number).sort((a,b) => a - b);
+       for (const size of sizes) {
+         if (data[size] && data[size].bestTimes && data[size].bestTimes.length > 0) {
+           const top = data[size].bestTimes[0];
+           const m = Math.floor(top.time / 60);
+           const s = Math.floor(top.time % 60);
+           return { name: top.name, score: `${size}x${size}: ${m}:${s < 10 ? '0' : ''}${s}` };
+         }
+       }
+       return null;
     }
-    
     if (gameType === 'memory') {
-      if (data && data[6] && data[6].length > 0) {
-        const top = data[6][0];
-        const m = Math.floor(top.time / 60);
-        const s = top.time % 60;
-        return { name: top.name, score: `Lvl 6 - ${m}:${s < 10 ? '0' : ''}${s}` };
+      const levels = Object.keys(data).map(Number).sort((a,b) => a - b);
+      for (const lvl of levels) {
+        if (data[lvl] && data[lvl].length > 0) {
+          const top = data[lvl][0];
+          const m = Math.floor(top.time / 60);
+          const s = Math.floor(top.time % 60);
+          return { name: top.name, score: `${lvl} cards: ${m}:${s < 10 ? '0' : ''}${s}` };
+        }
       }
       return null;
     }
-    
+
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       const entries = Object.entries(data);
       if (entries.length === 0) return null;
@@ -108,103 +142,103 @@ const GlobalLeadersTile: React.FC<{ leaderboards: Record<string, any> }> = ({ le
 
   return (
     <div className="card">
-       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-          <Trophy size={24} color="#fbbf24" />
-          <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', fontWeight: 950, color: 'var(--text-primary)' }}>Top Scorers</h2>
-       </div>
-       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {Object.entries(GAME_META).filter(([key]) => getTopPlayer(key, leaderboards[key])).length > 0 ? (
-            Object.entries(GAME_META).map(([key, meta], index, array) => {
-              const top = getTopPlayer(key, leaderboards[key]) as { name: string; score: string | number } | null;
-              if (!top) return null;
-              const isLast = index === array.length - 1;
-              return (
-                <div key={key} style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'space-between', 
-                  paddingBottom: '0.75rem', 
-                  borderBottom: isLast ? 'none' : '1px solid var(--item-border)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                    <div style={{ color: meta.color, opacity: 0.8 }}>{meta.icon}</div>
-                    <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: 950, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{meta.label}</div>
-                        <div style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)' }}>{top.name}</div>
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 'clamp(0.9rem, 3.5vw, 1.1rem)', fontWeight: 950, color: meta.color, marginLeft: '0.5rem' }}>
-                    {top.score}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
+        <Trophy size={24} color="#fbbf24" />
+        <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', fontWeight: 950, color: 'var(--text-primary)' }}>Top Scorers</h2>
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        {Object.entries(GAME_META).filter(([key]) => getTopPlayer(key, leaderboards[key])).length > 0 ? (
+          Object.entries(GAME_META).map(([key, meta], index, array) => {
+            const top = getTopPlayer(key, leaderboards[key]) as { name: string; score: string | number } | null;
+            if (!top) return null;
+            const isLast = index === array.length - 1;
+            return (
+              <div key={key} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingBottom: '0.75rem',
+                borderBottom: isLast ? 'none' : '1px solid var(--item-border)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                  <div style={{ color: meta.color, opacity: 0.8 }}>{meta.icon}</div>
+                  <div>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 950, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{meta.label}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)' }}>{top.name}</div>
                   </div>
                 </div>
-              );
-            })
-          ) : (
-            <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem', background: 'var(--item-bg)', borderRadius: '12px', fontSize: '0.9rem' }}>
-               No records found. Be the first to win!
-            </div>
-          )}
-       </div>
+                <div style={{ fontSize: 'clamp(0.9rem, 3.5vw, 1.1rem)', fontWeight: 950, color: meta.color, marginLeft: '0.5rem' }}>
+                  {top.score}
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem', background: 'var(--item-bg)', borderRadius: '12px', fontSize: '0.9rem' }}>
+            No records found. Be the first to win!
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-export const Dashboard: React.FC<DashboardProps> = ({ 
-    onSelectGame, 
-    leaderboards, 
-    onSelectNews
+export const Dashboard: React.FC<DashboardProps> = ({
+  onSelectGame,
+  leaderboards,
+  onSelectNews
 }) => {
   return (
     <div className="container" style={{ position: 'relative', paddingTop: '2rem', paddingBottom: '6rem' }}>
       <div className="hero-glow" />
-      
+
       {/* Hero Section */}
       <div className="reveal stagger-1" style={{ textAlign: 'center', marginBottom: '5rem', position: 'relative' }}>
-         <div style={{ 
-            display: 'inline-flex', 
-            padding: '0.5rem 1.25rem', 
-            background: 'var(--item-bg)', 
-            borderRadius: '100px', 
-            border: '1px solid var(--item-border)',
-            color: 'var(--accent)',
-            fontSize: '0.8rem',
-            fontWeight: 800,
-            textTransform: 'uppercase',
-            letterSpacing: '0.15em',
-            marginBottom: '1.5rem',
-            backdropFilter: 'blur(10px)'
-         }}>
-           ✨ Welcome to the Future of Play
-         </div>
-         <h1 style={{ 
-            fontSize: 'clamp(2.1rem, 7vw, 3.8rem)', 
-            fontWeight: 950, 
-            lineHeight: 1.1, 
-            letterSpacing: '-0.03em',
-            marginBottom: '1.25rem'
-         }}>
-           Elevate Your <br/> <span style={{ color: 'var(--accent)', textShadow: '0 0 30px var(--accent-glow)' }}>Arcade Experience</span>
-         </h1>
-         <p style={{ 
-            maxWidth: '600px', 
-            margin: '0 auto', 
-            fontSize: '1.1rem', 
-            color: 'var(--text-secondary)',
-            fontWeight: 500,
-            lineHeight: 1.6
-         }}>
-           Compete, climb, and conquer. A curated collection of classic games reimagined with a modern aesthetic.
-         </p>
+        <div style={{
+          display: 'inline-flex',
+          padding: '0.5rem 1.25rem',
+          background: 'var(--item-bg)',
+          borderRadius: '100px',
+          border: '1px solid var(--item-border)',
+          color: 'var(--accent)',
+          fontSize: '0.8rem',
+          fontWeight: 800,
+          textTransform: 'uppercase',
+          letterSpacing: '0.15em',
+          marginBottom: '1.5rem',
+          backdropFilter: 'blur(10px)'
+        }}>
+          ✨ Welcome to the Future of Play
+        </div>
+        <h1 style={{
+          fontSize: 'clamp(2.1rem, 7vw, 3.8rem)',
+          fontWeight: 950,
+          lineHeight: 1.1,
+          letterSpacing: '-0.03em',
+          marginBottom: '1.25rem'
+        }}>
+          Elevate Your <br /> <span style={{ color: 'var(--accent)', textShadow: '0 0 30px var(--accent-glow)' }}>Arcade Experience</span>
+        </h1>
+        <p style={{
+          maxWidth: '600px',
+          margin: '0 auto',
+          fontSize: '1.1rem',
+          color: 'var(--text-secondary)',
+          fontWeight: 500,
+          lineHeight: 1.6
+        }}>
+          Compete, climb, and conquer. A curated collection of classic games reimagined with a modern aesthetic.
+        </p>
       </div>
 
       {/* Glowing Divider */}
-      <div className="reveal stagger-2" style={{ 
-          width: '80%', 
-          margin: '0 auto 2.5rem auto',
-          height: '1px', 
-          background: 'linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%)', 
-          opacity: 0.4,
-          boxShadow: '0 0 30px var(--accent-glow)'
+      <div className="reveal stagger-2" style={{
+        width: '90%',
+        margin: '0 auto 5rem auto',
+        height: '1px',
+        background: 'linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%)',
+        opacity: 0.6,
+        boxShadow: '0 0 30px var(--accent-glow), 0 0 60px var(--accent-glow)'
       }} />
 
       {/* Main Two-Column Layout */}
@@ -224,6 +258,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
             <div className="game-cards-grid">
               {[
+                { type: 'shapeme' as const, players: 'Precision', color: '#84cc16', icon: <Paintbrush size={32} />, title: 'SHAPE ME', desc: 'Draw perfect circles, stars, and hearts to test your precision and accuracy.' },
                 { type: 'bingo' as const, players: 'Multiplayer', color: '#10b981', icon: <Gamepad2 size={32} />, title: 'BINGO', desc: 'Classic Bingo with a competitive twist. Complete 5 lines to win!' },
                 { type: 'typeracer' as const, players: 'Racing', color: '#6366f1', icon: <Timer size={32} />, title: 'TYPE RACER', desc: 'Speed typing test. Complete the paragraph first without errors.' },
                 { type: 'chess' as const, players: '2 Player', color: '#8b5cf6', icon: <span style={{ fontSize: '2rem' }}>♘</span>, title: 'CHESS', desc: 'Classic game of strategy in full 3D. Checkmate your opponent!' },
@@ -236,16 +271,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 { type: 'gridorder' as const, players: 'Speed', color: '#f59e0b', icon: <LayoutGrid size={32} />, title: 'GRID ORDER', desc: 'Shuffle the numbers into the right order. Race others!' },
                 { type: 'memory' as const, players: 'Memory', color: '#ec4899', icon: <Lightbulb size={32} />, title: 'REMEMBER ME', desc: 'Test your memory! Match all pairs of cards as fast as you can.' },
                 { type: 'jumprace' as const, players: 'Racing', color: '#10b981', icon: <Rabbit size={32} />, title: 'JUMP RACE', desc: 'Race pieces to the opposite corner. Jump over any piece!' },
-              ].map(({ type, players, color, icon, title, desc }) => (
+              ].map(({ type, players, color, icon, title, desc }, index) => (
                 <div
                   key={type}
                   onClick={() => onSelectGame(type)}
                   className="card card-shine game-card-hover reveal"
-                  style={{ 
-                    cursor: 'pointer', 
+                  style={{
+                    cursor: 'pointer',
                     border: '1px solid var(--card-border)',
                     height: '100%',
-                    display: 'flex', 
+                    display: 'flex',
                     flexDirection: 'column',
                     background: `linear-gradient(135deg, var(--card-bg) 0%, var(--card-gradient-end) 100%)`
                   }}
@@ -253,19 +288,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', fontSize: '0.65rem', fontWeight: 900, color, background: `${color}15`, padding: '0.35rem 0.8rem', borderRadius: '100px', border: `1px solid ${color}33`, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                     {players}
                   </div>
-                  <div style={{ 
-                    width: '64px', 
-                    height: '64px', 
-                    borderRadius: '20px', 
-                    background: `${color}12`, 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    marginBottom: '1.75rem',
-                    color: color,
-                    border: `1px solid ${color}22`,
-                    boxShadow: `0 8px 16px -4px ${color}15`
-                  }}>
+                  <div
+                    className={`roll-in stagger-icon-${(index % 6) + 1}`}
+                    style={{
+                      width: '64px',
+                      height: '64px',
+                      borderRadius: '50%',
+                      background: `${color}12`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginBottom: '1.75rem',
+                      color: color,
+                      border: `1px solid ${color}22`,
+                      boxShadow: `0 8px 16px -4px ${color}15`
+                    }}
+                  >
                     {icon}
                   </div>
                   <h2 style={{ fontSize: '1.7rem', marginBottom: '0.6rem', color: 'var(--text-primary)', fontWeight: 950, letterSpacing: '-0.02em' }}>{title}</h2>
@@ -285,29 +323,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)', fontSize: '1.6rem', fontWeight: 950 }}>
             <Globe size={28} color="var(--success)" style={{ filter: 'drop-shadow(0 0 10px var(--success-glow))' }} /> Insights
           </h2>
-          <NewsTile 
+          <NewsTile
             title="Latest Tech News"
             desc="Stay up-to-date with curated news about latest tech trends."
             icon={<Zap size={24} color="var(--success)" />}
             color="var(--success)"
             linkText="READ TECH NEWS →"
+            staggerClass="stagger-icon-4"
             onClick={() => onSelectNews?.(
-              'Latest tech news', 
-              'Tech Industry Updates', 
+              'Latest tech news',
+              'Tech Industry Updates',
               'Curated global updates.'
-            )} 
+            )}
           />
-          <NewsTile 
+          <NewsTile
             title="Global Headlines"
             desc="Headlines from across the globe and the Indian subcontinent."
             icon={<Globe size={24} color="var(--accent)" />}
             color="var(--accent)"
             linkText="READ GLOBAL NEWS →"
+            staggerClass="stagger-icon-5"
             onClick={() => onSelectNews?.(
-              'Latest International and Indian News', 
+              'Latest International and Indian News',
               'Global Headlines',
               'Stay informed with the latest happenings.'
-            )} 
+            )}
           />
           <div className="reveal stagger-4">
             <GlobalLeadersTile leaderboards={leaderboards} />

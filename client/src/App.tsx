@@ -23,6 +23,7 @@ const Kakuro = lazy(() => import('./components/Kakuro').then(m => ({ default: m.
 const GridOrder = lazy(() => import('./components/GridOrder').then(m => ({ default: m.GridOrder })));
 const MemoryGame = lazy(() => import('./components/MemoryGame').then(m => ({ default: m.MemoryGame })));
 const NewsView = lazy(() => import('./components/NewsView').then(m => ({ default: m.NewsView })));
+const ShapeMe = lazy(() => import('./components/ShapeMeComponent').then(m => ({ default: m.ShapeMeComponent })));
 const JumpRaceComponent = lazy(() => import('./components/JumpRaceComponent').then(m => ({ default: m.JumpRaceComponent }))) as React.LazyExoticComponent<React.FC<{ room: Room; me: Player; isDark?: boolean }>>;
 
 const LoadingFallback = () => (
@@ -75,8 +76,8 @@ export const App: React.FC = () => {
     const saved = localStorage.getItem('user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'news' | 'jumprace'>('dashboard');
-  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | null>(null);
+  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'news' | 'jumprace' | 'shapeme'>('dashboard');
+  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | null>(null);
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [isDark, setIsDark] = useState<boolean>(() => {
     if (user?.theme) return user.theme === 'dark';
@@ -114,7 +115,7 @@ export const App: React.FC = () => {
     me: null,
     leaderboards: { 
       bingo: {}, typeracer: [], chess: {}, quiz: {}, sudoku: {}, kakuro: {}, sixteencoins: {}, gridorder: {},
-      flappy: [], cssbattle: {}, memory: {}, jumprace: {}
+      flappy: [], cssbattle: {}, memory: {}, jumprace: {}, shapeme: {}
     },
     error: null,
   });
@@ -171,18 +172,9 @@ export const App: React.FC = () => {
       });
       setView('game');
     };
-
-    const onNumberCalled = ({ room }: { room: Room }) => {
-      setGameState(prev => ({ ...prev, room }));
-    };
-
-    const onGameOver = ({ room }: { room: Room }) => {
-      setGameState(prev => ({ ...prev, room }));
-    };
-
-    const onLeaderboardUpdated = (lb: GameState['leaderboards']) => {
-      setGameState(prev => ({ ...prev, leaderboards: lb }));
-    };
+    const onNumberCalled = ({ room }: { room: any }) => setGameState((prev: any) => ({ ...prev, room }));
+    const onGameOver = ({ room }: { room: any }) => setGameState((prev: any) => ({ ...prev, room }));
+    const onLeaderboardUpdated = (lb: any) => setGameState((prev: any) => ({ ...prev, leaderboards: lb }));
 
     socket.on('room-updated', onRoomUpdated);
     socket.on('game-started', onGameStarted);
@@ -200,19 +192,24 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleSelectGame = (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace') => {
+  const updateLeaderboard = (game: string, username: string, score: number) => {
+    socket.emit('update-score', { game, username, score });
+  };
+
+  const handleSelectGame = (type: any) => {
     setSelectedGame(type);
-    setGameState(prev => ({ ...prev, room: null, me: null })); 
+    setGameState((prev: any) => ({ ...prev, room: null, me: null })); 
     if (type === 'flappy') setView('flappy');
     else if (type === 'cssbattle') setView('cssbattle');
     else if (type === 'sudoku') setView('sudoku');
     else if (type === 'sixteencoins') setView('sixteencoins');
     else if (type === 'jumprace') setView('jumprace');
+    else if (type === 'shapeme') setView('shapeme');
     else setView('home');
   };
 
-  const handleRoomJoined = (me: GameState['me']) => {
-    setGameState(prev => ({ ...prev, me }));
+  const handleRoomJoined = (me: any) => {
+    setGameState((prev: any) => ({ ...prev, me }));
     setView('lobby');
   };
 
@@ -256,6 +253,10 @@ export const App: React.FC = () => {
 
     if (view === 'jumprace' && gameState.room && gameState.me) {
         return <JumpRaceComponent room={gameState.room} me={gameState.me} isDark={isDark} />;
+    }
+
+    if (view === 'shapeme') {
+      return <ShapeMe isDark={isDark} onGameEnd={(score) => updateLeaderboard('shapeme', user?.username || 'Guest', score)} />;
     }
 
     if (view === 'memory') {
@@ -323,6 +324,7 @@ export const App: React.FC = () => {
     if (view === 'sixteencoins') return '16 Coins';
     if (view === 'memory') return 'Remember Me';
     if (view === 'jumprace') return 'Jump Race';
+    if (view === 'shapeme') return 'Shape Me';
     if (view === 'home') return selectedGame?.toUpperCase() || 'New Game';
     if (view === 'lobby') return 'Lobby';
     if (view === 'game') {
@@ -348,6 +350,7 @@ export const App: React.FC = () => {
       case 'sixteencoins': return <Coins size={22} color="#6366f1" />;
       case 'memory': return <Lightbulb size={22} color="#ec4899" />;
       case 'jumprace': return <Rabbit size={22} color="#10b981" />;
+      case 'shapeme': return <Paintbrush size={22} color="#84cc16" />;
       case 'home':
         switch (selectedGame) {
           case 'bingo': return <Gamepad2 size={22} color="#10b981" />;
@@ -358,6 +361,7 @@ export const App: React.FC = () => {
           case 'gridorder': return <LayoutGrid size={22} color="#f59e0b" />;
           case 'memory': return <Lightbulb size={22} color="#ec4899" />;
           case 'jumprace': return <Rabbit size={22} color="#10b981" />;
+          case 'shapeme': return <Paintbrush size={22} color="#84cc16" />;
           default: return <Gamepad2 size={22} color="var(--accent)" />;
         }
       case 'game':
@@ -372,6 +376,7 @@ export const App: React.FC = () => {
           case 'gridorder': return <LayoutGrid size={22} color="#f59e0b" />;
           case 'memory': return <Lightbulb size={22} color="#ec4899" />;
           case 'jumprace': return <Rabbit size={22} color="#10b981" />;
+          case 'shapeme': return <Paintbrush size={22} color="#84cc16" />;
           default: return <Gamepad2 size={22} color="var(--accent)" />;
         }
       default: return null;

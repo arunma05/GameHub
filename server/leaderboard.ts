@@ -90,7 +90,7 @@ export async function getLeaderboards(): Promise<Leaderboards> {
 }
 
 export async function updatePlayerWin(name: string, type: GameType | string, score?: number, time?: number, level?: number | string) {
-  if (['flappy', 'typeracer'].includes(type)) {
+  if (['flappy', 'typeracer', 'shapeme'].includes(type)) {
      await prisma.result.create({
        data: { gameType: type, name, score }
      });

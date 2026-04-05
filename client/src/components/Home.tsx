@@ -22,8 +22,9 @@ interface HomeProps {
     }>;
     memory: Record<number, { name: string; time: number }[]>;
     jumprace: Record<string, number>;
+    shapeme: Record<string, number>;
   };
-  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | null;
+  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | null;
   publicRooms: PublicRoom[];
   memoryLevel: number;
   onMemoryLevelChange: (level: number) => void;
@@ -210,6 +211,20 @@ export const Home: React.FC<HomeProps> = ({
         ));
     }
 
+    if (selectedGame === 'shapeme') {
+        const entries = Object.entries(data as Record<string, number>).sort(([, a], [, b]) => b - a).slice(0, 10);
+        if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+        return entries.map(([pName, acc], index) => (
+          <div key={pName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: index === 0 ? '#fbbf24' : 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: index === 0 ? '#000' : 'var(--text-primary)' }}>{index + 1}</span>
+              <span style={{ fontWeight: 600 }}>{pName}</span>
+            </div>
+            <div style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 800 }}>{acc}% Accuracy</div>
+          </div>
+        ));
+    }
+
     // Default Win Records
     const entries = Object.entries(data as Record<string, number>).sort(([, a], [, b]) => b - a).slice(0, 10);
     if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No wins yet</div>;
@@ -258,6 +273,7 @@ export const Home: React.FC<HomeProps> = ({
              selectedGame === 'gridorder' ? 'Grid Order' :
              selectedGame === 'memory' ? 'Remember Me' :
              selectedGame === 'jumprace' ? 'Jump Race' :
+             selectedGame === 'shapeme' ? 'Shape Me' :
              'BINGO'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
@@ -272,6 +288,7 @@ export const Home: React.FC<HomeProps> = ({
              selectedGame === 'gridorder' ? 'Shuffle the numbers into the right order' :
              selectedGame === 'memory' ? 'Test your memory and race to match cards' :
              selectedGame === 'jumprace' ? 'Race your pieces to the opposite corner' :
+             selectedGame === 'shapeme' ? 'Trace shapes with precision and speed' :
              'Real-time multiplayer bingo experience'}
           </p>
         </div>
@@ -526,6 +543,7 @@ export const Home: React.FC<HomeProps> = ({
                  selectedGame === 'sixteencoins' ? 'Board Tacticians' :
                  selectedGame === 'kakuro' ? 'Kakuro Brainiacs' :
                  selectedGame === 'gridorder' ? 'Grid Overlords (By Size)' :
+                 selectedGame === 'shapeme' ? 'Precision Masters' :
                  'Bingo Champions'}
               </h3>
             </div>
