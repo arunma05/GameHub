@@ -197,11 +197,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
          </p>
       </div>
 
+      {/* Glowing Divider */}
+      <div className="reveal stagger-2" style={{ 
+          width: '80%', 
+          margin: '0 auto 2.5rem auto',
+          height: '1px', 
+          background: 'linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%)', 
+          opacity: 0.4,
+          boxShadow: '0 0 30px var(--accent-glow)'
+      }} />
+
       {/* Main Two-Column Layout */}
       <div className="dashboard-layout">
 
         {/* Left Column: Games */}
-        <div className="reveal stagger-2" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+        <div className="reveal stagger-3" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '3rem' }}>
 
           {/* Games Section */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -209,10 +219,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <h2 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)', fontSize: '1.8rem', fontWeight: 950 }}>
                 <Gamepad2 size={32} color="var(--accent)" style={{ filter: 'drop-shadow(0 0 10px var(--accent-glow))' }} /> Popular Games
               </h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: 'var(--text-secondary)', background: 'var(--item-bg)', padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid var(--item-border)', fontSize: '0.85rem', fontWeight: 600 }}>
-                <Trophy size={16} color="#fbbf24" />
-                <span>Global Rankings Enabled</span>
-              </div>
             </div>
 
 
