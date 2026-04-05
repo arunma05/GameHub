@@ -466,7 +466,8 @@ p {
     font-size: 1.5rem !important;
   }
   .container {
-    padding: 1rem !important;
+    padding: 1.25rem !important;
+    padding-top: 2.5rem !important;
     gap: 1.5rem !important;
   }
   .card {
@@ -499,5 +500,11 @@ p {
   }
   .no-mobile-padding {
     padding: 0.5rem !important;
+  }
+}
+
+@media (max-width: 500px) {
+  .server-status-badge {
+    right: 0.5rem !important;
   }
 }

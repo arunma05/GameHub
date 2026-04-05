@@ -548,16 +548,18 @@ export const App: React.FC = () => {
         )}
 
         {/* Global Server Status Badge */}
-        <div style={{ 
+        <div 
+          className="server-status-badge"
+          style={{ 
             position: 'absolute',
             top: '100%',
             right: '1rem',
-            marginTop: '8px',
+            marginTop: '4px',
             zIndex: 1105,
             display: 'flex', 
             alignItems: 'center', 
             gap: '0.4rem', 
-            padding: '5px 12px', 
+            padding: '4px 10px', 
             background: 'var(--item-bg)', 
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
