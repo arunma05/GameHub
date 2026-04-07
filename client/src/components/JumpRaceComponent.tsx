@@ -125,8 +125,8 @@ const Node3D: React.FC<{
 const AnimatedPiece3D: React.FC<{
   targetX: number; targetY: number;
   color: string; isSelected: boolean;
-  onClick: () => void; interactive: boolean;
-}> = ({ targetX, targetY, color, isSelected, onClick, interactive }) => {
+  onClick: () => void;
+}> = ({ targetX, targetY, color, isSelected, onClick }) => {
   const meshRef = useRef<any>(null);
   const targetPos = new Vector3(targetX - 3.5, 0.02, targetY - 3.5);
 
@@ -491,7 +491,6 @@ export const JumpRaceComponent: React.FC<JumpRaceProps> = ({ room, me }) => {
                           targetX={x} targetY={y}
                           color={SLOT_COLORS[slot]}
                           isSelected={selected === key}
-                          interactive={isMyTurn && ownerId === me.id}
                           onClick={() => handleNodeClick(key)}
                         />
                       );
