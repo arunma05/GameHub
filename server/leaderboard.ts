@@ -18,7 +18,7 @@ export async function getLeaderboards(): Promise<Leaderboards> {
     const leaderboards: Leaderboards = {
       bingo: {}, typeracer: [], chess: {}, quiz: {}, sudoku: {}, 
       kakuro: {}, sixteencoins: {}, gridorder: {}, memory: {}, flappy: [], cssbattle: {},
-      jumprace: {}
+      jumprace: {}, shapeme: {}
     };
 
     // Process WinCounts
@@ -51,6 +51,9 @@ export async function getLeaderboards(): Promise<Leaderboards> {
         if (!leaderboards.gridorder[level]) leaderboards.gridorder[level] = { bestTimes: [], bestMoves: [] };
         if (r.time !== null) leaderboards.gridorder[level].bestTimes.push({ name: r.name, time: r.time });
         if (r.score !== null) leaderboards.gridorder[level].bestMoves.push({ name: r.name, moves: r.score });
+      } else if (r.gameType === 'shapeme') {
+        const current = leaderboards.shapeme[r.name] || 0;
+        if ((r.score ?? 0) > current) leaderboards.shapeme[r.name] = r.score ?? 0;
       }
     });
 
@@ -84,7 +87,7 @@ export async function getLeaderboards(): Promise<Leaderboards> {
     return {
       bingo: {}, typeracer: [], chess: {}, quiz: {}, sudoku: {}, 
       kakuro: {}, sixteencoins: {}, gridorder: {}, memory: {}, flappy: [], cssbattle: {},
-      jumprace: {}
+      jumprace: {}, shapeme: {}
     };
   }
 }

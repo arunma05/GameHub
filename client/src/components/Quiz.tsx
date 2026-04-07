@@ -20,13 +20,21 @@ const decodeHTML = (html: string) => {
 export const Quiz: React.FC<QuizProps> = ({ room, me }) => {
   const [countdown, setCountdown] = useState<number | null>(3);
   const [now, setNow] = useState(Date.now());
+  const questionStartRef = React.useRef<number>(Date.now());
+
+  // Track local start time whenever a new question arrives
+  useEffect(() => {
+    if (room.gameState === 'playing' && !room.gameData?.showingResult) {
+      questionStartRef.current = Date.now();
+    }
+  }, [(room.gameData as any)?.currentQ, room.gameState]);
 
   useEffect(() => {
     if (room.gameState === 'playing' && !room.gameData?.showingResult) {
       const interval = setInterval(() => setNow(Date.now()), 100);
       return () => clearInterval(interval);
     }
-  }, [room.gameState, room.gameData?.showingResult, room.gameData?.currentQ]);
+  }, [room.gameState, room.gameData?.showingResult, (room.gameData as any)?.currentQ]);
 
   useEffect(() => {
     if (room.gameState === 'starting') {
@@ -184,7 +192,7 @@ export const Quiz: React.FC<QuizProps> = ({ room, me }) => {
   const myAnswer = gd.answers[me.id];
   const correct = gd.showingResult ? question.correct_answer : null;
   const timeLimit = 15;
-  const elapsed = gd.showingResult ? timeLimit : (gd.qStartTime ? Math.min((now - gd.qStartTime) / 1000, timeLimit) : 0);
+  const elapsed = gd.showingResult ? timeLimit : Math.min((now - questionStartRef.current) / 1000, timeLimit);
   const timeLeft = Math.max(timeLimit - elapsed, 0);
 
   return (

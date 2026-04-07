@@ -206,63 +206,81 @@ export const ShapeMeComponent: React.FC<ShapeMeProps> = ({ onGameEnd, isDark = t
     const canvas = canvasRef.current;
     if (!canvas) return 0;
 
-    // ── Step 1: Centroid ──
-    const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
-    const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
-
-    // ── Step 2: Characteristic radius (circumscribed circle radius ≈ max dist from centroid) ──
-    // We use the 90th-percentile radius to ignore stray outlier points
-    const radii = pts.map(p => Math.hypot(p.x - cx, p.y - cy)).sort((a, b) => a - b);
-    const R = radii[Math.floor(radii.length * 0.90)] || 1;
+    // ── Step 1: User Bounding Box ──
+    const minX = Math.min(...pts.map(p => p.x));
+    const maxX = Math.max(...pts.map(p => p.x));
+    const minY = Math.min(...pts.map(p => p.y));
+    const maxY = Math.max(...pts.map(p => p.y));
+    const Wu = Math.max(1, maxX - minX);
+    const Hu = Math.max(1, maxY - minY);
+    const Cux = (minX + maxX) / 2;
+    const Cuy = (minY + maxY) / 2;
 
     // Minimum size guard: must be at least 8% of canvas
-    const minR = Math.min(canvas.width, canvas.height) * 0.08;
-    const sizePenalty = R < minR ? R / minR : 1;
+    const minSize = canvas ? Math.min(canvas.width, canvas.height) * 0.15 : 50;
+    const sizePenalty = (Math.max(Wu, Hu) < minSize) ? Math.max(Wu, Hu) / minSize : 1;
 
-    // ── Step 3: Build ideal shape outline sample ──
-    const SAMPLES = 200; // more samples = more accurate coverage check
-    let outlineVerts: {x:number,y:number}[] = [];
+    // ── Step 2: Build 'Raw' Ideal Shape Outline ──
+    const SAMPLES = 200;
+    let rawOutline: {x:number,y:number}[] = [];
 
-    // For square: use the inradius (half-side) = R/√2 so corners align with R
     if (shape === 'circle') {
-      outlineVerts = sampleCircle(cx, cy, R, SAMPLES);
+      rawOutline = sampleCircle(0, 0, 100, SAMPLES);
     } else if (shape === 'square') {
-      const halfSide = R / Math.SQRT2;
-      const sq = [
-        { x: cx - halfSide, y: cy - halfSide },
-        { x: cx + halfSide, y: cy - halfSide },
-        { x: cx + halfSide, y: cy + halfSide },
-        { x: cx - halfSide, y: cy + halfSide },
-      ];
-      outlineVerts = samplePolygon(sq, SAMPLES);
+      const sq = [{x:-100,y:-100},{x:100,y:-100},{x:100,y:100},{x:-100,y:100}];
+      rawOutline = samplePolygon(sq, SAMPLES);
     } else if (shape === 'triangle') {
-      outlineVerts = samplePolygon(polygonVerts(cx, cy, R, 3, -Math.PI / 2), SAMPLES);
+      rawOutline = samplePolygon(polygonVerts(0, 0, 100, 3, -Math.PI / 2), SAMPLES);
     } else if (shape === 'hexagon') {
-      outlineVerts = samplePolygon(polygonVerts(cx, cy, R, 6, 0), SAMPLES);
+      rawOutline = samplePolygon(polygonVerts(0, 0, 100, 6, 0), SAMPLES);
     } else if (shape === 'star') {
-      const sv = starVerts(cx, cy, R, R * 0.4, 5);
-      outlineVerts = samplePolygon(sv, SAMPLES);
+      rawOutline = samplePolygon(starVerts(0, 0, 100, 40, 5), SAMPLES);
     } else if (shape === 'heart') {
-      // Parametric heart curve, scaled to radius R
-      outlineVerts = Array.from({ length: SAMPLES }, (_, i) => {
+      rawOutline = Array.from({ length: SAMPLES }, (_, i) => {
         const t = (2 * Math.PI * i) / SAMPLES;
-        // Standard heart parametric
         const hx = 16 * Math.pow(Math.sin(t), 3);
         const hy = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
-        // scale: max extent of hx is 16, hy is ~12. use 16 as normaliser
-        return { x: cx + (hx / 16) * R, y: cy + (hy / 14) * R };
+        return { x: hx * 6, y: hy * 6 }; // Raw scale for heart
       });
     }
 
+    // ── Step 3: Align Ideal Shape to User's Bounding Box ──
+    const iMinX = Math.min(...rawOutline.map(p => p.x));
+    const iMaxX = Math.max(...rawOutline.map(p => p.x));
+    const iMinY = Math.min(...rawOutline.map(p => p.y));
+    const iMaxY = Math.max(...rawOutline.map(p => p.y));
+    const Wi = iMaxX - iMinX;
+    const Hi = iMaxY - iMinY;
+    const Cix = (iMinX + iMaxX) / 2;
+    const Ciy = (iMinY + iMaxY) / 2;
+
+    const outlineVerts = rawOutline.map(p => ({
+      x: Cux + (p.x - Cix) * (Wu / Wi),
+      y: Cuy + (p.y - Ciy) * (Hu / Hi)
+    }));
+
+    // Measure Aspect Ratio similarity (penalty for stretching/squeezing the shape)
+    const ratioU = Wu / Hu;
+    const ratioI = Wi / Hi;
+    const ratioSimilarity = Math.min(ratioU / ratioI, ratioI / ratioU);
+    const aspectPenalty = Math.pow(ratioSimilarity, 0.4);
+
     // ── Step 4: Precision & Coverage ──
-    const precision = precisionScore(pts, outlineVerts, R);
-    
+    const precision = precisionScore(pts, outlineVerts, Math.max(Wu, Hu));
     let coverage = 1;
     if (checkCoverage) {
-      coverage = coverageScore(pts, outlineVerts, R);
+      coverage = coverageScore(pts, outlineVerts, Math.max(Wu, Hu));
     }
 
-    const score = precision * Math.pow(coverage, 0.55) * sizePenalty;
+    // ── Step 5: Closure Check (Start-to-End Gap) ──
+    const start = pts[0];
+    const end = pts[pts.length - 1];
+    const gap = Math.hypot(start.x - end.x, start.y - end.y);
+    const shapeSize = Math.max(Wu, Hu);
+    // Gap threshold: 10% of shape size. Harsh penalty if gap is large.
+    const closureScore = Math.max(0.4, 1 - (gap / (shapeSize * 0.5)));
+
+    const score = precision * coverage * sizePenalty * aspectPenalty * closureScore;
     return Math.max(0, Math.min(100, score));
   };
 

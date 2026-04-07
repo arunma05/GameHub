@@ -46,12 +46,12 @@ export const MemoryMatchSchema = z.object({
 
 export const RegisterSchema = z.object({
   username: z.string().min(3).max(20).regex(/^[a-zA-Z0-9_]+$/),
-  name: z.string().min(2).max(30),
-  password: z.string().min(5),
+  name: z.string().min(2).max(50),
+  password: z.string().min(4).max(72),
   captchaResponse: z.number(),
 });
 
 export const LoginSchema = z.object({
   username: z.string().min(3),
-  password: z.string().min(5),
+  password: z.string().min(4),
 });

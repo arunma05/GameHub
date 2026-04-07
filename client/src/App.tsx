@@ -91,6 +91,11 @@ export const App: React.FC = () => {
   const [kakuroLevel, setKakuroLevel] = useState<number | 'All'>(1);
   const [policyType, setPolicyType] = useState<'terms' | 'privacy' | 'cookie' | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  // Ref used by the popstate handler so it always calls the latest goToDashboard
+  const goToDashboardRef = React.useRef<() => void>(() => {});
+  // Tracks whether the player is intentionally in a room.
+  // Prevents stale room events from a quit game re-appearing in a new session.
+  const isInRoomRef = React.useRef(false);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -101,6 +106,30 @@ export const App: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [view]);
+
+  // ── Browser Back Button Support ─────────────────────────────────────────────
+  // Push a synthetic history entry each time the user leaves the dashboard so
+  // the browser's back button triggers popstate instead of navigating away.
+  useEffect(() => {
+    if (view !== 'dashboard') {
+      if (!history.state?.spa) {
+        history.pushState({ spa: true }, '');
+      }
+    }
+  }, [view]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      // Always call the latest version via the ref to avoid stale closures
+      goToDashboardRef.current();
+      // Re-push so the next back press is also intercepted
+      history.pushState({ spa: true }, '');
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+  // ───────────────────────────────────────────────────────────────────────────
+
 
   const toggleTheme = () => {
     setIsDark(prev => {
@@ -120,10 +149,30 @@ export const App: React.FC = () => {
     error: null,
   });
   const [isConnected, setIsConnected] = useState(socket.connected);
+  const [serverDownVisible, setServerDownVisible] = useState(false);
+  const [justReconnected, setJustReconnected] = useState(false);
+  const disconnectTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    function onConnect() { setIsConnected(true); }
-    function onDisconnect() { setIsConnected(false); }
+    function onConnect() {
+      setIsConnected(true);
+      // Cancel any pending "show overlay" timer
+      if (disconnectTimerRef.current) { clearTimeout(disconnectTimerRef.current); disconnectTimerRef.current = null; }
+      // If the overlay was already visible, flash "back online" then dismiss
+      setServerDownVisible(prev => {
+        if (prev) {
+          setJustReconnected(true);
+          setTimeout(() => { setServerDownVisible(false); setJustReconnected(false); }, 2000);
+        }
+        return prev; // keep visible briefly for the flash
+      });
+    }
+    function onDisconnect() {
+      setIsConnected(false);
+      setJustReconnected(false);
+      // Wait 2 s before showing the overlay — avoids flicker on transient blips
+      disconnectTimerRef.current = setTimeout(() => setServerDownVisible(true), 2000);
+    }
     socket.on('connect', onConnect);
     socket.on('disconnect', onDisconnect);
 
@@ -149,10 +198,25 @@ export const App: React.FC = () => {
     if (user.theme) setIsDark(user.theme === 'dark');
   };
 
+  const goToDashboard = () => {
+    // Tell the server to remove us from the room so no more events are sent to this socket
+    const currentRoomId = gameState.room?.id;
+    if (currentRoomId) {
+      socket.emit('leave-room', { roomId: currentRoomId });
+    }
+    isInRoomRef.current = false; // Stop processing any in-flight room events
+    setView('dashboard');
+    setSelectedGame(null);
+    setGameState(prev => ({ ...prev, room: null, me: null }));
+  };
+  // Keep the ref in sync so the popstate listener always calls the current version
+  goToDashboardRef.current = goToDashboard;
+
+
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('user');
-    setView('dashboard');
+    goToDashboard();
   };
 
   useEffect(() => {
@@ -162,18 +226,26 @@ export const App: React.FC = () => {
     socket.emit('get-leaderboards');
 
     const onRoomUpdated = (room: Room) => {
+      if (!isInRoomRef.current) return; // We've left — ignore stale server events
       setGameState(prev => ({ ...prev, room }));
     };
 
     const onGameStarted = (room: Room) => {
+      if (!isInRoomRef.current) return;
       setGameState(prev => {
         const meWithCard = room.players.find(p => p.id === prev.me?.id) || prev.me;
         return { ...prev, room, me: meWithCard };
       });
       setView('game');
     };
-    const onNumberCalled = ({ room }: { room: any }) => setGameState((prev: any) => ({ ...prev, room }));
-    const onGameOver = ({ room }: { room: any }) => setGameState((prev: any) => ({ ...prev, room }));
+    const onNumberCalled = ({ room }: { room: any }) => {
+      if (!isInRoomRef.current) return;
+      setGameState((prev: any) => ({ ...prev, room }));
+    };
+    const onGameOver = ({ room }: { room: any }) => {
+      if (!isInRoomRef.current) return;
+      setGameState((prev: any) => ({ ...prev, room }));
+    };
     const onLeaderboardUpdated = (lb: any) => setGameState((prev: any) => ({ ...prev, leaderboards: lb }));
 
     socket.on('room-updated', onRoomUpdated);
@@ -209,6 +281,7 @@ export const App: React.FC = () => {
   };
 
   const handleRoomJoined = (me: any) => {
+    isInRoomRef.current = true; // We are now intentionally in a room
     setGameState((prev: any) => ({ ...prev, me }));
     setView('lobby');
   };
@@ -421,7 +494,7 @@ export const App: React.FC = () => {
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                   <button 
-                      onClick={() => setView('dashboard')}
+                      onClick={goToDashboard}
                       style={{
                           background: 'var(--item-bg)',
                           border: '1px solid var(--item-border)',
@@ -613,6 +686,92 @@ export const App: React.FC = () => {
         type={policyType} 
         onClose={() => setPolicyType(null)} 
       />
+
+      {/* ── Global Server-Down Overlay ─────────────────────────────────────── */}
+      {serverDownVisible && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.75)',
+          backdropFilter: 'blur(12px)',
+          WebkitBackdropFilter: 'blur(12px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '1.5rem',
+          animation: 'sdo-fadein 0.4s ease-out'
+        }}>
+          <div style={{
+            background: 'var(--card-bg)',
+            border: `1px solid ${justReconnected ? 'var(--success)' : 'var(--error)'}`,
+            borderRadius: '28px',
+            padding: 'clamp(2rem, 6vw, 3rem) clamp(1.5rem, 5vw, 3rem)',
+            maxWidth: '420px', width: '100%',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem',
+            boxShadow: justReconnected
+              ? '0 0 60px var(--success-glow), 0 24px 60px rgba(0,0,0,0.5)'
+              : '0 0 60px rgba(244,63,94,0.25), 0 24px 60px rgba(0,0,0,0.5)',
+            textAlign: 'center',
+            animation: 'sdo-slidein 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          }}>
+            {/* Icon */}
+            <div style={{
+              width: '80px', height: '80px', borderRadius: '50%',
+              background: justReconnected ? 'var(--success-glow)' : 'rgba(244,63,94,0.12)',
+              border: `2px solid ${justReconnected ? 'var(--success)' : 'var(--error)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '2.5rem',
+              animation: justReconnected ? 'none' : 'sdo-pulse 2s ease-in-out infinite'
+            }}>
+              {justReconnected ? '✓' : '⚡'}
+            </div>
+
+            {/* Title */}
+            <div>
+              <h2 style={{ margin: '0 0 0.5rem', fontWeight: 950, fontSize: 'clamp(1.3rem, 5vw, 1.75rem)', color: justReconnected ? 'var(--success)' : 'var(--error)' }}>
+                {justReconnected ? 'Back Online!' : 'Server Unreachable'}
+              </h2>
+              <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                {justReconnected
+                  ? 'Connection restored. You can continue where you left off.'
+                  : 'The server appears to be down. Reconnecting automatically…'}
+              </p>
+            </div>
+
+            {/* Animated reconnect indicator */}
+            {!justReconnected && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.75rem', width: '100%' }}>
+                {/* Spinner */}
+                <div style={{
+                  width: '36px', height: '36px',
+                  border: '3px solid var(--item-border)',
+                  borderTopColor: 'var(--error)',
+                  borderRadius: '50%',
+                  animation: 'sdo-spin 0.9s linear infinite'
+                }} />
+                {/* Dot progress */}
+                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                  {[0, 1, 2].map(i => (
+                    <div key={i} style={{
+                      width: '8px', height: '8px', borderRadius: '50%',
+                      background: 'var(--error)',
+                      animation: `sdo-dot 1.4s ease-in-out ${i * 0.2}s infinite`
+                    }} />
+                  ))}
+                </div>
+                <p style={{ margin: 0, fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                  Trying to reconnect
+                </p>
+              </div>
+            )}
+          </div>
+
+          <style>{`
+            @keyframes sdo-fadein  { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes sdo-slidein { from { transform: scale(0.85) translateY(20px); opacity: 0; } to { transform: scale(1) translateY(0); opacity: 1; } }
+            @keyframes sdo-spin    { to { transform: rotate(360deg); } }
+            @keyframes sdo-pulse   { 0%,100% { box-shadow: 0 0 0 0 rgba(244,63,94,0.4); } 50% { box-shadow: 0 0 0 14px rgba(244,63,94,0); } }
+            @keyframes sdo-dot     { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1.1); opacity: 1; } }
+          `}</style>
+        </div>
+      )}
     </div>
   );
 };

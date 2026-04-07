@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { socket } from '../socket';
 import type { Player, PublicRoom } from '../types';
-import { Sparkles, Users, Trophy, Timer, Globe, Lock, Unlock, Zap, Brain, Paintbrush, Grid3X3, Sword, LayoutGrid, HelpCircle } from 'lucide-react';
+import { Sparkles, Users, Trophy, Timer, Globe, Lock, Unlock, Zap, Brain, Paintbrush, Grid3X3, Sword, LayoutGrid, HelpCircle, Rabbit } from 'lucide-react';
 import { TRIVIA_TOPICS } from '../constants/TriviaTopics';
 
 interface HomeProps {
@@ -260,7 +260,7 @@ export const Home: React.FC<HomeProps> = ({
              selectedGame === 'kakuro' ? <Brain size={48} color="#a78bfa" /> :
              selectedGame === 'gridorder' ? <LayoutGrid size={48} color="#f59e0b" /> :
              selectedGame === 'memory' ? <Brain size={48} color="#ec4899" /> :
-             selectedGame === 'jumprace' ? <Sword size={48} color="#10b981" /> :
+             selectedGame === 'jumprace' ? <Rabbit size={48} color="#10b981" /> :
              <Sparkles size={48} color="#60a5fa" />}
             {selectedGame === 'typeracer' ? 'Type Racer' : 
              selectedGame === 'chess' ? 'Chess' : 

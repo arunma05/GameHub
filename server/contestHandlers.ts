@@ -9,12 +9,14 @@ export async function handleQuizAnswer(socket: Socket, io: Server, { roomId, ans
   const room = rooms[roomId];
   if (!room || room.gameState !== 'playing' || room.type !== 'quiz') return;
   const gameData = room.gameData as QuizData;
-  if (!gameData || gameData.showingResult) return;
+  if (!gameData || gameData.showingResult || gameData.roundEnding) return;
   if (gameData.answers[socket.id]) return;
   
   gameData.answers[socket.id] = answer;
   io.to(roomId).emit('room-updated', room);
+  // All players have answered — end the round early
   if (Object.keys(gameData.answers).length >= room.players.length) {
+    gameData.roundEnding = true;
     handleQuizRoundEnd(roomId, io);
   }
 }
@@ -24,11 +26,19 @@ export function handleQuizRoundEnd(roomId: string, io: Server) {
   if (!room || room.gameState !== 'playing' || room.type !== 'quiz') return;
   const gameData = room.gameData as QuizData;
   if (!gameData) return;
+
+  // Guard: if already processing this round's end, bail out (prevents double-call from timer + all-answered)
+  if (gameData.showingResult) return;
+
+  // Mark as ending and cancel the pending timer
+  gameData.roundEnding = true;
   if (gameTimers[roomId]) { clearTimeout(gameTimers[roomId]); delete gameTimers[roomId]; }
 
   const q = gameData.questions[gameData.currentQ];
   room.players.forEach(p => {
-    if (gameData.answers[p.id] === q.correct_answer) gameData.scores[p.id] += 10;
+    if (gameData.answers[p.id] === q.correct_answer) {
+      gameData.scores[p.id] = (gameData.scores[p.id] || 0) + 10;
+    }
   });
 
   gameData.showingResult = true;
@@ -42,11 +52,13 @@ export function handleQuizRoundEnd(roomId: string, io: Server) {
     gData.currentQ++;
     gData.answers = {};
     gData.showingResult = false;
+    gData.roundEnding = false;
 
     if (gData.currentQ >= gData.questions.length) {
       r.gameState = 'finished';
-      const max = Math.max(...Object.values(gData.scores) as number[]);
-      r.winners = r.players.filter(p => gData.scores[p.id] === max);
+      const scores = gData.scores as Record<string, number>;
+      const max = Math.max(...Object.values(scores));
+      r.winners = r.players.filter(p => scores[p.id] === max);
       r.winner = r.winners[0];
       for (const w of r.winners) await updatePlayerWin(w.name, 'quiz');
       const lb = await getLeaderboards();

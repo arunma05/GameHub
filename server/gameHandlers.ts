@@ -147,21 +147,22 @@ export async function handleStartGame(socket: Socket, io: Server, { roomId }: { 
     broadcastActiveRooms(io);
   } else if (room.type === 'jumprace') {
     room.gameState = 'playing';
-    const p1Id = room.players[0].id;
-    const p2Id = room.players[1].id;
+    // 4 corner definitions: top-left, top-right, bottom-left, bottom-right
+    const corners = [
+      { cx: 0, cy: 0, dx: 1, dy: 1 },
+      { cx: 7, cy: 0, dx: -1, dy: 1 },
+      { cx: 0, cy: 7, dx: 1, dy: -1 },
+      { cx: 7, cy: 7, dx: -1, dy: -1 },
+    ];
     const board: Record<string, string> = {};
-    // Player 1 (Bottom corner triangle)
-    for (let i=0; i<4; i++) {
-        for (let j=0; j<4-i; j++) {
-            board[`${i},${j}`] = p1Id;
+    room.players.forEach((p, slotIdx) => {
+      const { cx, cy, dx, dy } = corners[slotIdx];
+      for (let i = 0; i < 4; i++) {
+        for (let j = 0; j < 4 - i; j++) {
+          board[`${cx + dx * i},${cy + dy * j}`] = p.id;
         }
-    }
-    // Player 2 (Top corner triangle)
-    for (let i=0; i<4; i++) {
-        for (let j=0; j<4-i; j++) {
-            board[`${7-i},${7-j}`] = p2Id;
-        }
-    }
+      }
+    });
     room.gameData = { board, turnIndex: 0 };
     room.currentTurnIndex = 0;
     io.to(roomId).emit('game-started', room);

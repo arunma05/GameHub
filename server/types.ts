@@ -18,7 +18,8 @@ export type GameType =
   | 'kakuro' 
   | 'gridorder' 
   | 'memory'
-  | 'jumprace';
+  | 'jumprace'
+  | 'shapeme';
 
 export type GameState = 'waiting' | 'starting' | 'playing' | 'finished';
 
@@ -33,6 +34,7 @@ export interface QuizData {
   scores: Record<string, number>;
   answers: Record<string, string>;
   showingResult?: boolean;
+  roundEnding?: boolean;
   qStartTime?: number;
   quizAmount: number;
   quizCategory?: number;
@@ -89,4 +91,5 @@ export interface Leaderboards {
   flappy: LeaderboardEntry[];
   cssbattle: Record<string, LeaderboardEntry[]>;
   jumprace: Record<string, number>;
+  shapeme: Record<string, number>;
 }

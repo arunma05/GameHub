@@ -171,21 +171,34 @@ export async function handleJumpRaceMove(socket: Socket, io: Server, data: unkno
     gameData.lastJump = lastJump;
   }
 
-  // Check win condition
-  const p1Id = room.players[0].id;
-  const p2Id = room.players[1].id;
-  
-  const p1Starts: string[] = [];
-  for (let i=0; i<4; i++) for (let j=0; j<4-i; j++) p1Starts.push(`${i},${j}`);
-  const p2Starts: string[] = [];
-  for (let i=0; i<4; i++) for (let j=0; j<4-i; j++) p2Starts.push(`${7-i},${7-j}`);
+  // Shared helper: build the 10-cell triangle for a given corner
+  const corners = [
+    { cx: 0, cy: 0, dx: 1,  dy: 1  }, // slot 0 — top-left
+    { cx: 7, cy: 0, dx: -1, dy: 1  }, // slot 1 — top-right
+    { cx: 0, cy: 7, dx: 1,  dy: -1 }, // slot 2 — bottom-left
+    { cx: 7, cy: 7, dx: -1, dy: -1 }, // slot 3 — bottom-right
+  ];
+  const OPPOSITE = [3, 2, 1, 0];
 
-  const p1InP2Base = p2Starts.filter(pos => board[pos] === p1Id).length;
-  const p2InP1Base = p1Starts.filter(pos => board[pos] === p2Id).length;
+  const buildTriangle = (slotIdx: number): string[] => {
+    const { cx, cy, dx, dy } = corners[slotIdx];
+    const cells: string[] = [];
+    for (let i = 0; i < 4; i++)
+      for (let j = 0; j < 4 - i; j++)
+        cells.push(`${cx + dx * i},${cy + dy * j}`);
+    return cells;
+  };
 
-  if (p1InP2Base === 10 || p2InP1Base === 10) {
+  // Check if any player has filled the opposite corner
+  let winner: typeof room.players[0] | null = null;
+  for (let s = 0; s < room.players.length; s++) {
+    const oppBase = buildTriangle(OPPOSITE[s]);
+    const filled = oppBase.filter(pos => board[pos] === room.players[s].id).length;
+    if (filled >= 10) { winner = room.players[s]; break; }
+  }
+
+  if (winner) {
     room.gameState = 'finished';
-    const winner = p1InP2Base === 10 ? room.players[0] : room.players[1];
     room.winner = winner;
     room.winners = [winner];
     await updatePlayerWin(winner.name, 'jumprace');

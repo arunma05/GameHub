@@ -10,7 +10,7 @@ import { handleStartGame, handleCallNumber, handleTypeProgress } from './gameHan
 import { handleChessMove, handleSixteenCoinsMove, handleSudokuWin, handleKakuroWin, handleSudokuLoad, handleSudokuSave, handleGridOrderWin, handleGridOrderScore, handleSixteenCoinsEndTurn, handleSixteenCoinsReady, handleJumpRaceMove, handleJumpRaceEndTurn } from './puzzleHandlers';
 import { handleQuizAnswer, handleFlappyScore, handleMemoryWin } from './contestHandlers';
 import { handleRegister, handleLogin, handleGuestLogin, handleGetCaptcha, handleUpdateTheme } from './authHandlers';
-import { getLeaderboards } from './leaderboard';
+import { getLeaderboards, updatePlayerWin } from './leaderboard';
 import { generateRoomCode } from './gameLogic';
 import { Room } from './types';
 
@@ -64,6 +64,35 @@ io.on('connection', async (socket: AugmentedSocket) => {
   socket.on('jumprace-move', (data) => handleJumpRaceMove(socket, io, data));
   socket.on('jumprace-endturn', (data) => handleJumpRaceEndTurn(socket, io, data));
 
+  socket.on('update-score', async ({ game, username, score }) => {
+    await updatePlayerWin(username, game, score);
+    io.emit('leaderboard-updated', await getLeaderboards());
+  });
+
+  // Explicit room leave — called when a player exits mid-game via the back button
+  socket.on('leave-room', ({ roomId }: { roomId: string }) => {
+    const room = rooms[roomId];
+    if (room) {
+      const idx = room.players.findIndex(p => p.id === socket.id);
+      if (idx !== -1) {
+        room.players.splice(idx, 1);
+        if (room.players.length === 0) {
+          // No players left — cancel any running timers and the delete room
+          const { gameTimers } = require('./gameHandlers');
+          if (gameTimers[roomId]) { clearTimeout(gameTimers[roomId]); delete gameTimers[roomId]; }
+          delete rooms[roomId];
+        } else {
+          // Transfer host if needed and notify remaining players
+          if (room.hostId === socket.id) room.hostId = room.players[0].id;
+          io.to(roomId).emit('room-updated', room);
+        }
+      }
+    }
+    // Remove socket from the socket.io room — stops all future room events reaching this client
+    socket.leave(roomId);
+    broadcastActiveRooms(io);
+  });
+
   // Auth Handlers
   socket.on('get-captcha', (callback) => callback(handleGetCaptcha(socket)));
   socket.on('register', (data, callback) => handleRegister(socket, data, callback));
@@ -105,6 +134,24 @@ io.on('connection', async (socket: AugmentedSocket) => {
 async function transitionToNewRoomLobby(room: Room) {
   let newRoomId = generateRoomCode();
   while (rooms[newRoomId]) newRoomId = generateRoomCode();
+
+  // Reset game-specific data for new lobby, preserving settings
+  let resetGameData = room.gameData;
+  if (room.type === 'quiz' && room.gameData && typeof room.gameData === 'object') {
+    const qd = room.gameData as any;
+    resetGameData = {
+      quizAmount: qd.quizAmount || 10,
+      quizCategory: qd.quizCategory,
+      quizDifficulty: qd.quizDifficulty,
+      questions: [],
+      currentQ: 0,
+      scores: {},
+      answers: {},
+      showingResult: false,
+      roundEnding: false,
+    };
+  }
+
   const newRoom: Room = { 
     ...room, 
     id: newRoomId, 
@@ -114,6 +161,7 @@ async function transitionToNewRoomLobby(room: Room) {
     readyPlayers: [], 
     calledNumbers: [],
     currentTurnIndex: 0,
+    gameData: resetGameData,
     players: room.players.map(p => ({ ...p, card: null, completedLines: 0 })) 
   };
   rooms[newRoomId] = newRoom;
