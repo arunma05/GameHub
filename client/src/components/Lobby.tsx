@@ -2,6 +2,7 @@ import React from 'react';
 import { socket } from '../socket';
 import type { Room, Player } from '../types';
 import { Play, Copy, Users } from 'lucide-react';
+import { TRIVIA_TOPICS } from '../constants/TriviaTopics';
 
 interface LobbyProps {
   room: Room;
@@ -46,17 +47,17 @@ export const Lobby: React.FC<LobbyProps> = ({ room, me }) => {
         {/* Room Code */}
         <div style={{ textAlign: 'center', borderBottom: '1px solid var(--item-border)', paddingBottom: '2rem' }}>
           <div style={{ marginBottom: '1rem', color: 'var(--accent)', fontSize: '0.9rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em' }}>
-             {room.type === 'typeracer' ? '🏎️ TYPERACER LOBBY' : 
-              room.type === 'chess' ? '♘ CHESS LOBBY' : 
-              room.type === 'flappy' ? '🐦 FLAPPY LOBBY' :
-              room.type === 'quiz' ? '🧠 TRIVIA LOBBY' :
-              room.type === 'cssbattle' ? '🎨 CSS BATTLE LOBBY' :
-              room.type === 'sudoku' ? '🧩 SUDOKU LOBBY' :
-              room.type === 'kakuro' ? '🧩 KAKURO LOBBY' : 
-              room.type === 'sixteencoins' ? '⚔️ 16 COINS LOBBY' : 
-              room.type === 'gridorder' ? '🔢 GRID ORDER LOBBY' :
-              room.type === 'memory' ? '🧠 REMEMBER ME LOBBY' :
-              '🎱 BINGO LOBBY'}
+            {room.type === 'typeracer' ? '🏎️ TYPERACER LOBBY' :
+              room.type === 'chess' ? '♘ CHESS LOBBY' :
+                room.type === 'flappy' ? '🐦 FLAPPY LOBBY' :
+                  room.type === 'quiz' ? '🧠 TRIVIA LOBBY' :
+                    room.type === 'cssbattle' ? '🎨 CSS BATTLE LOBBY' :
+                      room.type === 'sudoku' ? '🧩 SUDOKU LOBBY' :
+                        room.type === 'kakuro' ? '🧩 KAKURO LOBBY' :
+                          room.type === 'sixteencoins' ? '⚔️ 16 COINS LOBBY' :
+                            room.type === 'gridorder' ? '🔢 GRID ORDER LOBBY' :
+                              room.type === 'memory' ? '🧠 REMEMBER ME LOBBY' :
+                                '🎱 BINGO LOBBY'}
           </div>
           <h2 style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Room Code
@@ -69,6 +70,24 @@ export const Lobby: React.FC<LobbyProps> = ({ room, me }) => {
           </div>
           <p style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Share this code with others to join</p>
         </div>
+
+        {/* Trivia Settings Info */}
+        {room.type === 'quiz' && (
+          <div style={{ borderTop: '1px solid var(--item-border)', paddingTop: '1.5rem', textAlign: 'center' }}>
+             <p style={{ fontSize: '0.75rem', fontWeight: 900, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: '0.5rem', opacity: 0.7 }}>ACTIVE TRIVIA TOPIC</p>
+             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', padding: '0.8rem 1.5rem', background: 'var(--accent-glow)', border: '1px solid var(--accent)', borderRadius: '20px', color: 'var(--accent)', fontWeight: 950, fontSize: '1.1rem' }}>
+                {(() => {
+                  const topic = TRIVIA_TOPICS.find(c => c.category === (room.gameData as any)?.quizCategory && c.difficulty === (room.gameData as any)?.quizDifficulty);
+                  return (
+                    <>
+                      <span>{topic?.tech ? '🚀' : '📚'}</span>
+                      <span>{topic?.label || 'Custom/Random'}</span>
+                    </>
+                  );
+                })()}
+             </div>
+          </div>
+        )}
 
         {/* Player List */}
         <div>

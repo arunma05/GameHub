@@ -157,10 +157,15 @@ export const JumpRaceComponent: React.FC<JumpRaceProps> = ({ room, me }) => {
 
   // Map player IDs → slot index (0-3)
   const playerSlot: Record<string, number> = {};
-  room.players.forEach((p, i) => { playerSlot[p.id] = i; });
+  room.players.forEach((p, i) => { 
+    if (gameData?.playerSlots?.[p.id] !== undefined) {
+      playerSlot[p.id] = gameData.playerSlots[p.id];
+    } else {
+      playerSlot[p.id] = (room.players.length === 2 && i === 1) ? 3 : i;
+    }
+  });
 
   const mySlot = playerSlot[me.id] ?? 0;
-  const numPlayers = room.players.length;
   const boardDeg = BOARD_ROTATIONS[mySlot];
 
   // Stable piece IDs for 3D animations
@@ -268,15 +273,19 @@ export const JumpRaceComponent: React.FC<JumpRaceProps> = ({ room, me }) => {
 
   const getCellBg = (x: number, y: number): string => {
     const key = `${x},${y}`;
-    for (let s = 0; s < numPlayers; s++)
+    for (const p of room.players) {
+      const s = playerSlot[p.id];
       if (CORNER_BASES[s].includes(key)) return SLOT_COLORS[s] + '22';
+    }
     return (x + y) % 2 === 0 ? 'rgba(0,0,0,0.04)' : 'transparent';
   };
 
   const getCellGoalStroke = (x: number, y: number): string | null => {
     const key = `${x},${y}`;
-    for (let s = 0; s < numPlayers; s++)
+    for (const p of room.players) {
+      const s = playerSlot[p.id];
       if (CORNER_BASES[OPPOSITE[s]].includes(key)) return SLOT_COLORS[s];
+    }
     return null;
   };
 
@@ -469,8 +478,12 @@ export const JumpRaceComponent: React.FC<JumpRaceProps> = ({ room, me }) => {
                     {nodes.map(({ x, y }) => {
                       const key = `${x},${y}`;
                       let goalColor: string | undefined;
-                      for (let s = 0; s < numPlayers; s++) {
-                        if (CORNER_BASES[OPPOSITE[s]].includes(key)) { goalColor = SLOT_COLORS[s]; break; }
+                      for (const p of room.players) {
+                        const s = playerSlot[p.id];
+                        if (CORNER_BASES[OPPOSITE[s]].includes(key)) {
+                          goalColor = SLOT_COLORS[s];
+                          break;
+                        }
                       }
                       return (
                         <Node3D

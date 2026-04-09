@@ -19,7 +19,9 @@ export type GameType =
   | 'gridorder' 
   | 'memory'
   | 'jumprace'
-  | 'shapeme';
+  | 'shapeme'
+  | 'colormatcher'
+  | 'mirrordraw';
 
 export type GameState = 'waiting' | 'starting' | 'playing' | 'finished';
 
@@ -50,6 +52,7 @@ export interface JumpRaceData {
     board: Record<string, string>;
     turnIndex: number;
     lastJump?: string;
+    playerSlots?: Record<string, number>;
 }
 
 export type GameData = string | ChessData | QuizData | SixteenCoinsData | JumpRaceData | { gridSize: number } | { level: number | 'All' } | null;
@@ -91,5 +94,7 @@ export interface Leaderboards {
   flappy: LeaderboardEntry[];
   cssbattle: Record<string, LeaderboardEntry[]>;
   jumprace: Record<string, number>;
-  shapeme: Record<string, number>;
+  shapeme: Record<string, LeaderboardEntry[]>;
+  colormatcher: Record<string, LeaderboardEntry[]>;
+  mirrordraw: Record<string, LeaderboardEntry[]>;
 }

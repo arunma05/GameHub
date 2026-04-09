@@ -6,9 +6,9 @@ import { TRIVIA_TOPICS } from '../constants/TriviaTopics';
 
 interface HomeProps {
   onRoomJoined: (me: Player) => void;
-  leaderboards: { 
-    bingo: Record<string, number>; 
-    typeracer: { name: string; wpm: number }[]; 
+  leaderboards: {
+    bingo: Record<string, number>;
+    typeracer: { name: string; wpm: number }[];
     chess: Record<string, number>;
     quiz: Record<string, number>;
     flappy: { name: string; score: number }[];
@@ -16,15 +16,17 @@ interface HomeProps {
     sudoku: Record<string, number>;
     kakuro: Record<string, number>;
     sixteencoins: Record<string, number>;
-    gridorder: Record<number, { 
-      bestTimes: { name: string; time: number }[]; 
-      bestMoves: { name: string; moves: number }[]; 
+    gridorder: Record<number, {
+      bestTimes: { name: string; time: number }[];
+      bestMoves: { name: string; moves: number }[];
     }>;
     memory: Record<number, { name: string; time: number }[]>;
     jumprace: Record<string, number>;
     shapeme: Record<string, number>;
+    colormatcher: Record<string, number>;
+    mirrordraw: Record<string, number>;
   };
-  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | null;
+  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw' | null;
   publicRooms: PublicRoom[];
   memoryLevel: number;
   onMemoryLevelChange: (level: number) => void;
@@ -33,12 +35,12 @@ interface HomeProps {
   playerName?: string;
 }
 
-export const Home: React.FC<HomeProps> = ({ 
-  onRoomJoined, 
-  leaderboards, 
-  selectedGame, 
-  publicRooms, 
-  memoryLevel, 
+export const Home: React.FC<HomeProps> = ({
+  onRoomJoined,
+  leaderboards,
+  selectedGame,
+  publicRooms,
+  memoryLevel,
   onMemoryLevelChange,
   kakuroLevel,
   onKakuroLevelChange,
@@ -51,6 +53,7 @@ export const Home: React.FC<HomeProps> = ({
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [quizAmount, setQuizAmount] = useState(10);
   const [selectedTopicIdx, setSelectedTopicIdx] = useState(0);
+  const [topicSearch, setTopicSearch] = useState('');
   const [gridSize, setGridSize] = useState(3);
 
 
@@ -58,16 +61,16 @@ export const Home: React.FC<HomeProps> = ({
     if (!name.trim()) return setError('Please enter your name');
     setIsLoading(true);
     const selectedTopic = TRIVIA_TOPICS[selectedTopicIdx];
-    socket.emit('create-room', { 
-      playerName: name, 
-      type: selectedGame || 'bingo', 
-      isPublic, 
-      quizAmount, 
+    socket.emit('create-room', {
+      playerName: name,
+      type: selectedGame || 'bingo',
+      isPublic,
+      quizAmount,
       quizCategory: selectedTopic.category,
       quizDifficulty: selectedTopic.difficulty,
-      gridSize, 
+      gridSize,
       memoryLevel,
-      kakuroLevel 
+      kakuroLevel
     }, (response: { success: boolean; player?: Player; message?: string }) => {
       if (response.success && response.player) {
         onRoomJoined(response.player);
@@ -111,12 +114,12 @@ export const Home: React.FC<HomeProps> = ({
     if (!data) return null;
 
     if (selectedGame === 'typeracer') {
-      const top = [...(data as { name: string; wpm: number }[])].sort((a,b) => b.wpm - a.wpm).slice(0, 10);
+      const top = [...(data as { name: string; wpm: number }[])].sort((a, b) => b.wpm - a.wpm).slice(0, 10);
       if (top.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
       return top.map((item, index) => (
         <div key={index} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
           <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-            <span style={{ width: '24px', opacity: 0.5, fontWeight: 800 }}>#{index+1}</span>
+            <span style={{ width: '24px', opacity: 0.5, fontWeight: 800 }}>#{index + 1}</span>
             <span style={{ fontWeight: 600 }}>{item.name}</span>
           </div>
           <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{item.wpm} WPM</span>
@@ -125,104 +128,104 @@ export const Home: React.FC<HomeProps> = ({
     }
 
     if (selectedGame === 'cssbattle') {
-        // Safety: older db might have array for cssbattle or different structure
-        if (typeof data !== 'object' || Array.isArray(data)) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
-        
-        const battleData = data as Record<number, { name: string; time: number }[]>;
-        const entries = Object.entries(battleData).filter(([_, rec]) => Array.isArray(rec));
-        
-        if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
-        return entries.map(([lvlId, records]) => (
-            <div key={lvlId} style={{ marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Level {lvlId}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {records.slice(0, 3).map((r, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)', fontSize: '0.9rem' }}>
-                           <span style={{ fontWeight: 600 }}>{r.name}</span>
-                           <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{formatTime(r.time)}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        ));
+      // Safety: older db might have array for cssbattle or different structure
+      if (typeof data !== 'object' || Array.isArray(data)) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+
+      const battleData = data as Record<number, { name: string; time: number }[]>;
+      const entries = Object.entries(battleData).filter(([_, rec]) => Array.isArray(rec));
+
+      if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+      return entries.map(([lvlId, records]) => (
+        <div key={lvlId} style={{ marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Level {lvlId}</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {records.slice(0, 3).map((r, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)', fontSize: '0.9rem' }}>
+                <span style={{ fontWeight: 600 }}>{r.name}</span>
+                <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{formatTime(r.time)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ));
     }
 
     if (selectedGame === 'gridorder') {
-        // Safety for type transition
-        if (typeof data !== 'object' || Array.isArray(data)) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+      // Safety for type transition
+      if (typeof data !== 'object' || Array.isArray(data)) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
 
-        const gridData = data as Record<number, { bestTimes: any[]; bestMoves: any[] }>;
-        const entries = Object.entries(gridData).filter(([_, rec]) => rec && typeof rec === 'object' && ('bestTimes' in rec || 'bestMoves' in rec));
-        
-        if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
-        return entries.map(([size, record]) => (
-            <div key={size} style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(0,0,0,0.1)', borderRadius: '16px', border: '1px solid var(--item-border)' }}>
-                <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--accent)', marginBottom: '1rem', textAlign: 'center' }}>{size}x{size} CHALLENGE</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1rem' }}>
-                    <div>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>BEST TIMES</div>
-                        {Array.isArray(record.bestTimes) && record.bestTimes.length > 0 ? record.bestTimes.slice(0, 3).map((r, i) => (
-                            <div key={i} style={{ fontSize: '0.85rem', marginBottom: '0.4rem', color: 'var(--text-primary)' }}>
-                                {i+1}. {r.name} - <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{formatTime(r.time)}</span>
-                            </div>
-                        )) : <div style={{ fontSize: '0.75rem', opacity: 0.3 }}>N/A</div>}
-                    </div>
-                    <div>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>FEWEST MOVES</div>
-                        {Array.isArray(record.bestMoves) && record.bestMoves.length > 0 ? record.bestMoves.slice(0, 3).map((r, i) => (
-                            <div key={i} style={{ fontSize: '0.85rem', marginBottom: '0.4rem', color: 'var(--text-primary)' }}>
-                                {i+1}. {r.name} - <span style={{ color: '#10b981', fontWeight: 800 }}>{r.moves}</span>
-                            </div>
-                        )) : <div style={{ fontSize: '0.75rem', opacity: 0.3 }}>N/A</div>}
-                    </div>
+      const gridData = data as Record<number, { bestTimes: any[]; bestMoves: any[] }>;
+      const entries = Object.entries(gridData).filter(([_, rec]) => rec && typeof rec === 'object' && ('bestTimes' in rec || 'bestMoves' in rec));
+
+      if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+      return entries.map(([size, record]) => (
+        <div key={size} style={{ marginBottom: '2rem', padding: '1.5rem', background: 'rgba(0,0,0,0.1)', borderRadius: '16px', border: '1px solid var(--item-border)' }}>
+          <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--accent)', marginBottom: '1rem', textAlign: 'center' }}>{size}x{size} CHALLENGE</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '1rem' }}>
+            <div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>BEST TIMES</div>
+              {Array.isArray(record.bestTimes) && record.bestTimes.length > 0 ? record.bestTimes.slice(0, 3).map((r, i) => (
+                <div key={i} style={{ fontSize: '0.85rem', marginBottom: '0.4rem', color: 'var(--text-primary)' }}>
+                  {i + 1}. {r.name} - <span style={{ color: 'var(--accent)', fontWeight: 800 }}>{formatTime(r.time)}</span>
                 </div>
+              )) : <div style={{ fontSize: '0.75rem', opacity: 0.3 }}>N/A</div>}
             </div>
-        ));
+            <div>
+              <div style={{ fontSize: '0.7rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>FEWEST MOVES</div>
+              {Array.isArray(record.bestMoves) && record.bestMoves.length > 0 ? record.bestMoves.slice(0, 3).map((r, i) => (
+                <div key={i} style={{ fontSize: '0.85rem', marginBottom: '0.4rem', color: 'var(--text-primary)' }}>
+                  {i + 1}. {r.name} - <span style={{ color: '#10b981', fontWeight: 800 }}>{r.moves}</span>
+                </div>
+              )) : <div style={{ fontSize: '0.75rem', opacity: 0.3 }}>N/A</div>}
+            </div>
+          </div>
+        </div>
+      ));
     }
 
     if (selectedGame === 'memory') {
-        if (typeof data !== 'object' || Array.isArray(data)) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
-        const memoryData = data as Record<number, { name: string; time: number }[]>;
-        const entries = Object.entries(memoryData).filter(([_, rec]) => Array.isArray(rec));
-        if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
-        return entries.map(([lvl, records]) => (
-            <div key={lvl} style={{ marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Level {lvl} Cards</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {records.slice(0, 3).map((r, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)', fontSize: '0.9rem' }}>
-                           <span style={{ fontWeight: 600 }}>{r.name}</span>
-                           <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{formatTime(r.time)}</span>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        ));
+      if (typeof data !== 'object' || Array.isArray(data)) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+      const memoryData = data as Record<number, { name: string; time: number }[]>;
+      const entries = Object.entries(memoryData).filter(([_, rec]) => Array.isArray(rec));
+      if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+      return entries.map(([lvl, records]) => (
+        <div key={lvl} style={{ marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '0.8rem', fontWeight: 900, color: 'var(--text-secondary)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Level {lvl} Cards</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {records.slice(0, 3).map((r, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)', fontSize: '0.9rem' }}>
+                <span style={{ fontWeight: 600 }}>{r.name}</span>
+                <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{formatTime(r.time)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ));
     }
 
     if (selectedGame === 'flappy') {
-        const flappy = [...(data as { name: string; score: number }[])].sort((a,b) => b.score - a.score).slice(0, 10);
-        if (flappy.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
-        return flappy.map((item, index) => (
-          <div key={index} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
-            <span style={{ fontWeight: 600 }}>{item.name}</span>
-            <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{item.score} <small style={{fontSize: '0.6rem', opacity: 0.6}}>KM</small></span>
-          </div>
-        ));
+      const flappy = [...(data as { name: string; score: number }[])].sort((a, b) => b.score - a.score).slice(0, 10);
+      if (flappy.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+      return flappy.map((item, index) => (
+        <div key={index} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
+          <span style={{ fontWeight: 600 }}>{item.name}</span>
+          <span style={{ fontWeight: 900, color: 'var(--accent)' }}>{item.score} <small style={{ fontSize: '0.6rem', opacity: 0.6 }}>KM</small></span>
+        </div>
+      ));
     }
 
-    if (selectedGame === 'shapeme') {
-        const entries = Object.entries(data as Record<string, number>).sort(([, a], [, b]) => b - a).slice(0, 10);
-        if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
-        return entries.map(([pName, acc], index) => (
-          <div key={pName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: index === 0 ? '#fbbf24' : 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: index === 0 ? '#000' : 'var(--text-primary)' }}>{index + 1}</span>
-              <span style={{ fontWeight: 600 }}>{pName}</span>
-            </div>
-            <div style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 800 }}>{acc}% Accuracy</div>
+    if (selectedGame === 'shapeme' || selectedGame === 'mirrordraw' || selectedGame === 'colormatcher') {
+      const entries = Object.entries(data as Record<string, number>).sort(([, a], [, b]) => b - a).slice(0, 10);
+      if (entries.length === 0) return <div style={{ textAlign: 'center', opacity: 0.5, padding: '1rem' }}>No records yet</div>;
+      return entries.map(([pName, acc], index) => (
+        <div key={pName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--item-border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{ width: '28px', height: '28px', borderRadius: '50%', background: index === 0 ? '#fbbf24' : 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', fontWeight: 800, color: index === 0 ? '#000' : 'var(--text-primary)' }}>{index + 1}</span>
+            <span style={{ fontWeight: 600 }}>{pName}</span>
           </div>
-        ));
+          <div style={{ fontSize: '0.9rem', color: 'var(--accent)', fontWeight: 800 }}>{acc}% Accuracy</div>
+        </div>
+      ));
     }
 
     // Default Win Records
@@ -250,46 +253,46 @@ export const Home: React.FC<HomeProps> = ({
 
         <div style={{ textAlign: 'center' }}>
           <h1 className="responsive-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '0.5rem', fontWeight: 900 }}>
-            {selectedGame === 'typeracer' ? <Timer size={48} color="#60a5fa" /> : 
-             selectedGame === 'chess' ? <span style={{ fontSize: '3rem', color: '#8b5cf6' }}>♘</span> : 
-             selectedGame === 'flappy' ? <Zap size={48} color="#fbbf24" /> :
-             selectedGame === 'quiz' ? <HelpCircle size={48} color="#ec4899" /> :
-             selectedGame === 'cssbattle' ? <Paintbrush size={48} color="#f43f5e" /> :
-             selectedGame === 'sudoku' ? <Grid3X3 size={48} color="#22d3ee" /> :
-             selectedGame === 'sixteencoins' ? <Sword size={48} color="#6366f1" /> :
-             selectedGame === 'kakuro' ? <Brain size={48} color="#a78bfa" /> :
-             selectedGame === 'gridorder' ? <LayoutGrid size={48} color="#f59e0b" /> :
-             selectedGame === 'memory' ? <Brain size={48} color="#ec4899" /> :
-             selectedGame === 'jumprace' ? <Rabbit size={48} color="#10b981" /> :
-             <Sparkles size={48} color="#60a5fa" />}
-            {selectedGame === 'typeracer' ? 'Type Racer' : 
-             selectedGame === 'chess' ? 'Chess' : 
-             selectedGame === 'flappy' ? 'Flappy Bird' :
-             selectedGame === 'quiz' ? 'Trivia' :
-             selectedGame === 'cssbattle' ? 'CSS Battle' :
-             selectedGame === 'sudoku' ? 'Sudoku' :
-             selectedGame === 'sixteencoins' ? '16 Coins' :
-             selectedGame === 'kakuro' ? 'Kakuro' :
-             selectedGame === 'gridorder' ? 'Grid Order' :
-             selectedGame === 'memory' ? 'Remember Me' :
-             selectedGame === 'jumprace' ? 'Jump Race' :
-             selectedGame === 'shapeme' ? 'Shape Me' :
-             'BINGO'}
+            {selectedGame === 'typeracer' ? <Timer size={48} color="#60a5fa" /> :
+              selectedGame === 'chess' ? <span style={{ fontSize: '3rem', color: '#8b5cf6' }}>♘</span> :
+                selectedGame === 'flappy' ? <Zap size={48} color="#fbbf24" /> :
+                  selectedGame === 'quiz' ? <HelpCircle size={48} color="#ec4899" /> :
+                    selectedGame === 'cssbattle' ? <Paintbrush size={48} color="#f43f5e" /> :
+                      selectedGame === 'sudoku' ? <Grid3X3 size={48} color="#22d3ee" /> :
+                        selectedGame === 'sixteencoins' ? <Sword size={48} color="#6366f1" /> :
+                          selectedGame === 'kakuro' ? <Brain size={48} color="#a78bfa" /> :
+                            selectedGame === 'gridorder' ? <LayoutGrid size={48} color="#f59e0b" /> :
+                              selectedGame === 'memory' ? <Brain size={48} color="#ec4899" /> :
+                                selectedGame === 'jumprace' ? <Rabbit size={48} color="#10b981" /> :
+                                  <Sparkles size={48} color="#60a5fa" />}
+            {selectedGame === 'typeracer' ? 'Type Racer' :
+              selectedGame === 'chess' ? 'Chess' :
+                selectedGame === 'flappy' ? 'Flappy Bird' :
+                  selectedGame === 'quiz' ? 'Trivia' :
+                    selectedGame === 'cssbattle' ? 'CSS Battle' :
+                      selectedGame === 'sudoku' ? 'Sudoku' :
+                        selectedGame === 'sixteencoins' ? '16 Coins' :
+                          selectedGame === 'kakuro' ? 'Kakuro' :
+                            selectedGame === 'gridorder' ? 'Grid Order' :
+                              selectedGame === 'memory' ? 'Remember Me' :
+                                selectedGame === 'jumprace' ? 'Jump Race' :
+                                  selectedGame === 'shapeme' ? 'Shape Me' :
+                                    'BINGO'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
-            {selectedGame === 'typeracer' ? 'Speed typing arena' : 
-             selectedGame === 'chess' ? 'Classic 3D Strategy' : 
-             selectedGame === 'flappy' ? 'High-flying arcade challenge' :
-             selectedGame === 'quiz' ? 'Test your knowledge across 50+ topics' :
-             selectedGame === 'cssbattle' ? 'Replicate shapes using HTML & CSS' :
-             selectedGame === 'sudoku' ? 'Classic 9x9 puzzle' :
-             selectedGame === 'sixteencoins' ? 'Capture pieces in this strategy classic' :
-             selectedGame === 'kakuro' ? 'Challenging number crossword puzzle' :
-             selectedGame === 'gridorder' ? 'Shuffle the numbers into the right order' :
-             selectedGame === 'memory' ? 'Test your memory and race to match cards' :
-             selectedGame === 'jumprace' ? 'Race your pieces to the opposite corner' :
-             selectedGame === 'shapeme' ? 'Trace shapes with precision and speed' :
-             'Real-time multiplayer bingo experience'}
+            {selectedGame === 'typeracer' ? 'Speed typing arena' :
+              selectedGame === 'chess' ? 'Classic 3D Strategy' :
+                selectedGame === 'flappy' ? 'High-flying arcade challenge' :
+                  selectedGame === 'quiz' ? 'Test your knowledge across 50+ topics' :
+                    selectedGame === 'cssbattle' ? 'Replicate shapes using HTML & CSS' :
+                      selectedGame === 'sudoku' ? 'Classic 9x9 puzzle' :
+                        selectedGame === 'sixteencoins' ? 'Capture pieces in this strategy classic' :
+                          selectedGame === 'kakuro' ? 'Challenging number crossword puzzle' :
+                            selectedGame === 'gridorder' ? 'Shuffle the numbers into the right order' :
+                              selectedGame === 'memory' ? 'Test your memory and race to match cards' :
+                                selectedGame === 'jumprace' ? 'Race your pieces to the opposite corner' :
+                                  selectedGame === 'shapeme' ? 'Trace shapes with precision and speed' :
+                                    'Real-time multiplayer bingo experience'}
           </p>
         </div>
 
@@ -301,12 +304,12 @@ export const Home: React.FC<HomeProps> = ({
 
         <div className="input-group">
           <label className="input-label" style={{ fontSize: '0.9rem' }}>PLAYING AS</label>
-          <div style={{ 
-            fontSize: '1.2rem', 
-            padding: '1.25rem', 
-            background: 'var(--item-bg)', 
-            borderRadius: '16px', 
-            border: '1px solid var(--accent)', 
+          <div style={{
+            fontSize: '1.2rem',
+            padding: '1.25rem',
+            background: 'var(--item-bg)',
+            borderRadius: '16px',
+            border: '1px solid var(--accent)',
             color: 'var(--accent)',
             fontWeight: 800,
             textAlign: 'center'
@@ -379,25 +382,42 @@ export const Home: React.FC<HomeProps> = ({
           {selectedGame === 'quiz' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '0.5rem' }}>
               <div>
-                <label className="input-label" style={{ fontSize: '0.8rem' }}>SELECT TOPIC</label>
-                <select 
-                  className="input-field"
-                  value={selectedTopicIdx} 
-                  onChange={e => setSelectedTopicIdx(parseInt(e.target.value))}
-                  style={{ width: '100%', fontSize: '0.95rem', padding: '1rem', background: 'var(--item-bg)', color: 'var(--text-primary)', border: '1px solid var(--item-border)', borderRadius: '14px' }}
-                >
-                  {TRIVIA_TOPICS.map((t, idx) => (
-                    <option key={idx} value={idx} style={{ background: 'var(--card-bg)' }}>
-                      {t.tech ? '🚀 ' : '📚 '}{t.label}
-                    </option>
-                  ))}
-                </select>
+                <label className="input-label" style={{ fontSize: '0.8rem' }}>SEARCH & SELECT TOPIC</label>
+                <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Search topics (e.g. India, History...)"
+                    className="input-field"
+                    style={{ background: 'var(--item-bg)', border: '1px solid var(--item-border)', borderRadius: '14px', padding: '1rem', width: '100%', fontSize: '0.9rem' }}
+                    value={topicSearch}
+                    onChange={(e) => setTopicSearch(e.target.value)}
+                  />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.5rem', maxHeight: '180px', overflowY: 'auto', padding: '0.5rem', background: 'var(--bg-secondary)', borderRadius: '14px', marginTop: '0.5rem', border: '1px solid var(--item-border)' }}>
+                     {TRIVIA_TOPICS.filter(t => t.label.toLowerCase().includes(topicSearch.toLowerCase())).map((t, idx) => {
+                       const actualIdx = TRIVIA_TOPICS.indexOf(t);
+                       return (
+                        <button 
+                          key={idx} 
+                          onClick={() => setSelectedTopicIdx(actualIdx)}
+                          style={{ 
+                            padding: '0.6rem', fontSize: '0.75rem', fontWeight: 800, borderRadius: '8px', border: '1px solid var(--item-border)',
+                            background: selectedTopicIdx === actualIdx ? 'var(--accent-glow)' : 'var(--card-bg)',
+                            color: selectedTopicIdx === actualIdx ? 'var(--accent)' : 'var(--text-primary)',
+                            borderColor: selectedTopicIdx === actualIdx ? 'var(--accent)' : 'var(--item-border)',
+                            cursor: 'pointer', textAlign: 'left'
+                          }}
+                        >
+                           {t.tech ? '🚀 ' : '📚 '}{t.label}
+                        </button>
+                      )})}
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="input-label" style={{ fontSize: '0.8rem' }}>QUESTIONS</label>
-                <select 
+                <select
                   className="input-field"
-                  value={quizAmount} 
+                  value={quizAmount}
                   onChange={e => setQuizAmount(parseInt(e.target.value))}
                   style={{ width: '100%', fontSize: '1rem', padding: '0.8rem', background: 'var(--item-bg)', color: 'var(--text-primary)', border: '1px solid var(--item-border)', borderRadius: '14px' }}
                 >
@@ -534,17 +554,19 @@ export const Home: React.FC<HomeProps> = ({
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
               <Trophy color="#fbbf24" size={24} />
               <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                {selectedGame === 'typeracer' ? 'Top WPM Records' : 
-                 selectedGame === 'chess' ? 'Chess Grandmasters' : 
-                 selectedGame === 'flappy' ? 'Top Flyers' :
-                 selectedGame === 'quiz' ? 'Quiz Brainiacs' :
-                 selectedGame === 'cssbattle' ? 'CSS Masters (By Level)' :
-                 selectedGame === 'sudoku' ? 'Sudoku Masters' :
-                 selectedGame === 'sixteencoins' ? 'Board Tacticians' :
-                 selectedGame === 'kakuro' ? 'Kakuro Brainiacs' :
-                 selectedGame === 'gridorder' ? 'Grid Overlords (By Size)' :
-                 selectedGame === 'shapeme' ? 'Precision Masters' :
-                 'Bingo Champions'}
+                {selectedGame === 'typeracer' ? 'Top WPM Records' :
+                  selectedGame === 'chess' ? 'Chess Grandmasters' :
+                    selectedGame === 'flappy' ? 'Top Flyers' :
+                      selectedGame === 'quiz' ? 'Quiz Brainiacs' :
+                        selectedGame === 'cssbattle' ? 'CSS Masters (By Level)' :
+                          selectedGame === 'sudoku' ? 'Sudoku Masters' :
+                            selectedGame === 'sixteencoins' ? 'Board Tacticians' :
+                              selectedGame === 'kakuro' ? 'Kakuro Brainiacs' :
+                                selectedGame === 'gridorder' ? 'Grid Overlords (By Size)' :
+                                  selectedGame === 'shapeme' ? 'Precision Masters' :
+                                    selectedGame === 'colormatcher' ? 'Color Matchers' :
+                                      selectedGame === 'mirrordraw' ? 'Reflection Artists' :
+                                        'Bingo Champions'}
               </h3>
             </div>
 

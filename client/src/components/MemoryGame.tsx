@@ -42,9 +42,10 @@ interface MemoryGameProps {
   room?: Room;
   me?: PlayerType;
   level: number;
+  onGameEnd?: (time: number, level: number) => void;
 }
 
-export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initialLevel }) => {
+export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initialLevel, onGameEnd }) => {
   const [cards, setCards] = useState<Card[]>([]);
   const [flippedCards, setFlippedCards] = useState<number[]>([]);
   const [moves, setMoves] = useState(0);
@@ -176,9 +177,8 @@ export const MemoryGame: React.FC<MemoryGameProps> = ({ room, me, level: initial
               
               if (room && room.id) {
                 socket.emit('memory-win', { roomId: room.id, time });
-              } else {
-                const savedName = localStorage.getItem('arcade-player-name') || 'Player';
-                socket.emit('memory-score', { name: savedName, level, time });
+              } else if (onGameEnd) {
+                onGameEnd(time, level);
               }
             }
             return updated;

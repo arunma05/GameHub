@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { RefreshCcw, Info, MousePointer2, Circle, Square, Hexagon, Triangle, Star, Heart, Trophy } from 'lucide-react';
 
 interface ShapeMeProps {
-  onGameEnd?: (score: number) => void;
+  onGameEnd?: (shape: string, score: number) => void;
   isDark?: boolean;
 }
 
@@ -297,7 +297,7 @@ export const ShapeMeComponent: React.FC<ShapeMeProps> = ({ onGameEnd, isDark = t
       setBestScores(newBests);
       localStorage.setItem('shapeme_best', JSON.stringify(newBests));
     }
-    if (onGameEnd) onGameEnd(finalAcc);
+    if (onGameEnd) onGameEnd(selectedShape, finalAcc);
   };
 
   const reset = () => {

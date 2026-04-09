@@ -155,7 +155,11 @@ export async function handleStartGame(socket: Socket, io: Server, { roomId }: { 
       { cx: 7, cy: 7, dx: -1, dy: -1 },
     ];
     const board: Record<string, string> = {};
-    room.players.forEach((p, slotIdx) => {
+    const playerSlots: Record<string, number> = {};
+    room.players.forEach((p, i) => {
+      // For 2 players, we want opposite corners: 0 (TL) and 3 (BR)
+      const slotIdx = (room.players.length === 2 && i === 1) ? 3 : i;
+      playerSlots[p.id] = slotIdx;
       const { cx, cy, dx, dy } = corners[slotIdx];
       for (let i = 0; i < 4; i++) {
         for (let j = 0; j < 4 - i; j++) {
@@ -163,7 +167,7 @@ export async function handleStartGame(socket: Socket, io: Server, { roomId }: { 
         }
       }
     });
-    room.gameData = { board, turnIndex: 0 };
+    room.gameData = { board, turnIndex: 0, playerSlots };
     room.currentTurnIndex = 0;
     io.to(roomId).emit('game-started', room);
     broadcastActiveRooms(io);

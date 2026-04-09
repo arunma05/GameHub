@@ -31,15 +31,8 @@ const io = new Server(server, {
   cors: { origin: '*', methods: ['GET', 'POST'] }
 });
 
-io.on('connection', async (socket: AugmentedSocket) => {
+io.on('connection', (socket: AugmentedSocket) => {
   console.log('Connected:', socket.id);
-  try {
-    const initialLeaderboards = await getLeaderboards();
-    socket.emit('leaderboard-updated', initialLeaderboards);
-  } catch (err) {
-    console.error('Initial leaderboard fetch failed:', err);
-  }
-  socket.emit('active-rooms', getActiveRooms());
 
   socket.on('sudoku-load', (data, callback) => handleSudokuLoad(socket, data, callback));
   socket.on('sudoku-save', (data) => handleSudokuSave(socket, data));
@@ -63,9 +56,17 @@ io.on('connection', async (socket: AugmentedSocket) => {
   socket.on('gridorder-score', (data) => handleGridOrderScore(socket, io, data));
   socket.on('jumprace-move', (data) => handleJumpRaceMove(socket, io, data));
   socket.on('jumprace-endturn', (data) => handleJumpRaceEndTurn(socket, io, data));
+  socket.on('update-room-settings', (data) => {
+    const { roomId, settings } = data;
+    const room = rooms[roomId];
+    if (room && room.hostId === socket.id && room.gameState === 'waiting') {
+      room.gameData = { ...(room.gameData as any), ...settings };
+      io.to(roomId).emit('room-updated', room);
+    }
+  });
 
-  socket.on('update-score', async ({ game, username, score }) => {
-    await updatePlayerWin(username, game, score);
+  socket.on('update-score', async ({ game, username, score, time, level }) => {
+    await updatePlayerWin(username, game, score, time, level);
     io.emit('leaderboard-updated', await getLeaderboards());
   });
 
@@ -107,7 +108,7 @@ io.on('connection', async (socket: AugmentedSocket) => {
 
     if (!room.readyPlayers) room.readyPlayers = [];
     if (!room.readyPlayers.includes(socket.id)) room.readyPlayers.push(socket.id);
-    
+
     if (room.players.every(p => room.readyPlayers?.includes(p.id))) {
       await transitionToNewRoomLobby(room);
     } else {
@@ -129,6 +130,17 @@ io.on('connection', async (socket: AugmentedSocket) => {
     }
     broadcastActiveRooms(io);
   });
+
+  // 1. Perform async initializations WITHOUT blocking the main event registration
+  (async () => {
+    try {
+      const initialLeaderboards = await getLeaderboards();
+      socket.emit('leaderboard-updated', initialLeaderboards);
+    } catch (err) {
+      console.error('Initial leaderboard fetch failed:', err);
+    }
+    socket.emit('active-rooms', getActiveRooms());
+  })();
 });
 
 async function transitionToNewRoomLobby(room: Room) {
@@ -152,17 +164,17 @@ async function transitionToNewRoomLobby(room: Room) {
     };
   }
 
-  const newRoom: Room = { 
-    ...room, 
-    id: newRoomId, 
-    gameState: 'waiting', 
-    winners: [], 
-    winner: null, 
-    readyPlayers: [], 
+  const newRoom: Room = {
+    ...room,
+    id: newRoomId,
+    gameState: 'waiting',
+    winners: [],
+    winner: null,
+    readyPlayers: [],
     calledNumbers: [],
     currentTurnIndex: 0,
     gameData: resetGameData,
-    players: room.players.map(p => ({ ...p, card: null, completedLines: 0 })) 
+    players: room.players.map(p => ({ ...p, card: null, completedLines: 0 }))
   };
   rooms[newRoomId] = newRoom;
   const socketsInRoom = await io.in(room.id).fetchSockets();

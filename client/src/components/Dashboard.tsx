@@ -1,8 +1,8 @@
 import React from 'react';
-import { Gamepad2, Timer, Trophy, Globe, Zap, Brain, Paintbrush, Grid3X3, LayoutGrid, Lightbulb, HelpCircle, Rabbit, Coins } from 'lucide-react';
+import { Gamepad2, Timer, Trophy, Globe, Zap, Brain, Paintbrush, Grid3X3, LayoutGrid, Lightbulb, HelpCircle, Rabbit, Coins, MousePointer2 } from 'lucide-react';
 
 interface DashboardProps {
-  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme') => void;
+  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw') => void;
   leaderboards: Record<string, any>;
   onSelectNews?: (query: string, title: string, subtitle: string) => void;
 }
@@ -20,7 +20,9 @@ const GAME_META: Record<string, { color: string; label: string; icon: React.Reac
   gridorder: { color: '#f59e0b', label: 'Grid Order', icon: <LayoutGrid size={13} /> },
   memory: { color: '#ec4899', label: 'Remember Me', icon: <Lightbulb size={13} /> },
   jumprace: { color: '#10b981', label: 'Jump Race', icon: <Rabbit size={13} /> },
-  shapeme: { color: '#84cc16', label: 'Shape Me', icon: <Paintbrush size={13} /> }
+  shapeme: { color: '#84cc16', label: 'Shape Me', icon: <Paintbrush size={13} /> },
+  colormatcher: { color: '#d946ef', label: 'Color Matcher', icon: <Zap size={13} /> },
+  mirrordraw: { color: '#2dd4bf', label: 'Mirror Draw', icon: <MousePointer2 size={13} /> }
 };
 
 const NewsTile: React.FC<{
@@ -70,74 +72,87 @@ const NewsTile: React.FC<{
 );
 
 const GlobalLeadersTile: React.FC<{ leaderboards: Record<string, any> }> = ({ leaderboards }) => {
-  const getTopPlayer = (gameType: string, data: any) => {
-    if (gameType === 'typeracer') {
-      if (!Array.isArray(data) || data.length === 0) return null;
-      const top = data[0];
-      return { name: top.name, score: `${top.wpm} WPM` };
+  const getAllTopEntries = (gameType: string, data: any): { sublabel?: string, name: string; score: string | number }[] => {
+    if (gameType === 'shapeme' || gameType === 'mirrordraw') {
+      if (typeof data !== 'object' || Array.isArray(data)) return [];
+      return Object.entries(data).map(([cat, entries]: [string, any]) => {
+        if (!Array.isArray(entries) || entries.length === 0) return null;
+        const top = entries[0];
+        return {
+          sublabel: cat.charAt(0).toUpperCase() + cat.slice(1),
+          name: top.name,
+          score: `${top.score}% Acc${top.time ? ` (${top.time}s)` : ''}`
+        };
+      }).filter(Boolean) as any[];
     }
-    if (gameType === 'shapeme') {
-      if (typeof data !== 'object' || Array.isArray(data)) return null;
-      const entries = Object.entries(data);
-      if (entries.length === 0) return null;
-      const sorted = entries.sort((a,b) => (b[1] as number) - (a[1] as number));
-      return { name: sorted[0][0], score: `${sorted[0][1]}% Acc` };
-    }
-    if (gameType === 'typeracer') {
-       if (!Array.isArray(data) || data.length === 0) return null;
-       const top = data[0];
-       return { name: top.name, score: `${top.wpm} WPM` };
-    }
-    if (gameType === 'flappy') {
-      if (!Array.isArray(data) || data.length === 0) return null;
-      const top = data[0];
-      return { name: top.name, score: `${(top.score / 1000).toFixed(2)} km` };
+    if (gameType === 'colormatcher') {
+      if (typeof data !== 'object' || Array.isArray(data)) return [];
+      const entries = data['Best Match'];
+      if (!Array.isArray(entries) || entries.length === 0) return [];
+      const top = entries[0];
+      return [{ name: top.name, score: `${top.score}% Match${top.time ? ` (${top.time}s)` : ''}` }];
     }
     if (gameType === 'cssbattle') {
-      // Find any level with a record
-      const levels = Object.keys(data).map(Number).sort((a,b) => a - b);
-      for (const lvl of levels) {
-        if (data[lvl] && data[lvl].length > 0) {
-          const top = data[lvl][0];
-          const m = Math.floor(top.time / 60);
-          const s = Math.floor(top.time % 60);
-          return { name: top.name, score: `L${lvl}: ${m}:${s < 10 ? '0' : ''}${s}` };
-        }
-      }
-      return null;
+      if (typeof data !== 'object' || Array.isArray(data)) return [];
+      return Object.entries(data).map(([lvl, entries]: [string, any]) => {
+        if (!Array.isArray(entries) || entries.length === 0) return null;
+        const top = entries[0];
+        const m = Math.floor(top.time / 60);
+        const s = Math.floor(top.time % 60);
+        return {
+          sublabel: `Level ${lvl}`,
+          name: top.name,
+          score: `${m}:${s < 10 ? '0' : ''}${s}`
+        };
+      }).filter(Boolean) as any[];
     }
     if (gameType === 'gridorder') {
-       const sizes = Object.keys(data).map(Number).sort((a,b) => a - b);
-       for (const size of sizes) {
-         if (data[size] && data[size].bestTimes && data[size].bestTimes.length > 0) {
-           const top = data[size].bestTimes[0];
-           const m = Math.floor(top.time / 60);
-           const s = Math.floor(top.time % 60);
-           return { name: top.name, score: `${size}x${size}: ${m}:${s < 10 ? '0' : ''}${s}` };
-         }
-       }
-       return null;
+      if (typeof data !== 'object' || Array.isArray(data)) return [];
+      return Object.entries(data).map(([size, entry]: [string, any]) => {
+        if (!entry.bestTimes || entry.bestTimes.length === 0) return null;
+        const top = entry.bestTimes[0];
+        const m = Math.floor(top.time / 60);
+        const s = Math.floor(top.time % 60);
+        return {
+          sublabel: `${size}x${size}`,
+          name: top.name,
+          score: `${m}:${s < 10 ? '0' : ''}${s}`
+        };
+      }).filter(Boolean) as any[];
     }
     if (gameType === 'memory') {
-      const levels = Object.keys(data).map(Number).sort((a,b) => a - b);
-      for (const lvl of levels) {
-        if (data[lvl] && data[lvl].length > 0) {
-          const top = data[lvl][0];
-          const m = Math.floor(top.time / 60);
-          const s = Math.floor(top.time % 60);
-          return { name: top.name, score: `${lvl} cards: ${m}:${s < 10 ? '0' : ''}${s}` };
-        }
-      }
-      return null;
+      if (typeof data !== 'object' || Array.isArray(data)) return [];
+      return Object.entries(data).map(([lvl, entries]: [string, any]) => {
+        if (!Array.isArray(entries) || entries.length === 0) return null;
+        const top = entries[0];
+        const m = Math.floor(top.time / 60);
+        const s = Math.floor(top.time % 60);
+        return {
+          sublabel: `${lvl} Cards`,
+          name: top.name,
+          score: `${m}:${s < 10 ? '0' : ''}${s}`
+        };
+      }).filter(Boolean) as any[];
+    }
+
+    if (gameType === 'typeracer') {
+      if (!Array.isArray(data) || data.length === 0) return [];
+      const top = data[0];
+      return [{ name: top.name, score: `${top.wpm} WPM` }];
+    }
+    if (gameType === 'flappy') {
+      if (!Array.isArray(data) || data.length === 0) return [];
+      const top = data[0];
+      return [{ name: top.name, score: `${(top.score / 1000).toFixed(2)} km` }];
     }
 
     if (data && typeof data === 'object' && !Array.isArray(data)) {
       const entries = Object.entries(data);
-      if (entries.length === 0) return null;
+      if (entries.length === 0) return [];
       const sorted = entries.sort((a, b) => (b[1] as number) - (a[1] as number));
-      return { name: sorted[0][0], score: `${sorted[0][1]} wins` };
+      return [{ name: sorted[0][0], score: `${sorted[0][1]} wins` }];
     }
-    return null;
+    return [];
   };
 
   return (
@@ -147,37 +162,43 @@ const GlobalLeadersTile: React.FC<{ leaderboards: Record<string, any> }> = ({ le
         <h2 style={{ margin: 0, fontSize: 'clamp(1.2rem, 4vw, 1.5rem)', fontWeight: 950, color: 'var(--text-primary)' }}>Top Scorers</h2>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-        {Object.entries(GAME_META).filter(([key]) => getTopPlayer(key, leaderboards[key])).length > 0 ? (
-          Object.entries(GAME_META).map(([key, meta], index, array) => {
-            const top = getTopPlayer(key, leaderboards[key]) as { name: string; score: string | number } | null;
-            if (!top) return null;
-            const isLast = index === array.length - 1;
+        {(() => {
+          const allEntries = Object.entries(GAME_META).flatMap(([key, meta]) => {
+            const entries = getAllTopEntries(key, leaderboards[key]);
+            return entries.map(top => ({ ...top, meta, key }));
+          });
+
+          if (allEntries.length === 0) {
             return (
-              <div key={key} style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                paddingBottom: '0.75rem',
-                borderBottom: isLast ? 'none' : '1px solid var(--item-border)'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                  <div style={{ color: meta.color, opacity: 0.8 }}>{meta.icon}</div>
-                  <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 950, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{meta.label}</div>
-                    <div style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)' }}>{top.name}</div>
-                  </div>
-                </div>
-                <div style={{ fontSize: 'clamp(0.9rem, 3.5vw, 1.1rem)', fontWeight: 950, color: meta.color, marginLeft: '0.5rem' }}>
-                  {top.score}
-                </div>
+              <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem', background: 'var(--item-bg)', borderRadius: '12px', fontSize: '0.9rem' }}>
+                No records found. Be the first to win!
               </div>
             );
-          })
-        ) : (
-          <div style={{ color: 'var(--text-secondary)', textAlign: 'center', padding: '1rem', background: 'var(--item-bg)', borderRadius: '12px', fontSize: '0.9rem' }}>
-            No records found. Be the first to win!
-          </div>
-        )}
+          }
+
+          return allEntries.map((entry, idx) => (
+            <div key={`${entry.key}-${idx}`} style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingBottom: '0.75rem',
+              borderBottom: idx === allEntries.length - 1 ? 'none' : '1px solid var(--item-border)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                <div style={{ color: entry.meta.color, opacity: 0.8 }}>{entry.meta.icon}</div>
+                <div>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 950, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    {entry.meta.label}{entry.sublabel ? `: ${entry.sublabel}` : ''}
+                  </div>
+                  <div style={{ fontSize: '1rem', fontWeight: 850, color: 'var(--text-primary)' }}>{entry.name}</div>
+                </div>
+              </div>
+              <div style={{ fontSize: 'clamp(0.9rem, 3.5vw, 1.1rem)', fontWeight: 950, color: entry.meta.color, marginLeft: '0.5rem' }}>
+                {entry.score}
+              </div>
+            </div>
+          ));
+        })()}
       </div>
     </div>
   );
@@ -193,23 +214,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       <div className="hero-glow" />
 
       {/* Hero Section */}
-      <div className="reveal stagger-1" style={{ textAlign: 'center', marginBottom: '5rem', position: 'relative' }}>
-        <div style={{
-          display: 'inline-flex',
-          padding: '0.5rem 1.25rem',
-          background: 'var(--item-bg)',
-          borderRadius: '100px',
-          border: '1px solid var(--item-border)',
-          color: 'var(--accent)',
-          fontSize: '0.8rem',
-          fontWeight: 800,
-          textTransform: 'uppercase',
-          letterSpacing: '0.15em',
-          marginBottom: '1.5rem',
-          backdropFilter: 'blur(10px)'
-        }}>
-          ✨ Welcome to the Future of Play
-        </div>
+      <div className="reveal stagger-1" style={{ textAlign: 'center', marginBottom: '3rem', position: 'relative' }}>
         <h1 style={{
           fontSize: 'clamp(2.1rem, 7vw, 3.8rem)',
           fontWeight: 950,
@@ -234,7 +239,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Glowing Divider */}
       <div className="reveal stagger-2" style={{
         width: '90%',
-        margin: '0 auto 5rem auto',
+        margin: '0 auto 3rem auto',
         height: '1px',
         background: 'linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%)',
         opacity: 0.6,
@@ -271,6 +276,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 { type: 'gridorder' as const, players: 'Speed', color: '#f59e0b', icon: <LayoutGrid size={32} />, title: 'GRID ORDER', desc: 'Shuffle the numbers into the right order. Race others!' },
                 { type: 'memory' as const, players: 'Memory', color: '#ec4899', icon: <Lightbulb size={32} />, title: 'REMEMBER ME', desc: 'Test your memory! Match all pairs of cards as fast as you can.' },
                 { type: 'jumprace' as const, players: 'Racing', color: '#10b981', icon: <Rabbit size={32} />, title: 'JUMP RACE', desc: 'Race pieces to the opposite corner. Jump over any piece!' },
+                { type: 'colormatcher' as const, players: 'Precision', color: '#d946ef', icon: <Zap size={32} />, title: 'COLOR MATCHER', desc: 'Match complex colors by mixing RGB channels. High precision required!' },
+                { type: 'mirrordraw' as const, players: 'Spatial', color: '#2dd4bf', icon: <MousePointer2 size={32} />, title: 'MIRROR DRAW', desc: 'Draw the horizontal reflection of shapes. Test your symmetry skills!' },
               ].map(({ type, players, color, icon, title, desc }, index) => (
                 <div
                   key={type}
@@ -355,6 +362,65 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
       </div>
+
+      {/* Footer */}
+      <footer style={{
+        marginTop: '2rem', paddingTop: '4rem', borderTop: '1px solid var(--card-border)',
+        display: 'flex', flexDirection: 'column', gap: '3rem', opacity: 0.8
+      }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '3rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>ARCADE CLASSICS</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {['bingo', 'typeracer', 'flappy', 'jumprace', 'shapeme', 'mirrordraw'].map(g => (
+                <button key={g} onClick={() => onSelectGame(g as any)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600, textAlign: 'left', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = GAME_META[g].color} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+                  {GAME_META[g].label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>PUZZLES & BRAINS</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {['sudoku', 'kakuro', 'gridorder', 'memory', 'quiz', 'colormatcher'].map(g => (
+                <button key={g} onClick={() => onSelectGame(g as any)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600, textAlign: 'left', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = GAME_META[g].color} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+                  {GAME_META[g].label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>STRATEGY & SKILLS</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {['chess', 'cssbattle', 'sixteencoins'].map(g => (
+                <button key={g} onClick={() => onSelectGame(g as any)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600, textAlign: 'left', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = GAME_META[g].color} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+                  {GAME_META[g].label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <h3 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>GAME HUB</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.6', fontWeight: 500 }}>
+              Experience the ultimate multiplayer arcade destination. Compete, chat, and climb the global leaderboards across 13 premium experiences.
+            </p>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+              <Zap size={18} color="var(--accent)" />
+              <Trophy size={18} color="var(--accent)" />
+              <Globe size={18} color="var(--accent)" />
+            </div>
+          </div>
+        </div>
+
+        <div style={{ borderTop: '1px solid var(--item-border)', paddingTop: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 900 }}>
+          <span>© 2026 GAME HUB ARCADE</span>
+          <div style={{ display: 'flex', gap: '1.5rem' }}>
+            <span style={{ cursor: 'pointer' }}>TERMS</span>
+            <span style={{ cursor: 'pointer' }}>PRIVACY</span>
+            <span style={{ cursor: 'pointer' }}>SUPPORT</span>
+          </div>
+        </div>
+      </footer>
 
     </div>
   );

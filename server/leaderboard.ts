@@ -18,7 +18,7 @@ export async function getLeaderboards(): Promise<Leaderboards> {
     const leaderboards: Leaderboards = {
       bingo: {}, typeracer: [], chess: {}, quiz: {}, sudoku: {}, 
       kakuro: {}, sixteencoins: {}, gridorder: {}, memory: {}, flappy: [], cssbattle: {},
-      jumprace: {}, shapeme: {}
+      jumprace: {}, shapeme: {}, colormatcher: {}, mirrordraw: {}
     };
 
     // Process WinCounts
@@ -51,9 +51,17 @@ export async function getLeaderboards(): Promise<Leaderboards> {
         if (!leaderboards.gridorder[level]) leaderboards.gridorder[level] = { bestTimes: [], bestMoves: [] };
         if (r.time !== null) leaderboards.gridorder[level].bestTimes.push({ name: r.name, time: r.time });
         if (r.score !== null) leaderboards.gridorder[level].bestMoves.push({ name: r.name, moves: r.score });
-      } else if (r.gameType === 'shapeme') {
-        const current = leaderboards.shapeme[r.name] || 0;
-        if ((r.score ?? 0) > current) leaderboards.shapeme[r.name] = r.score ?? 0;
+      } else if (r.gameType.startsWith('shapeme-')) {
+        const shape = r.gameType.split('-')[1];
+        if (!leaderboards.shapeme[shape]) leaderboards.shapeme[shape] = [];
+        leaderboards.shapeme[shape].push({ name: r.name, score: r.score ?? 0 });
+      } else if (r.gameType.startsWith('mirrordraw-')) {
+        const shape = r.gameType.split('-')[1];
+        if (!leaderboards.mirrordraw[shape]) leaderboards.mirrordraw[shape] = [];
+        leaderboards.mirrordraw[shape].push({ name: r.name, score: r.score ?? 0, time: r.time ?? 0 });
+      } else if (r.gameType === 'colormatcher') {
+        if (!leaderboards.colormatcher['Best Match']) leaderboards.colormatcher['Best Match'] = [];
+        leaderboards.colormatcher['Best Match'].push({ name: r.name, score: r.score ?? 0, time: r.time ?? 0 });
       }
     });
 
@@ -81,23 +89,42 @@ export async function getLeaderboards(): Promise<Leaderboards> {
       leaderboards.gridorder[lvl].bestMoves = leaderboards.gridorder[lvl].bestMoves.slice(0, 10);
     });
 
+    Object.keys(leaderboards.shapeme).forEach(shape => {
+      leaderboards.shapeme[shape].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      leaderboards.shapeme[shape] = leaderboards.shapeme[shape].slice(0, 10);
+    });
+
+    Object.keys(leaderboards.mirrordraw).forEach(shape => {
+      leaderboards.mirrordraw[shape].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      leaderboards.mirrordraw[shape] = leaderboards.mirrordraw[shape].slice(0, 10);
+    });
+
+    Object.keys(leaderboards.colormatcher).forEach(cat => {
+      leaderboards.colormatcher[cat].sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+      leaderboards.colormatcher[cat] = leaderboards.colormatcher[cat].slice(0, 10);
+    });
+
     return leaderboards;
   } catch (error) {
     console.error('Database connection failed in getLeaderboards:', error);
     return {
       bingo: {}, typeracer: [], chess: {}, quiz: {}, sudoku: {}, 
       kakuro: {}, sixteencoins: {}, gridorder: {}, memory: {}, flappy: [], cssbattle: {},
-      jumprace: {}, shapeme: {}
+      jumprace: {}, shapeme: {}, colormatcher: {}, mirrordraw: {}
     };
   }
 }
 
 export async function updatePlayerWin(name: string, type: GameType | string, score?: number, time?: number, level?: number | string) {
-  if (['flappy', 'typeracer', 'shapeme'].includes(type)) {
+  if (['flappy', 'typeracer'].includes(type as string)) {
      await prisma.result.create({
-       data: { gameType: type, name, score }
+       data: { gameType: type as string, name, score }
      });
-  } else if (['cssbattle', 'memory'].includes(type) && level !== undefined) {
+  } else if (type === 'shapeme' && level !== undefined) {
+    await prisma.result.create({
+      data: { gameType: `shapeme-${level}`, name, score }
+    });
+  } else if (['cssbattle', 'memory'].includes(type as string) && level !== undefined) {
      await prisma.result.create({
        data: { gameType: `${type}-${level}`, name, time }
      });
@@ -105,12 +132,20 @@ export async function updatePlayerWin(name: string, type: GameType | string, sco
      await prisma.result.create({
        data: { gameType: `gridorder-${level}`, name, score, time }
      });
+  } else if (type === 'mirrordraw' && level !== undefined) {
+     await prisma.result.create({
+       data: { gameType: `mirrordraw-${level}`, name, score, time }
+     });
+  } else if (type === 'colormatcher') {
+     await prisma.result.create({
+       data: { gameType: 'colormatcher', name, score, time }
+     });
   } else {
     // Standard win count games
     await prisma.winCount.upsert({
-      where: { gameType_name: { gameType: type, name } },
+      where: { gameType_name: { gameType: type as string, name } },
       update: { count: { increment: 1 } },
-      create: { gameType: type, name, count: 1 }
+      create: { gameType: type as string, name, count: 1 }
     });
   }
 }

@@ -191,10 +191,13 @@ export async function handleJumpRaceMove(socket: Socket, io: Server, data: unkno
 
   // Check if any player has filled the opposite corner
   let winner: typeof room.players[0] | null = null;
+  const playerSlots = gameData.playerSlots || {};
   for (let s = 0; s < room.players.length; s++) {
-    const oppBase = buildTriangle(OPPOSITE[s]);
-    const filled = oppBase.filter(pos => board[pos] === room.players[s].id).length;
-    if (filled >= 10) { winner = room.players[s]; break; }
+    const player = room.players[s];
+    const slotIdx = playerSlots[player.id] ?? s;
+    const oppBase = buildTriangle(OPPOSITE[slotIdx]);
+    const filled = oppBase.filter(pos => board[pos] === player.id).length;
+    if (filled >= 10) { winner = player; break; }
   }
 
   if (winner) {
