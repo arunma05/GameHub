@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const CreateRoomSchema = z.object({
   playerName: z.string().min(1).max(20),
-  type: z.enum(['bingo', 'typeracer', 'chess', 'flappy', 'quiz', 'cssbattle', 'sudoku', 'sixteencoins', 'kakuro', 'gridorder', 'memory', 'jumprace']),
+  type: z.enum(['bingo', 'typeracer', 'chess', 'flappy', 'quiz', 'cssbattle', 'sudoku', 'sixteencoins', 'kakuro', 'gridorder', 'memory', 'jumprace', 'archerstick']),
   isPublic: z.boolean().optional(),
   quizAmount: z.number().min(5).max(50).optional(),
   quizCategory: z.number().optional(),
@@ -42,6 +42,20 @@ export const FlappyScoreSchema = z.object({
 export const MemoryMatchSchema = z.object({
   roomId: z.string().length(5),
   matches: z.number().min(0).max(50),
+});
+
+export const ArcherStickActionSchema = z.object({
+  roomId: z.string().length(5),
+  type: z.enum(['move', 'angle', 'shoot']),
+  x: z.number().optional(),
+  y: z.number().optional(),
+  v: z.number().optional(),
+  angle: z.number().optional()
+});
+
+export const ArcherHitSchema = z.object({
+  roomId: z.string().length(5),
+  targetId: z.string()
 });
 
 export const RegisterSchema = z.object({

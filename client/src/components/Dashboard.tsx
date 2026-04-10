@@ -2,7 +2,7 @@ import React from 'react';
 import { Gamepad2, Timer, Trophy, Globe, Zap, Brain, Paintbrush, Grid3X3, LayoutGrid, Lightbulb, HelpCircle, Rabbit, Coins, MousePointer2 } from 'lucide-react';
 
 interface DashboardProps {
-  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw') => void;
+  onSelectGame: (type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw' | 'archerstick') => void;
   leaderboards: Record<string, any>;
   onSelectNews?: (query: string, title: string, subtitle: string) => void;
 }
@@ -22,7 +22,8 @@ const GAME_META: Record<string, { color: string; label: string; icon: React.Reac
   jumprace: { color: '#10b981', label: 'Jump Race', icon: <Rabbit size={13} /> },
   shapeme: { color: '#84cc16', label: 'Shape Me', icon: <Paintbrush size={13} /> },
   colormatcher: { color: '#d946ef', label: 'Color Matcher', icon: <Zap size={13} /> },
-  mirrordraw: { color: '#2dd4bf', label: 'Mirror Draw', icon: <MousePointer2 size={13} /> }
+  mirrordraw: { color: '#2dd4bf', label: 'Mirror Draw', icon: <MousePointer2 size={13} /> },
+  archerstick: { color: '#f43f5e', label: 'Archer Stick', icon: <span style={{ fontSize: '0.85rem' }}>🏹</span> }
 };
 
 const NewsTile: React.FC<{
@@ -81,7 +82,7 @@ const GlobalLeadersTile: React.FC<{ leaderboards: Record<string, any> }> = ({ le
         return {
           sublabel: cat.charAt(0).toUpperCase() + cat.slice(1),
           name: top.name,
-          score: `${top.score}% Acc${top.time ? ` (${top.time}s)` : ''}`
+          score: `${top.score}% Acc`
         };
       }).filter(Boolean) as any[];
     }
@@ -90,7 +91,7 @@ const GlobalLeadersTile: React.FC<{ leaderboards: Record<string, any> }> = ({ le
       const entries = data['Best Match'];
       if (!Array.isArray(entries) || entries.length === 0) return [];
       const top = entries[0];
-      return [{ name: top.name, score: `${top.score}% Match${top.time ? ` (${top.time}s)` : ''}` }];
+      return [{ name: top.name, score: `${top.score}% Match` }];
     }
     if (gameType === 'cssbattle') {
       if (typeof data !== 'object' || Array.isArray(data)) return [];
@@ -278,6 +279,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 { type: 'jumprace' as const, players: 'Racing', color: '#10b981', icon: <Rabbit size={32} />, title: 'JUMP RACE', desc: 'Race pieces to the opposite corner. Jump over any piece!' },
                 { type: 'colormatcher' as const, players: 'Precision', color: '#d946ef', icon: <Zap size={32} />, title: 'COLOR MATCHER', desc: 'Match complex colors by mixing RGB channels. High precision required!' },
                 { type: 'mirrordraw' as const, players: 'Spatial', color: '#2dd4bf', icon: <MousePointer2 size={32} />, title: 'MIRROR DRAW', desc: 'Draw the horizontal reflection of shapes. Test your symmetry skills!' },
+                { type: 'archerstick' as const, players: 'Combat', color: '#f43f5e', icon: <span style={{ fontSize: '2rem' }}>🏹</span>, title: 'ARCHER STICK', desc: 'Shoot arrows at your opponent. 5 hits to win the duel!' },
               ].map(({ type, players, color, icon, title, desc }, index) => (
                 <div
                   key={type}
@@ -360,68 +362,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <GlobalLeadersTile leaderboards={leaderboards} />
           </div>
         </div>
-
       </div>
-
-      {/* Footer */}
-      <footer style={{
-        marginTop: '2rem', paddingTop: '4rem', borderTop: '1px solid var(--card-border)',
-        display: 'flex', flexDirection: 'column', gap: '3rem', opacity: 0.8
-      }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '3rem' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>ARCADE CLASSICS</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {['bingo', 'typeracer', 'flappy', 'jumprace', 'shapeme', 'mirrordraw'].map(g => (
-                <button key={g} onClick={() => onSelectGame(g as any)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600, textAlign: 'left', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = GAME_META[g].color} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
-                  {GAME_META[g].label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>PUZZLES & BRAINS</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {['sudoku', 'kakuro', 'gridorder', 'memory', 'quiz', 'colormatcher'].map(g => (
-                <button key={g} onClick={() => onSelectGame(g as any)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600, textAlign: 'left', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = GAME_META[g].color} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
-                  {GAME_META[g].label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>STRATEGY & SKILLS</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              {['chess', 'cssbattle', 'sixteencoins'].map(g => (
-                <button key={g} onClick={() => onSelectGame(g as any)} style={{ background: 'none', border: 'none', padding: 0, color: 'var(--text-secondary)', fontSize: '0.95rem', fontWeight: 600, textAlign: 'left', cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={e => e.currentTarget.style.color = GAME_META[g].color} onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
-                  {GAME_META[g].label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <h3 style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--accent)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>GAME HUB</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: '1.6', fontWeight: 500 }}>
-              Experience the ultimate multiplayer arcade destination. Compete, chat, and climb the global leaderboards across 13 premium experiences.
-            </p>
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
-              <Zap size={18} color="var(--accent)" />
-              <Trophy size={18} color="var(--accent)" />
-              <Globe size={18} color="var(--accent)" />
-            </div>
-          </div>
-        </div>
-
-        <div style={{ borderTop: '1px solid var(--item-border)', paddingTop: '2.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 900 }}>
-          <span>© 2026 GAME HUB ARCADE</span>
-          <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <span style={{ cursor: 'pointer' }}>TERMS</span>
-            <span style={{ cursor: 'pointer' }}>PRIVACY</span>
-            <span style={{ cursor: 'pointer' }}>SUPPORT</span>
-          </div>
-        </div>
-      </footer>
-
     </div>
   );
 };

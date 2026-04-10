@@ -18,13 +18,13 @@ export async function getLeaderboards(): Promise<Leaderboards> {
     const leaderboards: Leaderboards = {
       bingo: {}, typeracer: [], chess: {}, quiz: {}, sudoku: {}, 
       kakuro: {}, sixteencoins: {}, gridorder: {}, memory: {}, flappy: [], cssbattle: {},
-      jumprace: {}, shapeme: {}, colormatcher: {}, mirrordraw: {}
+      jumprace: {}, shapeme: {}, colormatcher: {}, mirrordraw: {}, archerstick: {}
     };
 
     // Process WinCounts
     wins.forEach(w => {
       const type = w.gameType as keyof Leaderboards;
-      if (['bingo', 'chess', 'quiz', 'sudoku', 'kakuro', 'sixteencoins', 'jumprace'].includes(w.gameType)) {
+      if (['bingo', 'chess', 'quiz', 'sudoku', 'kakuro', 'sixteencoins', 'jumprace', 'archerstick'].includes(w.gameType)) {
         const lb = leaderboards[type];
         if (lb && typeof lb === 'object' && !Array.isArray(lb)) {
           (lb as Record<string, number>)[w.name] = w.count;
@@ -110,7 +110,7 @@ export async function getLeaderboards(): Promise<Leaderboards> {
     return {
       bingo: {}, typeracer: [], chess: {}, quiz: {}, sudoku: {}, 
       kakuro: {}, sixteencoins: {}, gridorder: {}, memory: {}, flappy: [], cssbattle: {},
-      jumprace: {}, shapeme: {}, colormatcher: {}, mirrordraw: {}
+      jumprace: {}, shapeme: {}, colormatcher: {}, mirrordraw: {}, archerstick: {}
     };
   }
 }

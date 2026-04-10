@@ -21,7 +21,8 @@ export type GameType =
   | 'jumprace'
   | 'shapeme'
   | 'colormatcher'
-  | 'mirrordraw';
+  | 'mirrordraw'
+  | 'archerstick';
 
 export type GameState = 'waiting' | 'starting' | 'playing' | 'finished';
 
@@ -55,7 +56,13 @@ export interface JumpRaceData {
     playerSlots?: Record<string, number>;
 }
 
-export type GameData = string | ChessData | QuizData | SixteenCoinsData | JumpRaceData | { gridSize: number } | { level: number | 'All' } | null;
+export interface ArcherStickData {
+    health: Record<string, number>;
+    playerPos: Record<string, { x: number; y: number; dir: number }>;
+    arrows: { x: number; y: number; vx: number; vy: number; ownerId: string }[];
+}
+
+export type GameData = string | ChessData | QuizData | SixteenCoinsData | JumpRaceData | ArcherStickData | { gridSize: number } | { level: number | 'All' } | null;
 
 export interface Room {
   id: string;
@@ -97,4 +104,5 @@ export interface Leaderboards {
   shapeme: Record<string, LeaderboardEntry[]>;
   colormatcher: Record<string, LeaderboardEntry[]>;
   mirrordraw: Record<string, LeaderboardEntry[]>;
+  archerstick: Record<string, number>;
 }

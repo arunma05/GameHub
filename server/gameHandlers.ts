@@ -1,7 +1,8 @@
 import { Server, Socket } from 'socket.io';
 import { rooms, broadcastActiveRooms } from './roomHandlers';
 import { getLeaderboards, updatePlayerWin } from './leaderboard';
-import { TypeProgressSchema, SixteenCoinsMoveSchema, FlappyScoreSchema, MemoryMatchSchema } from './validation';
+import { TypeProgressSchema, SixteenCoinsMoveSchema, FlappyScoreSchema, MemoryMatchSchema, ArcherStickActionSchema, ArcherHitSchema } from './validation';
+import { ArcherStickData } from './types';
 import { getRandomSentence } from './sentences';
 import { generateCard, countCompletedLines } from './utils';
 import { generateRoomCode } from './gameLogic';
@@ -196,6 +197,20 @@ export async function handleStartGame(socket: Socket, io: Server, { roomId }: { 
         broadcastActiveRooms(io);
       }
     }, 3500);
+  } else if (room.type === 'archerstick') {
+    room.gameState = 'playing';
+    const p1Id = room.players[0].id;
+    const p2Id = room.players[1].id;
+    room.gameData = {
+      health: { [p1Id]: 10, [p2Id]: 10 },
+      playerPos: { 
+        [p1Id]: { x: 100, y: 350, dir: 1 }, 
+        [p2Id]: { x: 700, y: 350, dir: -1 } 
+      },
+      arrows: []
+    };
+    io.to(roomId).emit('game-started', room);
+    broadcastActiveRooms(io);
   } else {
     // Basic start for other games
     room.players.forEach(p => { 
@@ -284,6 +299,56 @@ export async function handleTypeProgress(socket: Socket, io: Server, data: unkno
     await updatePlayerWin(player.name, 'typeracer', player.wpm);
     const lb = await getLeaderboards();
     io.to(roomId).emit('game-over', { winner: player, room });
+    io.emit('leaderboard-updated', lb);
+    broadcastActiveRooms(io);
+  } else {
+    io.to(roomId).emit('room-updated', room);
+  }
+}
+
+export async function handleArcherAction(socket: Socket, io: Server, data: unknown) {
+  const res = ArcherStickActionSchema.safeParse(data);
+  if (!res.success) return;
+  const { roomId, type, x, y, angle } = res.data;
+  const room = rooms[roomId];
+  if (!room || room.gameState !== 'playing' || room.type !== 'archerstick') return;
+
+  const g = room.gameData as ArcherStickData;
+  if (!g.playerPos[socket.id]) return;
+
+  if (type === 'move' && x !== undefined && y !== undefined) {
+    g.playerPos[socket.id].x = x;
+    g.playerPos[socket.id].y = y;
+  } else if (type === 'angle' && angle !== undefined) {
+    g.playerPos[socket.id].dir = angle;
+  } else if (type === 'shoot' && x !== undefined && y !== undefined) {
+     socket.to(roomId).emit('archer-shot', { x, y, angle, ownerId: socket.id });
+     return;
+  }
+  
+  io.to(roomId).emit('room-updated', room);
+}
+
+export async function handleArcherHit(socket: Socket, io: Server, data: unknown) {
+  const res = ArcherHitSchema.safeParse(data);
+  if (!res.success) return;
+  const { roomId, targetId } = res.data;
+  const room = rooms[roomId];
+  if (!room || room.gameState !== 'playing' || room.type !== 'archerstick') return;
+
+  const g = room.gameData as ArcherStickData;
+  if (g.health[targetId] === undefined) return;
+
+  g.health[targetId] -= 1;
+  
+  if (g.health[targetId] <= 0) {
+    room.gameState = 'finished';
+    room.winner = room.players.find(p => p.id !== targetId) || room.players[0];
+    room.winners = [room.winner];
+    
+    await updatePlayerWin(room.winner.name, 'archerstick');
+    const lb = await getLeaderboards();
+    io.to(roomId).emit('game-over', { winner: room.winner, room });
     io.emit('leaderboard-updated', lb);
     broadcastActiveRooms(io);
   } else {

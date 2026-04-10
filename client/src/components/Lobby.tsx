@@ -57,7 +57,10 @@ export const Lobby: React.FC<LobbyProps> = ({ room, me }) => {
                           room.type === 'sixteencoins' ? '⚔️ 16 COINS LOBBY' :
                             room.type === 'gridorder' ? '🔢 GRID ORDER LOBBY' :
                               room.type === 'memory' ? '🧠 REMEMBER ME LOBBY' :
-                                '🎱 BINGO LOBBY'}
+                                room.type === 'jumprace' ? '🏃 JUMP RACE LOBBY' :
+                                  room.type === 'archerstick' ? '🏹 ARCHER STICK LOBBY' :
+                                    room.type === 'bingo' ? '🎱 BINGO LOBBY' :
+                                    '🎮 GAME LOBBY'}
           </div>
           <h2 style={{ marginBottom: '0.5rem', color: 'var(--text-secondary)', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             Room Code

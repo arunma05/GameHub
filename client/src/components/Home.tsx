@@ -25,8 +25,9 @@ interface HomeProps {
     shapeme: Record<string, number>;
     colormatcher: Record<string, number>;
     mirrordraw: Record<string, number>;
+    archerstick: Record<string, number>;
   };
-  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw' | null;
+  selectedGame: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw' | 'archerstick' | null;
   publicRooms: PublicRoom[];
   memoryLevel: number;
   onMemoryLevelChange: (level: number) => void;
@@ -264,7 +265,8 @@ export const Home: React.FC<HomeProps> = ({
                             selectedGame === 'gridorder' ? <LayoutGrid size={48} color="#f59e0b" /> :
                               selectedGame === 'memory' ? <Brain size={48} color="#ec4899" /> :
                                 selectedGame === 'jumprace' ? <Rabbit size={48} color="#10b981" /> :
-                                  <Sparkles size={48} color="#60a5fa" />}
+                                  selectedGame === 'archerstick' ? <Sword size={48} color="#f43f5e" /> :
+                                    <Sparkles size={48} color="#60a5fa" />}
             {selectedGame === 'typeracer' ? 'Type Racer' :
               selectedGame === 'chess' ? 'Chess' :
                 selectedGame === 'flappy' ? 'Flappy Bird' :
@@ -276,8 +278,9 @@ export const Home: React.FC<HomeProps> = ({
                             selectedGame === 'gridorder' ? 'Grid Order' :
                               selectedGame === 'memory' ? 'Remember Me' :
                                 selectedGame === 'jumprace' ? 'Jump Race' :
-                                  selectedGame === 'shapeme' ? 'Shape Me' :
-                                    'BINGO'}
+                                  selectedGame === 'archerstick' ? 'Archer Stick' :
+                                    selectedGame === 'shapeme' ? 'Shape Me' :
+                                      'BINGO'}
           </h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
             {selectedGame === 'typeracer' ? 'Speed typing arena' :
@@ -291,8 +294,9 @@ export const Home: React.FC<HomeProps> = ({
                             selectedGame === 'gridorder' ? 'Shuffle the numbers into the right order' :
                               selectedGame === 'memory' ? 'Test your memory and race to match cards' :
                                 selectedGame === 'jumprace' ? 'Race your pieces to the opposite corner' :
-                                  selectedGame === 'shapeme' ? 'Trace shapes with precision and speed' :
-                                    'Real-time multiplayer bingo experience'}
+                                  selectedGame === 'archerstick' ? 'Multiplayer archer duel. 5 hits to win!' :
+                                    selectedGame === 'shapeme' ? 'Trace shapes with precision and speed' :
+                                      'Real-time multiplayer bingo experience'}
           </p>
         </div>
 

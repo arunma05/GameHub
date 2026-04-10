@@ -26,6 +26,7 @@ const NewsView = lazy(() => import('./components/NewsView').then(m => ({ default
 const ShapeMe = lazy(() => import('./components/ShapeMeComponent').then(m => ({ default: m.ShapeMeComponent })));
 const ColorMatcher = lazy(() => import('./components/ColorMatcher').then(m => ({ default: m.ColorMatcher })));
 const MirrorDraw = lazy(() => import('./components/MirrorDraw').then(m => ({ default: m.MirrorDraw })));
+const ArcherStick = lazy(() => import('./components/ArcherStick').then(m => ({ default: m.ArcherStick })));
 const JumpRaceComponent = lazy(() => import('./components/JumpRaceComponent').then(m => ({ default: m.JumpRaceComponent }))) as React.LazyExoticComponent<React.FC<{ room: Room; me: Player; isDark?: boolean }>>;
 
 const LoadingFallback = () => (
@@ -78,8 +79,8 @@ export const App: React.FC = () => {
     const saved = localStorage.getItem('user');
     return saved ? JSON.parse(saved) : null;
   });
-  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'news' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw'>('dashboard');
-  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw' | null>(null);
+  const [view, setView] = useState<'dashboard' | 'home' | 'lobby' | 'game' | 'flappy' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'news' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw' | 'archerstick'>('dashboard');
+  const [selectedGame, setSelectedGame] = useState<'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw' | 'archerstick' | null>(null);
   const [publicRooms, setPublicRooms] = useState<PublicRoom[]>([]);
   const [isDark, setIsDark] = useState<boolean>(() => {
     if (user?.theme) return user.theme === 'dark';
@@ -146,7 +147,7 @@ export const App: React.FC = () => {
     me: null,
     leaderboards: { 
       bingo: {}, typeracer: [], chess: {}, quiz: {}, sudoku: {}, kakuro: {}, sixteencoins: {}, gridorder: {},
-      flappy: [], cssbattle: {}, memory: {}, jumprace: {}, shapeme: {}, colormatcher: {}, mirrordraw: {}
+      flappy: [], cssbattle: {}, memory: {}, jumprace: {}, shapeme: {}, colormatcher: {}, mirrordraw: {}, archerstick: {}
     },
     error: null,
   });
@@ -273,7 +274,7 @@ export const App: React.FC = () => {
   const handleSelectGame = (type: any) => {
     setSelectedGame(type);
     setGameState((prev: any) => ({ ...prev, room: null, me: null })); 
-    if (['flappy', 'cssbattle', 'sudoku', 'sixteencoins', 'jumprace', 'shapeme', 'colormatcher', 'mirrordraw'].includes(type)) {
+    if (['flappy', 'cssbattle', 'sudoku', 'sixteencoins', 'jumprace', 'shapeme', 'colormatcher', 'mirrordraw', 'archerstick'].includes(type)) {
       setView(type as any);
     } else {
       setView('home');
@@ -384,6 +385,8 @@ export const App: React.FC = () => {
         return <SixteenCoins room={gameState.room} me={gameState.me} isDark={isDark} />;
       } else if (gameState.room.type === 'jumprace') {
         return <JumpRaceComponent room={gameState.room} me={gameState.me} isDark={isDark} />;
+      } else if (gameState.room.type === 'archerstick') {
+        return <ArcherStick room={gameState.room} me={gameState.me} isDark={isDark} />;
       } else if (gameState.room.type === 'quiz') {
         return <Quiz room={gameState.room} me={gameState.me} />;
       } else if (gameState.room.type === 'kakuro') {
@@ -409,6 +412,7 @@ export const App: React.FC = () => {
     if (view === 'shapeme') return 'Shape Me';
     if (view === 'colormatcher') return 'Color Matcher';
     if (view === 'mirrordraw') return 'Mirror Draw';
+    if (view === 'archerstick') return 'Archer Stick';
     if (view === 'home') return selectedGame?.toUpperCase() || 'New Game';
     if (view === 'lobby') return 'Lobby';
     if (view === 'game') {
@@ -416,6 +420,7 @@ export const App: React.FC = () => {
       if (type === 'quiz') return 'TRIVIA';
       if (type === 'sixteencoins') return '16 COINS';
       if (type === 'jumprace') return 'JUMP RACE';
+      if (type === 'archerstick') return 'ARCHER STICK';
       if (type === 'gridorder') return 'GRID ORDER';
       if (type === 'typeracer') return 'TYPE RACER';
       if (type === 'memory') return 'MEMORY GAME';
@@ -437,6 +442,7 @@ export const App: React.FC = () => {
       case 'shapeme': return <Paintbrush size={22} color="#84cc16" />;
       case 'colormatcher': return <Zap size={22} color="#d946ef" />;
       case 'mirrordraw': return <MousePointer2 size={22} color="#2dd4bf" />;
+      case 'archerstick': return <span style={{ fontSize: '1.2rem' }}>🏹</span>;
       case 'home':
         switch (selectedGame) {
           case 'bingo': return <Gamepad2 size={22} color="#10b981" />;

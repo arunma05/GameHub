@@ -1,6 +1,6 @@
 export interface PublicRoom {
   id: string;
-  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw';
+  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw' | 'archerstick';
   playerCount: number;
   hostName: string;
 }
@@ -16,7 +16,7 @@ export interface Player {
 
 export interface Room {
   id: string;
-  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw';
+  type: 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw' | 'archerstick';
   hostId: string;
   players: Player[];
   gameState: 'waiting' | 'starting' | 'playing' | 'finished';
@@ -53,5 +53,6 @@ export interface GameState {
     shapeme: Record<string, number>;
     colormatcher: Record<string, number>;
     mirrordraw: Record<string, number>;
+    archerstick: Record<string, number>;
   };
 }

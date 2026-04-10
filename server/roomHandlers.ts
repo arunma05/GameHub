@@ -17,7 +17,7 @@ export function getActiveRooms() {
   return Object.values(rooms)
     .filter(r => {
       if (r.gameState !== 'waiting' || !r.isPublic) return false;
-      if ((r.type === 'chess' || r.type === 'sixteencoins') && r.players.length >= 2) return false;
+      if ((r.type === 'chess' || r.type === 'sixteencoins' || r.type === 'archerstick') && r.players.length >= 2) return false;
       return true;
     })
     .map(r => ({
@@ -62,7 +62,8 @@ export function handleCreateRoom(socket: AugmentedSocket, io: Server, data: unkn
               (type === 'gridorder' ? { gridSize: gridSize || 3 } : 
               (type === 'memory' ? { level: memoryLevel || 6 } :
               (type === 'sixteencoins' ? { coins: {}, readyCount: 0 } :
-              (type === 'kakuro' ? { level: kakuroLevel || 1 } : null)))))),
+              (type === 'kakuro' ? { level: kakuroLevel || 1 } :
+              (type === 'archerstick' ? { health: {}, playerPos: {}, arrows: [] } : null))))))),
     readyPlayers: [],
   };
 
@@ -83,7 +84,7 @@ export function handleJoinRoom(socket: AugmentedSocket, io: Server, data: unknow
   if (!room) return callback({ success: false, message: 'Room not found' });
   if (room.gameState !== 'waiting') return callback({ success: false, message: 'Game already in progress' });
 
-  if ((room.type === 'chess' || room.type === 'sixteencoins') && room.players.length >= 2) {
+  if ((room.type === 'chess' || room.type === 'sixteencoins' || room.type === 'archerstick') && room.players.length >= 2) {
     return callback({ success: false, message: 'Room is full' });
   }
   const nameExists = room.players.some(p => p.name.toLowerCase() === playerName.toLowerCase());

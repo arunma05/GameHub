@@ -6,7 +6,7 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { rooms, handleCreateRoom, handleJoinRoom, broadcastActiveRooms, getActiveRooms, AugmentedSocket } from './roomHandlers';
-import { handleStartGame, handleCallNumber, handleTypeProgress } from './gameHandlers';
+import { handleStartGame, handleCallNumber, handleTypeProgress, handleArcherAction, handleArcherHit } from './gameHandlers';
 import { handleChessMove, handleSixteenCoinsMove, handleSudokuWin, handleKakuroWin, handleSudokuLoad, handleSudokuSave, handleGridOrderWin, handleGridOrderScore, handleSixteenCoinsEndTurn, handleSixteenCoinsReady, handleJumpRaceMove, handleJumpRaceEndTurn } from './puzzleHandlers';
 import { handleQuizAnswer, handleFlappyScore, handleMemoryWin } from './contestHandlers';
 import { handleRegister, handleLogin, handleGuestLogin, handleGetCaptcha, handleUpdateTheme } from './authHandlers';
@@ -56,6 +56,8 @@ io.on('connection', (socket: AugmentedSocket) => {
   socket.on('gridorder-score', (data) => handleGridOrderScore(socket, io, data));
   socket.on('jumprace-move', (data) => handleJumpRaceMove(socket, io, data));
   socket.on('jumprace-endturn', (data) => handleJumpRaceEndTurn(socket, io, data));
+  socket.on('archerstick-action', (data) => handleArcherAction(socket, io, data));
+  socket.on('archerstick-hit', (data) => handleArcherHit(socket, io, data));
   socket.on('update-room-settings', (data) => {
     const { roomId, settings } = data;
     const room = rooms[roomId];
