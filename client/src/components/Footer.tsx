@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, Cpu, Zap, Trophy, Globe, Gamepad2 } from 'lucide-react';
+import { Heart, Cpu, Zap, Trophy, Globe } from 'lucide-react';
 import { Logo } from './Logo';
 
 export type GameType = 'bingo' | 'typeracer' | 'chess' | 'flappy' | 'quiz' | 'cssbattle' | 'sudoku' | 'sixteencoins' | 'kakuro' | 'gridorder' | 'memory' | 'jumprace' | 'shapeme' | 'colormatcher' | 'mirrordraw' | 'archerstick';

@@ -172,7 +172,7 @@ export const ArcherStick: React.FC<ArcherStickProps> = ({ room, me, isDark }) =>
     return () => { socket.off('archer-shot', handleShot); };
   }, [me.id]);
 
-  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+  const handleMouseDown = (_e: React.MouseEvent | React.TouchEvent) => {
     if (room.gameState !== 'playing') return;
     setIsCharging(true);
   };

@@ -28,7 +28,7 @@ const getBezierPoint = (t: number, p0: {x:number,y:number}, p1: {x:number,y:numb
 
 const getPatternPoints = (shape: ShapeType, n: number) => {
   const pts: {x:number,y:number}[] = [];
-  const stepsPerSeg = Math.floor(n / 2) || 1;
+  // const stepsPerSeg = Math.floor(n / 2) || 1;
 
   if (shape === 'infinity') {
     const p0={x:100,y:50}, p1={x:60,y:10}, p2={x:20,y:10}, p3={x:20,y:50};
@@ -65,6 +65,7 @@ const getPatternPoints = (shape: ShapeType, n: number) => {
 const dist = (p1: {x:number, y:number}, p2: {x:number, y:number}) => Math.hypot(p1.x - p2.x, p1.y - p2.y);
 
 // Resample points to have uniform distribution
+/*
 const resample = (pts: {x:number, y:number}[], n: number) => {
   if (pts.length < 2) return Array(n).fill(pts[0] || {x:0, y:0});
   
@@ -100,6 +101,7 @@ const resample = (pts: {x:number, y:number}[], n: number) => {
   while (res.length < n) res.push(pts[pts.length - 1]);
   return res.slice(0, n);
 };
+*/
 
 // Slightly more robust linear resampling
 const resampleLinear = (pts: {x:number, y:number}[], n: number) => {
